@@ -42,7 +42,7 @@ export function createInitialGameState(options: CreateGameOptions = {}): GameSta
       {
         id: "log-game-start",
         type: "game_start",
-        message: `Created a ${settings.playerCount} player game.`,
+        message: `创建了 ${settings.playerCount} 人游戏。`,
         createdAt: options.now ?? Date.now(),
       },
     ],

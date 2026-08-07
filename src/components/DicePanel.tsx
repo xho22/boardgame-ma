@@ -1,24 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
-import type { Entrant, Player, RaceState } from "../game/types";
+import type { Entrant, MainMoveChoice, Player, RaceState } from "../game/types";
 
 type DicePanelProps = {
   race: RaceState;
   currentPlayer: Player;
   currentEntrant: Entrant;
-  onRoll: (playerId: string) => void;
+  onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
 export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
+  const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(true);
+  const [useRocketDouble, setUseRocketDouble] = useState(true);
+  const [magicianMaxRerolls, setMagicianMaxRerolls] = useState<0 | 1 | 2>(2);
   const intervalRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setIsRolling(false);
     setRollingValue(race.previousFinalMoveValue ?? 1);
-  }, [currentPlayer.id, race.previousFinalMoveValue]);
+    setUseBeforeMainAbility(true);
+    setUseRocketDouble(true);
+    setMagicianMaxRerolls(2);
+  }, [currentEntrant.id, currentPlayer.id, race.previousFinalMoveValue]);
 
   useEffect(() => {
     return () => {
@@ -32,7 +38,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
     };
   }, []);
 
-  function startRollAnimation() {
+  function startRollAnimation(choice?: MainMoveChoice) {
     if (isRolling) {
       return;
     }
@@ -48,12 +54,39 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
       }
 
       timeoutRef.current = null;
-      onRoll(currentEntrant.id);
+      onRoll(currentEntrant.id, choice);
     }, 2_000);
+  }
+
+  function useDirectAbility(choice: MainMoveChoice) {
+    if (isRolling) {
+      return;
+    }
+
+    onRoll(currentEntrant.id, choice);
   }
 
   const displayValue = isRolling ? rollingValue : (race.previousFinalMoveValue ?? "-");
   const currentAthlete = STANDARD_ATHLETE_BY_ID.get(currentEntrant.athleteId);
+  const abilityKey = currentEntrant.copiedAbilityKey ?? currentAthlete?.implementationKey;
+  const hasFlipFlopTarget =
+    abilityKey === "warp_swap_instead_main_move" &&
+    race.entrants.some(
+      (entrant) =>
+        entrant.id !== currentEntrant.id &&
+        !entrant.finished &&
+        !entrant.eliminated &&
+        entrant.position > currentEntrant.position,
+    );
+  const rollChoice: MainMoveChoice = {
+    useLegsFixedMove: false,
+    useFlipFlopSwap: false,
+    useCheerleader: abilityKey === "cheer_last_place_then_self" ? useBeforeMainAbility : undefined,
+    useHypnotist: abilityKey === "warp_racer_to_self_before_main" ? useBeforeMainAbility : undefined,
+    useThirdWheel: abilityKey === "warp_to_exactly_two_before_main" ? useBeforeMainAbility : undefined,
+    useRocketScientistDouble: abilityKey === "optional_double_roll_then_trip" ? useRocketDouble : undefined,
+    magicianMaxRerolls: abilityKey === "reroll_main_move_up_to_two" ? magicianMaxRerolls : undefined,
+  };
 
   return (
     <section className="dice-panel" aria-label="Current turn">
@@ -73,9 +106,78 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
       <div className={`dice-readout ${isRolling ? "rolling" : ""}`} aria-label="Last die roll">
         {displayValue}
       </div>
-      <button className="primary-button" type="button" onClick={startRollAnimation} disabled={isRolling}>
-        {isRolling ? "Rolling..." : "Roll Die"}
-      </button>
+      <div className="ability-choice-panel">
+        {abilityKey === "main_move_fixed_five_optional" ? (
+          <div className="ability-choice-actions" aria-label="长腿能力选择">
+            <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+              {isRolling ? "掷骰中..." : "掷骰移动"}
+            </button>
+            <button
+              className="primary-button"
+              type="button"
+              onClick={() => useDirectAbility({ useLegsFixedMove: true })}
+              disabled={isRolling}
+            >
+              直接移动 5 格
+            </button>
+          </div>
+        ) : (
+          <>
+            {abilityKey === "warp_swap_instead_main_move" && hasFlipFlopTarget ? (
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={() => useDirectAbility({ useFlipFlopSwap: true })}
+                disabled={isRolling}
+              >
+                使用能力换位
+              </button>
+            ) : null}
+
+            {abilityKey === "cheer_last_place_then_self" ||
+            abilityKey === "warp_racer_to_self_before_main" ||
+            abilityKey === "warp_to_exactly_two_before_main" ? (
+              <label className="ability-toggle">
+                <input
+                  type="checkbox"
+                  checked={useBeforeMainAbility}
+                  onChange={(event) => setUseBeforeMainAbility(event.target.checked)}
+                />
+                本回合使用可选能力
+              </label>
+            ) : null}
+
+            {abilityKey === "optional_double_roll_then_trip" ? (
+              <label className="ability-toggle">
+                <input
+                  type="checkbox"
+                  checked={useRocketDouble}
+                  onChange={(event) => setUseRocketDouble(event.target.checked)}
+                />
+                掷骰后使用火箭加倍
+              </label>
+            ) : null}
+
+            {abilityKey === "reroll_main_move_up_to_two" ? (
+              <label className="ability-select">
+                <span>低点自动重掷次数</span>
+                <select
+                  value={magicianMaxRerolls}
+                  onChange={(event) => setMagicianMaxRerolls(Number(event.target.value) as 0 | 1 | 2)}
+                >
+                  <option value={0}>0</option>
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                </select>
+              </label>
+            ) : null}
+
+            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+              {isRolling ? "掷骰中..." : "掷骰"}
+            </button>
+          </>
+        )}
+      </div>
     </section>
   );
 }

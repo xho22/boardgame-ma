@@ -3,7 +3,7 @@ import { STANDARD_ATHLETES } from "./athletes";
 import { reduceGameCommand } from "./raceEngine";
 import { createInitialGameState } from "./setup";
 import type { Rng } from "./rng";
-import type { GameState } from "./types";
+import type { GameState, MainMoveChoice } from "./types";
 
 function scriptedRng(rolls: number[]): Rng {
   let rollIndex = 0;
@@ -56,8 +56,8 @@ function createRace(firstAthlete: string, secondAthlete: string, trackLength = 3
   return reduceGameCommand(game, { type: "REVEAL_RACE" }, rng);
 }
 
-function roll(game: GameState, playerId: string, rolls: number[]): GameState {
-  return reduceGameCommand(game, { type: "ROLL_DICE", playerId }, scriptedRng(rolls));
+function roll(game: GameState, playerId: string, rolls: number[], choice?: MainMoveChoice): GameState {
+  return reduceGameCommand(game, { type: "ROLL_DICE", playerId, choice }, scriptedRng(rolls));
 }
 
 function entrantPosition(game: GameState, playerId: string): number {
@@ -79,14 +79,14 @@ describe("phase 7 abilities", () => {
     const game = roll(createRace("Alchemist", "Baba Yaga"), "player-1", [1]);
 
     expect(entrantPosition(game, "player-1")).toBe(4);
-    expect(latestMessages(game).some((message) => message.includes("Alchemist"))).toBe(true);
+    expect(latestMessages(game).some((message) => message.includes("炼金术士"))).toBe(true);
   });
 
   it("Coach gives racers sharing the coach space +1 to main move", () => {
     const game = roll(createRace("Coach", "Baba Yaga"), "player-1", [1]);
 
     expect(entrantPosition(game, "player-1")).toBe(2);
-    expect(latestMessages(game).some((message) => message.includes("coached"))).toBe(true);
+    expect(latestMessages(game).some((message) => message.includes("指导"))).toBe(true);
   });
 
   it("Gunk gives other racers -1 to main move without changing the die", () => {
@@ -94,7 +94,7 @@ describe("phase 7 abilities", () => {
 
     expect(game.activeRace?.previousFinalMoveValue).toBe(3);
     expect(entrantPosition(game, "player-1")).toBe(3);
-    expect(latestMessages(game)).toContain("player-1 rolled 4.");
+    expect(latestMessages(game).some((message) => message.includes("掷出了 4"))).toBe(true);
   });
 
   it("Hare gains +2 unless it starts the turn alone in the lead", () => {
@@ -118,14 +118,21 @@ describe("phase 7 abilities", () => {
     const skipped = roll(leadingGame, "player-1", [6]);
 
     expect(entrantPosition(skipped, "player-1")).toBe(3);
-    expect(latestMessages(skipped).some((message) => message.includes("alone in the lead"))).toBe(true);
+    expect(latestMessages(skipped).some((message) => message.includes("独自领先"))).toBe(true);
   });
 
   it("Legs can replace the roll with a fixed main move of 5", () => {
     const game = roll(createRace("Legs", "Baba Yaga"), "player-1", [1]);
 
     expect(entrantPosition(game, "player-1")).toBe(5);
-    expect(latestMessages(game).some((message) => message.includes("skip rolling"))).toBe(true);
+    expect(latestMessages(game).some((message) => message.includes("不掷骰"))).toBe(true);
+  });
+
+  it("Legs can choose to roll instead of using the fixed 5 move", () => {
+    const game = roll(createRace("Legs", "Baba Yaga"), "player-1", [2], { useLegsFixedMove: false });
+
+    expect(entrantPosition(game, "player-1")).toBe(2);
+    expect(latestMessages(game).some((message) => message.includes("掷出了 2"))).toBe(true);
   });
 
   it("Magician rerolls low main move rolls up to two times and uses the final roll", () => {
@@ -146,6 +153,15 @@ describe("phase 7 abilities", () => {
 
     expect(entrantPosition(game, "player-1")).toBe(6);
     expect(game.activeRace?.entrants.find((entrant) => entrant.playerId === "player-1")?.skippedTurns).toBe(0);
-    expect(latestMessages(game).some((message) => message.includes("recovered from trip"))).toBe(true);
+    expect(latestMessages(game).some((message) => message.includes("从摔倒中恢复"))).toBe(true);
+  });
+
+  it("Rocket Scientist can skip the optional double move", () => {
+    const game = roll(createRace("Rocket Scientist", "Baba Yaga"), "player-1", [3], {
+      useRocketScientistDouble: false,
+    });
+
+    expect(entrantPosition(game, "player-1")).toBe(3);
+    expect(game.activeRace?.entrants.find((entrant) => entrant.playerId === "player-1")?.skippedTurns).toBe(0);
   });
 });

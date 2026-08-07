@@ -206,14 +206,14 @@ type GameCommand =
   | { type: "ASSIGN_TEAMS" }
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
   | { type: "REVEAL_RACE" }
-  | { type: "ROLL_DICE"; playerId: string }
+  | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
   | { type: "CONFIRM_REACTION"; playerId: string; reactionId: string; accepted: boolean }
   | { type: "BEGIN_NEXT_RACE" }
   | { type: "FINISH_GAME" };
 ```
 
-兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。
+兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。`choice` 用来记录本次主移动前后的玩家选择，例如 Legs 是否直接移动 5 格、Flip Flop 是否换位、Rocket Scientist 是否加倍。
 
 命令处理函数必须是纯规则逻辑：
 
@@ -282,6 +282,13 @@ game_end
 - 结果：移动了几格、是否 trip、是否 warp、是否冲线、是否得分。
 
 日志必须由规则引擎或命令结算层生成，UI 只负责展示。
+
+日志展示规则：
+
+- 比赛日志使用中文玩家文案。
+- 最新日志显示在最上方。
+- 序号使用日志真实追加顺序，不能因为倒序显示而重新从 1 开始编号。
+- 日志区域保留滚动条，超过可视高度后向下滚动查看历史，不丢弃超过 10 条的记录。
 
 示例：
 
@@ -611,6 +618,12 @@ type SelectionState = {
 - 超过 10 秒未选择则默认不使用
 
 本地亲子模式下，可以关闭计时器。
+
+当前主动能力交互状态：
+
+- before main move：Legs、Flip Flop、Cheerleader、Hypnotist、Third Wheel 已有本地 UI 选择。
+- after roll：Magician、Rocket Scientist 当前使用回合开始前策略选项；后续应升级为真正掷骰后暂停确认。
+- on other roll：Dicemonger、Inchworm、Lackey 当前仍是本地自动反应；在线多人阶段应通过 `pendingReactions` 或同类状态补确认流。
 
 ## 15.4 版本校准
 

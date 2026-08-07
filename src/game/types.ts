@@ -167,6 +167,16 @@ export type ReactionPrompt = {
   promptType: "optionalPower" | "reroll" | "duel";
 };
 
+export type MainMoveChoice = {
+  useLegsFixedMove?: boolean;
+  useFlipFlopSwap?: boolean;
+  useCheerleader?: boolean;
+  useHypnotist?: boolean;
+  useThirdWheel?: boolean;
+  useRocketScientistDouble?: boolean;
+  magicianMaxRerolls?: 0 | 1 | 2;
+};
+
 export type RaceSummary = {
   raceNumber: number;
   firstPlacePoints: number;
@@ -210,7 +220,7 @@ export type GameCommand =
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
   | { type: "LOCK_SELECTION"; playerId: string }
   | { type: "REVEAL_RACE" }
-  | { type: "ROLL_DICE"; playerId: string }
+  | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
   | { type: "CONFIRM_REACTION"; playerId: string; reactionId: string; accepted: boolean }
   | { type: "BEGIN_NEXT_RACE" }

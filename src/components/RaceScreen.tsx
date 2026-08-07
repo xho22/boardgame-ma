@@ -1,11 +1,11 @@
 import { DicePanel } from "./DicePanel";
 import { GameLog } from "./GameLog";
 import { Track } from "./Track";
-import type { GameState } from "../game/types";
+import type { GameState, MainMoveChoice } from "../game/types";
 
 type RaceScreenProps = {
   game: GameState;
-  onRoll: (playerId: string) => void;
+  onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
 export function RaceScreen({ game, onRoll }: RaceScreenProps) {

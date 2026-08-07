@@ -8,7 +8,7 @@ import {
   resolveAfterMove,
   resolveMainMove,
 } from "./abilityEngine";
-import type { Entrant, Finisher, GameCommand, GameLogEntry, GameState, RaceState } from "./types";
+import type { Entrant, Finisher, GameCommand, GameLogEntry, GameState, MainMoveChoice, RaceState } from "./types";
 import type { Rng } from "./rng";
 
 export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rng): GameState {
@@ -26,7 +26,7 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
     case "REVEAL_RACE":
       return beginRaceFromSelection(game);
     case "ROLL_DICE":
-      return rollForCurrentPlayer(game, command.playerId, rng);
+      return rollForCurrentPlayer(game, command.playerId, rng, command.choice);
     case "BEGIN_NEXT_RACE":
       return beginNextRace(game);
     case "FINISH_GAME":
@@ -104,9 +104,9 @@ export function beginRaceFromSelection(game: GameState): GameState {
     selectionState: null,
     log: [
       ...game.log,
-      createLog(game, "race_start", `Race ${raceSummary.raceNumber} started.`, 0),
+      createLog(game, "race_start", `第 ${raceSummary.raceNumber} 场比赛开始。`, 0),
       ...prepared.entrants.map((entrant, index) =>
-        createLog(game, "athlete_reveal", `${entrant.playerId} sent ${entrant.athleteId}.`, index + 1),
+        createLog(game, "athlete_reveal", `${describeRaceEntrant(game, entrant)} 登场。`, index + 1),
       ),
       ...prepared.logs.map((log, index) => createLog(game, log.type, log.message, prepared.entrants.length + index + 1)),
     ],
@@ -114,7 +114,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
   };
 }
 
-export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng): GameState {
+export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng, choice?: MainMoveChoice): GameState {
   const race = requireActiveRace(game);
 
   if (race.status !== "active") {
@@ -137,7 +137,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     return advanceTurn(game, race);
   }
 
-  const mainMove = resolveMainMove({ game, race, entrant, rng });
+  const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
   const moveResult = moveWithAbility(mainMove.race, mainMove.entrant, mainMove.finalMove, {
     leaptoad: mainMove.usesLeaptoadMove,
     preventOverFinish: mainMove.preventsOverFinish,
@@ -185,13 +185,13 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     ...mainMove.logs,
     ...(mainMove.dieRoll === null
       ? []
-      : [{ type: "dice_roll" as const, message: `${playerId} rolled ${mainMove.dieRoll}.` }]),
+      : [{ type: "dice_roll" as const, message: `${describeRaceEntrant(game, entrant)} 掷出了 ${mainMove.dieRoll}。` }]),
     {
       type: "movement" as const,
       message:
         mainMove.finalMove === 0
-          ? `${playerId} stayed at ${moveResult.entrant.position}.`
-          : `${playerId} moved ${mainMove.finalMove} spaces to ${moveResult.entrant.position}.`,
+          ? `${describeRaceEntrant(game, entrant)} 停在 ${moveResult.entrant.position}。`
+          : `${describeRaceEntrant(game, entrant)} 移动 ${mainMove.finalMove} 格，到达 ${moveResult.entrant.position}。`,
     },
     ...afterMove.logs,
   ];
@@ -210,7 +210,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
             createLog(
               game,
               "finish",
-              `${entrant.id} finished in rank ${finishers[finishers.length - 1].rank}.`,
+              `${describeRaceEntrant(game, entrant)} 以第 ${finishers[finishers.length - 1].rank} 名冲线。`,
               baseLogs.length + raceAfterSecondaryFinishes.logs.length,
             ),
           ]
@@ -275,7 +275,7 @@ function completeRace(game: GameState): GameState {
     log: [
       ...scoredGame.log,
       ...masterMindResult.logs.map((log, index) => createLog(scoredGame, log.type, log.message, index)),
-      createLog(scoredGame, "race_end", `Race ${race.raceNumber} complete.`, masterMindResult.logs.length),
+      createLog(scoredGame, "race_end", `第 ${race.raceNumber} 场比赛结束。`, masterMindResult.logs.length),
     ],
     revision: scoredGame.revision + 1,
   };
@@ -354,7 +354,7 @@ function syncFinishers(race: RaceState): { race: RaceState; logs: { type: GameLo
     });
     logs.push({
       type: "finish",
-      message: `${entrant.id} finished in rank ${rank}.`,
+      message: `选手 ${entrant.id} 以第 ${rank} 名冲线。`,
     });
     return {
       ...entrant,
@@ -454,7 +454,7 @@ function applyMastermindPredictions(
     logs: [
       {
         type: "ability_trigger",
-        message: `${mastermind.playerId} used Mastermind and claimed rank 2 after predicting the winner.`,
+        message: `${mastermind.playerId} 的预言家预测命中，结算为第 2 名。`,
       },
     ],
   };
@@ -466,6 +466,13 @@ function requireActiveRace(game: GameState): RaceState {
   }
 
   return game.activeRace;
+}
+
+function describeRaceEntrant(game: GameState, entrant: Entrant): string {
+  const player = game.players.find((candidate) => candidate.id === entrant.playerId);
+  const athlete = game.athletes.find((candidate) => candidate.id === entrant.athleteId);
+
+  return `${player?.name ?? entrant.playerId}的${athlete?.displayName ?? athlete?.standardName ?? entrant.athleteId}`;
 }
 
 function createLog(game: GameState, type: GameLogEntry["type"], message: string, offset: number): GameLogEntry {

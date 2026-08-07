@@ -538,8 +538,56 @@ h1 {
   align-items: center;
 }
 
-.dice-panel .primary-button {
+.dice-panel .primary-button,
+.dice-panel .secondary-button {
   grid-column: 1 / -1;
+}
+
+.ability-choice-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 10px;
+}
+
+.ability-choice-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ability-toggle,
+.ability-select {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #ddd5ca;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #4d4841;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ability-toggle {
+  justify-content: flex-start;
+}
+
+.ability-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: #1d6258;
+}
+
+.ability-select select {
+  min-width: 64px;
+  border: 1px solid #cfc5b7;
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px 8px;
+  color: #24211d;
+  font-weight: 800;
 }
 
 .current-racer-image {

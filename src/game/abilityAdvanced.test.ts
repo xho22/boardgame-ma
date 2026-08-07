@@ -4,7 +4,7 @@ import { reduceGameCommand } from "./raceEngine";
 import { createRng } from "./rng";
 import { createInitialGameState } from "./setup";
 import type { Rng } from "./rng";
-import type { GameState, RaceState } from "./types";
+import type { GameState, MainMoveChoice, RaceState } from "./types";
 
 function scriptedRng(rolls: number[]): Rng {
   let rollIndex = 0;
@@ -76,8 +76,8 @@ function createRace(athleteNames: string[], trackLength = 30, previousWinnerName
   return reduceGameCommand(game, { type: "REVEAL_RACE" }, rng);
 }
 
-function roll(game: GameState, playerId: string, rolls: number[]): GameState {
-  return reduceGameCommand(game, { type: "ROLL_DICE", playerId }, scriptedRng(rolls));
+function roll(game: GameState, playerId: string, rolls: number[], choice?: MainMoveChoice): GameState {
+  return reduceGameCommand(game, { type: "ROLL_DICE", playerId, choice }, scriptedRng(rolls));
 }
 
 function setPositions(game: GameState, positions: Record<string, number>, currentPlayerId = "player-1"): GameState {
@@ -133,9 +133,9 @@ describe("phase 8 abilities", () => {
 
     expect(position(game, "player-2")).toBe(0);
     expect(entrant(game, "player-1").skippedTurns).toBeGreaterThanOrEqual(1);
-    expect(messages(game).some((message) => message.includes("being passed"))).toBe(true);
-    expect(messages(game).some((message) => message.includes("pushed them back"))).toBe(true);
-    expect(messages(game).some((message) => message.includes("shared stop"))).toBe(true);
+    expect(messages(game).some((message) => message.includes("被经过"))).toBe(true);
+    expect(messages(game).some((message) => message.includes("推回"))).toBe(true);
+    expect(messages(game).some((message) => message.includes("同格停留"))).toBe(true);
   });
 
   it("Cheerleader, Lovable Loser, Heckler, Romantic, Scoocher, and Suckerfish can trigger", () => {
@@ -146,7 +146,7 @@ describe("phase 8 abilities", () => {
       "player-4": 8,
     }), "player-1", [1]);
 
-    expect(messages(game).some((message) => message.includes("cheered"))).toBe(true);
+    expect(messages(game).some((message) => message.includes("啦啦队长"))).toBe(true);
 
     game = roll(setPositions(createRace(["Lovable Loser", "Baba Yaga"]), {
       "player-1": 0,
@@ -209,6 +209,13 @@ describe("phase 9 abilities", () => {
     }), "player-1", [6]);
     expect(position(game, "player-1")).toBe(5);
     expect(position(game, "player-2")).toBe(0);
+
+    game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 5,
+    }), "player-1", [2], { useFlipFlopSwap: false });
+    expect(position(game, "player-1")).toBe(2);
+    expect(position(game, "player-2")).toBe(5);
 
     game = roll(createRace(["Genius", "Baba Yaga"]), "player-1", [4]);
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-1");

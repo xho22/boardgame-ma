@@ -7,7 +7,7 @@ import {
 } from "./abilityImplementations";
 import { getPassedSpaces, moveEntrantBackward, moveEntrantForward } from "./movement";
 import type { AbilityImplementationKey } from "./abilityTypes";
-import type { GameLogEntry, GameState, Entrant, Player, RaceState } from "./types";
+import type { GameLogEntry, GameState, Entrant, MainMoveChoice, Player, RaceState } from "./types";
 import type { Rng } from "./rng";
 
 export type AbilityLog = {
@@ -40,6 +40,7 @@ type ResolveMainMoveOptions = {
   race: RaceState;
   entrant: Entrant;
   rng: Rng;
+  choice?: MainMoveChoice;
 };
 
 type ApplyBeforeRaceOptions = {
@@ -79,7 +80,7 @@ export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOpti
       if (copied) {
         logs.push({
           type: "ability_trigger",
-          message: `${name} used Egg and copied ${copied.standardName}'s ability for this race.`,
+          message: `${name} 使用蛋，在本场复制了${copied.displayName}的能力。`,
         });
         return { ...entrant, copiedAbilityKey: copied.implementationKey };
       }
@@ -95,7 +96,7 @@ export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOpti
       if (copied) {
         logs.push({
           type: "ability_trigger",
-          message: `${name} used Twin and copied previous winner ${copied.standardName}'s ability.`,
+          message: `${name} 使用双子，复制了上一场冠军${copied.displayName}的能力。`,
         });
         return { ...entrant, copiedAbilityKey: copied.implementationKey };
       }
@@ -108,7 +109,7 @@ export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOpti
 
       logs.push({
         type: "ability_trigger",
-        message: `${name} used Mastermind and predicted ${describeEntrant(game, predicted)} as winner.`,
+        message: `${name} 使用预言家，预测${describeEntrant(game, predicted)}会夺冠。`,
       });
       return { ...entrant, predictedWinnerPlayerId: predicted.playerId };
     }
@@ -121,7 +122,7 @@ export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOpti
       players = addScore(players, entrant.playerId, 4);
       logs.push({
         type: "score_awarded",
-        message: `${describeEntrant(game, entrant)} used Sisyphus and gained 4 points before the race.`,
+        message: `${describeEntrant(game, entrant)} 使用西西弗斯，赛前获得 4 分。`,
       });
     }
   }
@@ -129,7 +130,7 @@ export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOpti
   return { entrants: nextEntrants, players, logs };
 }
 
-export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOptions): MainMoveResolution {
+export function resolveMainMove({ game, race, entrant, rng, choice = {} }: ResolveMainMoveOptions): MainMoveResolution {
   const key = getEffectiveImplementationKey(game, race, entrant);
   const racerName = describeEntrant(game, entrant);
   const logs: AbilityLog[] = [];
@@ -154,7 +155,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       logs: [
         {
           type: "ability_trigger",
-          message: `${racerName} recovered from trip and skipped this main move.`,
+          message: `${racerName} 从摔倒中恢复，跳过本次主移动。`,
         },
       ],
       usesLeaptoadMove: false,
@@ -165,7 +166,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     };
   }
 
-  const beforeMain = applyBeforeMainMove(game, workingRace, workingEntrant, players);
+  const beforeMain = applyBeforeMainMove(game, workingRace, workingEntrant, players, choice);
   workingRace = beforeMain.race;
   players = beforeMain.players;
   logs.push(...beforeMain.logs);
@@ -186,7 +187,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
         ...logs,
         {
           type: "ability_trigger",
-          message: `${racerName} was alone in the lead, so Hare skipped the main move.`,
+          message: `${racerName} 独自领先，野兔能力使本次主移动为 0。`,
         },
       ],
       usesLeaptoadMove: false,
@@ -197,7 +198,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     };
   }
 
-  if (key === "warp_swap_instead_main_move" && shouldAutoUseFlipFlop(workingRace, workingEntrant)) {
+  if (key === "warp_swap_instead_main_move" && (choice.useFlipFlopSwap ?? true) && shouldAutoUseFlipFlop(workingRace, workingEntrant)) {
     const target = findLeaderOther(workingRace, workingEntrant);
 
     if (target) {
@@ -206,7 +207,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
         workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
       logs.push({
         type: "position_swap",
-        message: `${racerName} used Flip Flop to swap positions with ${describeEntrant(game, target)}.`,
+        message: `${racerName} 使用翻转者，与${describeEntrant(game, target)}交换位置。`,
       });
     }
 
@@ -228,11 +229,11 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     actionCount: workingEntrant.actionCount + 1,
   };
 
-  if (key === "main_move_fixed_five_optional") {
+  if (key === "main_move_fixed_five_optional" && (choice.useLegsFixedMove ?? true)) {
     moveValue = 5;
     logs.push({
       type: "ability_trigger",
-      message: `${racerName} used Legs to skip rolling and set the main move to 5.`,
+      message: `${racerName} 使用长腿，不掷骰并将主移动设为 5。`,
     });
   } else {
     dieRoll = rng.rollDie(6);
@@ -257,7 +258,9 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     if (key === "reroll_main_move_up_to_two") {
       const rolls = [dieRoll];
 
-      while (shouldAutoRerollMagician(rolls[rolls.length - 1], rolls.length - 1)) {
+      const maxRerolls = choice.magicianMaxRerolls ?? 2;
+
+      while (rolls.length - 1 < maxRerolls && shouldAutoRerollMagician(rolls[rolls.length - 1], rolls.length - 1)) {
         rolls.push(rng.rollDie(6));
       }
 
@@ -266,7 +269,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       if (rolls.length > 1) {
         logs.push({
           type: "ability_trigger",
-          message: `${racerName} used Magician to reroll ${rolls.length - 1} time(s): ${rolls.join(" -> ")}; final roll ${dieRoll}.`,
+          message: `${racerName} 使用魔术师重掷 ${rolls.length - 1} 次：${rolls.join(" -> ")}，最终点数 ${dieRoll}。`,
         });
       }
     }
@@ -279,7 +282,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       workingRace = moveEntrantInRace(workingRace, dicemonger.id, 1);
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, dicemonger)} granted a reroll: ${firstRoll} -> ${dieRoll}, then moved 1.`,
+        message: `${describeEntrant(game, dicemonger)} 发动骰商，让点数 ${firstRoll} 重掷为 ${dieRoll}，随后自己移动 1 格。`,
       });
     }
 
@@ -289,7 +292,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       moveValue = 4;
       logs.push({
         type: "ability_trigger",
-        message: `${racerName} used Alchemist: roll ${dieRoll} became main move 4.`,
+        message: `${racerName} 使用炼金术士，将掷骰 ${dieRoll} 改为主移动 4。`,
       });
     }
 
@@ -298,11 +301,11 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       players = addScore(players, nextEntrant.playerId, -1);
       logs.push({
         type: "ability_trigger",
-        message: `${racerName} used Sisyphus: roll 6 warped to Start and lost 1 point before moving.`,
+        message: `${racerName} 使用西西弗斯，掷出 6 后回到起点并先失去 1 分。`,
       });
     }
 
-    if (key === "optional_double_roll_then_trip" && shouldAutoUseRocketScientist(moveValue)) {
+    if (key === "optional_double_roll_then_trip" && (choice.useRocketScientistDouble ?? true) && shouldAutoUseRocketScientist(moveValue)) {
       moveValue *= 2;
       nextEntrant = {
         ...nextEntrant,
@@ -310,11 +313,11 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       };
       logs.push({
         type: "ability_trigger",
-        message: `${racerName} used Rocket Scientist to double the main move to ${moveValue}.`,
+        message: `${racerName} 使用火箭科学家，将主移动翻倍为 ${moveValue}。`,
       });
       logs.push({
         type: "status_added",
-        message: `${racerName} tripped and will skip the next main move.`,
+        message: `${racerName} 摔倒了，下次主移动会跳过。`,
       });
     }
 
@@ -322,7 +325,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
       extraTurnPlayerId = entrant.id;
       logs.push({
         type: "ability_trigger",
-        message: `${racerName} used Genius and correctly predicted 4, earning another turn.`,
+        message: `${racerName} 使用天才并猜中 4，获得一个额外回合。`,
       });
     }
 
@@ -382,7 +385,7 @@ export function resolveAfterMove({
     moverAfter = { ...moverAfter, position: pushedPosition };
     logs.push({
       type: "ability_trigger",
-      message: `${describeEntrant(game, hugeBaby)} blocked the space and pushed ${describeEntrant(game, moverAfter)} to ${pushedPosition}.`,
+      message: `${describeEntrant(game, hugeBaby)} 挡住格子，将${describeEntrant(game, moverAfter)}推回到 ${pushedPosition}。`,
     });
   }
 
@@ -400,7 +403,7 @@ export function resolveAfterMove({
       }));
       logs.push({
         type: "status_added",
-        message: `${describeEntrant(game, entrant)} tripped ${describeEntrant(game, moverAfter)} while being passed.`,
+        message: `${describeEntrant(game, entrant)} 在被经过时绊倒了${describeEntrant(game, moverAfter)}。`,
       });
     }
 
@@ -411,7 +414,7 @@ export function resolveAfterMove({
       }));
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, entrant)} followed ${describeEntrant(game, moverAfter)} to ${moverAfter.position}.`,
+        message: `${describeEntrant(game, entrant)} 跟随${describeEntrant(game, moverAfter)}移动到 ${moverAfter.position}。`,
       });
     }
   }
@@ -428,7 +431,7 @@ export function resolveAfterMove({
         workingRace = replaceEntrant(workingRace, moved);
         logs.push({
           type: "movement",
-          message: `${describeEntrant(game, moverAfter)} passed ${describeEntrant(game, entrant)} and pushed them back to ${moved.position}.`,
+          message: `${describeEntrant(game, moverAfter)} 经过${describeEntrant(game, entrant)}，将其推回到 ${moved.position}。`,
         });
       }
     }
@@ -455,7 +458,7 @@ export function resolveAfterMove({
         }));
         logs.push({
           type: "status_added",
-          message: `${describeEntrant(game, entrant)} tripped ${describeEntrant(game, moverCurrent)} on shared stop.`,
+          message: `${describeEntrant(game, entrant)} 在同格停留时绊倒了${describeEntrant(game, moverCurrent)}。`,
         });
       }
     }
@@ -469,7 +472,7 @@ export function resolveAfterMove({
       }
       logs.push({
         type: "status_added",
-        message: `${describeEntrant(game, moverCurrent)} tripped ${shared.map((entrant) => describeEntrant(game, entrant)).join(", ")} on shared stop.`,
+        message: `${describeEntrant(game, moverCurrent)} 在同格停留时绊倒了${shared.map((entrant) => describeEntrant(game, entrant)).join("、")}。`,
       });
     }
 
@@ -482,7 +485,7 @@ export function resolveAfterMove({
       workingRace = moveEntrantInRace(workingRace, moverAfter.id, 2);
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, moverCurrent)} won an automatic duel, moved 2, and tripped ${describeEntrant(game, opponent)}.`,
+        message: `${describeEntrant(game, moverCurrent)} 赢得自动决斗，移动 2 格，并绊倒${describeEntrant(game, opponent)}。`,
       });
     }
 
@@ -493,7 +496,7 @@ export function resolveAfterMove({
       }));
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, moverCurrent)} removed ${describeEntrant(game, shared[0])} from this race.`,
+        message: `${describeEntrant(game, moverCurrent)} 将${describeEntrant(game, shared[0])}移出本场比赛。`,
       });
     }
   }
@@ -508,7 +511,7 @@ export function resolveAfterMove({
       workingRace = moveEntrantInRace(workingRace, romantic.id, 2);
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, romantic)} saw a pair sharing space and moved 2.`,
+        message: `${describeEntrant(game, romantic)} 看到一对选手同格，移动 2 格。`,
       });
     }
   }
@@ -522,7 +525,7 @@ export function resolveAfterMove({
       workingRace = moveEntrantInRace(workingRace, heckler.id, 2);
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, heckler)} heckled a short turn and moved 2.`,
+        message: `${describeEntrant(game, heckler)} 嘲讽短移动回合，移动 2 格。`,
       });
     }
   }
@@ -538,7 +541,7 @@ export function resolveAfterMove({
         workingRace = moveEntrantInRace(workingRace, scoocher.id, 1);
         logs.push({
           type: "ability_trigger",
-          message: `${describeEntrant(game, scoocher)} scooched 1 after another racer used a power.`,
+          message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
         });
       }
     }
@@ -551,7 +554,7 @@ export function describeEntrant(game: GameState, entrant: Entrant): string {
   const player = game.players.find((candidate) => candidate.id === entrant.playerId);
   const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
 
-  return `${player?.name ?? entrant.playerId}'s ${athlete?.standardName ?? entrant.athleteId}`;
+  return `${player?.name ?? entrant.playerId}的${athlete?.displayName ?? athlete?.standardName ?? entrant.athleteId}`;
 }
 
 export function getEffectiveImplementationKey(
@@ -589,6 +592,7 @@ function applyBeforeMainMove(
   race: RaceState,
   entrant: Entrant,
   players: Player[],
+  choice: MainMoveChoice,
 ): { race: RaceState; players: Player[]; logs: AbilityLog[] } {
   const key = getEffectiveImplementationKey(game, race, entrant);
   const logs: AbilityLog[] = [];
@@ -596,7 +600,7 @@ function applyBeforeMainMove(
   let nextPlayers = players;
   const name = describeEntrant(game, entrant);
 
-  if (key === "cheer_last_place_then_self") {
+  if (key === "cheer_last_place_then_self" && (choice.useCheerleader ?? true)) {
     const last = findAloneLast(workingRace);
 
     if (last && last.id !== entrant.id) {
@@ -604,7 +608,7 @@ function applyBeforeMainMove(
       workingRace = moveEntrantInRace(workingRace, entrant.id, 1);
       logs.push({
         type: "ability_trigger",
-        message: `${name} cheered ${describeEntrant(game, last)} forward 2, then moved 1.`,
+        message: `${name} 使用啦啦队长，让${describeEntrant(game, last)}前进 2 格，自己再移动 1 格。`,
       });
     }
   }
@@ -613,11 +617,11 @@ function applyBeforeMainMove(
     nextPlayers = addScore(nextPlayers, entrant.playerId, 1);
     logs.push({
       type: "score_awarded",
-      message: `${name} used Lovable Loser and gained 1 point while alone in last place.`,
+      message: `${name} 使用可爱输家，独自在最后一名时获得 1 分。`,
     });
   }
 
-  if (key === "warp_racer_to_self_before_main") {
+  if (key === "warp_racer_to_self_before_main" && (choice.useHypnotist ?? true)) {
     const target = findLeaderOther(workingRace, entrant);
 
     if (target) {
@@ -627,12 +631,12 @@ function applyBeforeMainMove(
       }));
       logs.push({
         type: "position_swap",
-        message: `${name} used Hypnotist to warp ${describeEntrant(game, target)} to ${entrant.position}.`,
+        message: `${name} 使用催眠师，将${describeEntrant(game, target)}传送到 ${entrant.position}。`,
       });
     }
   }
 
-  if (key === "warp_to_exactly_two_before_main") {
+  if (key === "warp_to_exactly_two_before_main" && (choice.useThirdWheel ?? true)) {
     const targetSpace = findSpaceWithExactOthers(workingRace, entrant.id, 2);
 
     if (targetSpace !== null) {
@@ -642,7 +646,7 @@ function applyBeforeMainMove(
       }));
       logs.push({
         type: "position_swap",
-        message: `${name} used Third Wheel to warp to a two-racer space at ${targetSpace}.`,
+        message: `${name} 使用第三者，传送到有两名其他选手的格子 ${targetSpace}。`,
       });
     }
   }
@@ -668,7 +672,7 @@ function applyBeforeMainMove(
     };
     logs.push({
       type: "ability_trigger",
-      message: `${name} used Party Animal to pull every other racer 1 space toward the party.`,
+      message: `${name} 使用派对动物，让其他所有选手朝自己移动 1 格。`,
     });
   }
 
@@ -694,7 +698,7 @@ function applyRollReactions(
       skipMover = true;
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, inchworm)} intercepted roll 1, moved 1, and skipped ${describeEntrant(game, entrant)}'s move.`,
+        message: `${describeEntrant(game, inchworm)} 拦截点数 1，自己移动 1 格，并跳过${describeEntrant(game, entrant)}的移动。`,
       });
     }
 
@@ -704,7 +708,7 @@ function applyRollReactions(
       nextTurnPlayerId = skipper.id;
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, skipper)} saw roll 1 and will take the next turn.`,
+        message: `${describeEntrant(game, skipper)} 看到点数 1，将接手下一个回合。`,
       });
     }
   }
@@ -716,7 +720,7 @@ function applyRollReactions(
       workingRace = moveEntrantInRace(workingRace, lackey.id, 2);
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, lackey)} saw roll 6 and moved 2 before ${describeEntrant(game, entrant)}.`,
+        message: `${describeEntrant(game, lackey)} 看到点数 6，在${describeEntrant(game, entrant)}移动前先移动 2 格。`,
       });
     }
   }
@@ -738,7 +742,7 @@ function applyMainMoveModifiers(
     moveValue += 2;
     logs.push({
       type: "ability_trigger",
-      message: `${describeEntrant(game, entrant)} used Hare: main move +2, now ${moveValue}.`,
+      message: `${describeEntrant(game, entrant)} 使用野兔，主移动 +2，当前为 ${moveValue}。`,
     });
   }
 
@@ -748,7 +752,7 @@ function applyMainMoveModifiers(
     moveValue += modifier;
     logs.push({
       type: "ability_trigger",
-      message: `${describeEntrant(game, entrant)} used Blimp: main move ${modifier > 0 ? "+3" : "-1"}, now ${Math.max(0, moveValue)}.`,
+      message: `${describeEntrant(game, entrant)} 使用飞艇，主移动 ${modifier > 0 ? "+3" : "-1"}，当前为 ${Math.max(0, moveValue)}。`,
     });
   }
 
@@ -758,7 +762,7 @@ function applyMainMoveModifiers(
       moveValue += guests;
       logs.push({
         type: "ability_trigger",
-        message: `${describeEntrant(game, entrant)} gained +${guests} from Party Animal guests, now ${moveValue}.`,
+        message: `${describeEntrant(game, entrant)} 因派对来客获得 +${guests}，当前为 ${moveValue}。`,
       });
     }
   }
@@ -769,7 +773,7 @@ function applyMainMoveModifiers(
     moveValue += 1;
     logs.push({
       type: "ability_trigger",
-      message: `${describeEntrant(game, coach)} coached ${describeEntrant(game, entrant)}: main move +1, now ${moveValue}.`,
+      message: `${describeEntrant(game, coach)} 指导${describeEntrant(game, entrant)}，主移动 +1，当前为 ${moveValue}。`,
     });
   }
 
@@ -779,7 +783,7 @@ function applyMainMoveModifiers(
     moveValue -= 1;
     logs.push({
       type: "ability_trigger",
-      message: `${describeEntrant(game, gunk)} slowed ${describeEntrant(game, entrant)}: main move -1, now ${Math.max(0, moveValue)}.`,
+      message: `${describeEntrant(game, gunk)} 拖慢${describeEntrant(game, entrant)}，主移动 -1，当前为 ${Math.max(0, moveValue)}。`,
     });
   }
 

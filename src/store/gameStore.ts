@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { reduceGameCommand } from "../game/raceEngine";
 import { createRng } from "../game/rng";
 import { createInitialGameState } from "../game/setup";
-import type { GameSettings, GameState } from "../game/types";
+import type { GameSettings, GameState, MainMoveChoice } from "../game/types";
 import { clearSavedGame, loadSavedGame, saveGame } from "./persistence";
 
 type AppView = "home" | "setup" | "teamReveal" | "selecting" | "raceReveal" | "racing" | "raceResults" | "finalResults";
@@ -22,7 +22,7 @@ type GameStore = {
   selectAthlete: (playerId: string, athleteId: string) => void;
   lockSelection: (playerId: string) => void;
   revealRace: () => void;
-  rollDice: (playerId: string) => void;
+  rollDice: (playerId: string, choice?: MainMoveChoice) => void;
   beginNextRace: () => void;
 };
 
@@ -143,13 +143,13 @@ export const useGameStore = create<GameStore>((set) => ({
       saveGame(game);
       return { game, hasSavedGame: true, view: "racing" };
     }),
-  rollDice: (playerId) =>
+  rollDice: (playerId, choice) =>
     set((state) => {
       if (!state.game) {
         return state;
       }
 
-      const game = reduceGameCommand(state.game, { type: "ROLL_DICE", playerId }, rngForGame(state.game));
+      const game = reduceGameCommand(state.game, { type: "ROLL_DICE", playerId, choice }, rngForGame(state.game));
       saveGame(game);
       return { game, hasSavedGame: true, view: viewFromGame(game) };
     }),
