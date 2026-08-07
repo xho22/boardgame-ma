@@ -387,6 +387,10 @@ h1 {
   font-weight: 900;
 }
 
+.moving-piece {
+  animation: piece-hop 180ms ease-out;
+}
+
 .race-control-grid {
   display: grid;
   grid-template-columns: minmax(280px, 420px) minmax(280px, 1fr);
@@ -423,6 +427,41 @@ h1 {
   color: #1d6258;
   font-size: 42px;
   font-weight: 900;
+}
+
+.dice-readout.rolling {
+  animation: dice-pulse 160ms linear infinite;
+  background: #fff1ec;
+  border-color: #e94f2f;
+  color: #e94f2f;
+}
+
+@keyframes dice-pulse {
+  0% {
+    transform: rotate(-3deg) scale(0.96);
+  }
+
+  50% {
+    transform: rotate(3deg) scale(1.04);
+  }
+
+  100% {
+    transform: rotate(-3deg) scale(0.96);
+  }
+}
+
+@keyframes piece-hop {
+  0% {
+    transform: translateY(7px) scale(0.92);
+  }
+
+  55% {
+    transform: translateY(-5px) scale(1.08);
+  }
+
+  100% {
+    transform: translateY(0) scale(1);
+  }
 }
 
 .game-log {
