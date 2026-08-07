@@ -169,8 +169,10 @@ export type RaceSummary = {
 
 export type SelectionState = {
   raceNumber: number;
+  activePlayerId: string | null;
   selectionsByPlayerId: Record<string, string | null>;
   lockedPlayerIds: string[];
+  revealed: boolean;
 };
 
 export type GameLogEntry = {

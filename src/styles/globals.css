@@ -223,6 +223,84 @@ h1 {
   margin-top: 28px;
 }
 
+.selection-cover {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.helper-text {
+  max-width: 560px;
+  color: #5d564f;
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.selectable-racer {
+  min-height: 96px;
+  display: grid;
+  gap: 6px;
+  align-content: center;
+  border: 2px solid #d8cfc0;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #1c1b1a;
+  padding: 14px;
+  text-align: left;
+}
+
+.selectable-racer.selected {
+  border-color: #e94f2f;
+  background: #fff1ec;
+}
+
+.selectable-racer span {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.selectable-racer small {
+  color: #665f57;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.reveal-top-bar {
+  grid-template-columns: 80px 1fr 80px;
+}
+
+.reveal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.reveal-card {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #ddd5ca;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 18px;
+}
+
+.reveal-card h3 {
+  font-size: 28px;
+}
+
+.reveal-card p {
+  color: #665f57;
+  font-weight: 800;
+}
+
 .player-column {
   display: grid;
   gap: 12px;

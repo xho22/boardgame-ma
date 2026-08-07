@@ -5,9 +5,10 @@ type TeamRevealScreenProps = {
   game: GameState;
   onNewGame: () => void;
   onClearGame: () => void;
+  onBeginSelection: () => void;
 };
 
-export function TeamRevealScreen({ game, onNewGame, onClearGame }: TeamRevealScreenProps) {
+export function TeamRevealScreen({ game, onNewGame, onClearGame, onBeginSelection }: TeamRevealScreenProps) {
   return (
     <main className="app-shell screen-layout">
       <header className="top-bar">
@@ -49,6 +50,12 @@ export function TeamRevealScreen({ game, onNewGame, onClearGame }: TeamRevealScr
           </article>
         ))}
       </section>
+
+      <footer className="bottom-actions">
+        <button className="primary-button" type="button" onClick={onBeginSelection}>
+          Choose Racers
+        </button>
+      </footer>
     </main>
   );
 }

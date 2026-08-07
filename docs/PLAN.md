@@ -25,7 +25,7 @@
 | 1 | 规则数据模型 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 9 tests passed | 已创建规则模型、seed RNG、初始化函数和单元测试 |
 | 2 | 基础角色池 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 14 tests passed | 已录入标准版 36 名选手数据、能力 key 和角色数据测试 |
 | 3 | 本地状态管理与页面流程 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 16 tests passed；页面模块校验: 通过 | 已实现 Zustand store、localStorage 存档、首页、设置页和队伍展示页 |
-| 4 | 秘密派遣流程 | 未开始 | 未验收 | - | - |
+| 4 | 秘密派遣流程 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 20 tests passed；页面模块校验: 通过 | 已实现逐个玩家选择、锁定遮挡式流程、统一揭示和已使用角色防选 |
 | 5 | 基础比赛引擎 | 未开始 | 未验收 | - | - |
 | 6 | 比赛 UI | 未开始 | 未验收 | - | - |
 | 7 | 第一批能力实现 | 未开始 | 未验收 | - | - |

@@ -1,9 +1,10 @@
 import { create } from "zustand";
+import { beginSelection, lockPlayerSelection, selectAthleteForRace } from "../game/selection";
 import { createInitialGameState } from "../game/setup";
 import type { GameSettings, GameState } from "../game/types";
 import { clearSavedGame, loadSavedGame, saveGame } from "./persistence";
 
-type AppView = "home" | "setup" | "teamReveal";
+type AppView = "home" | "setup" | "teamReveal" | "selecting" | "raceReveal";
 
 type GameStore = {
   view: AppView;
@@ -14,6 +15,9 @@ type GameStore = {
   startNewGame: (settings: Partial<GameSettings>) => void;
   continueGame: () => void;
   clearGame: () => void;
+  beginSelection: () => void;
+  selectAthlete: (playerId: string, athleteId: string) => void;
+  lockSelection: (playerId: string) => void;
 };
 
 const initialSavedGame = loadSavedGame();
@@ -41,4 +45,34 @@ export const useGameStore = create<GameStore>((set) => ({
     clearSavedGame();
     set({ game: null, hasSavedGame: false, view: "home" });
   },
+  beginSelection: () =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = beginSelection(state.game);
+      saveGame(game);
+      return { game, hasSavedGame: true, view: "selecting" };
+    }),
+  selectAthlete: (playerId, athleteId) =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = selectAthleteForRace(state.game, playerId, athleteId);
+      saveGame(game);
+      return { game, hasSavedGame: true };
+    }),
+  lockSelection: (playerId) =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = lockPlayerSelection(state.game, playerId);
+      saveGame(game);
+      return { game, hasSavedGame: true, view: game.phase === "raceReveal" ? "raceReveal" : "selecting" };
+    }),
 }));
