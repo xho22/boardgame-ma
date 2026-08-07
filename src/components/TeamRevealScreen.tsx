@@ -1,14 +1,26 @@
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
+import { useState } from "react";
 import type { GameState } from "../game/types";
 
 type TeamRevealScreenProps = {
   game: GameState;
   onNewGame: () => void;
   onClearGame: () => void;
+  onRandomizeTeams: () => void;
   onBeginSelection: () => void;
 };
 
-export function TeamRevealScreen({ game, onNewGame, onClearGame, onBeginSelection }: TeamRevealScreenProps) {
+export function TeamRevealScreen({ game, onNewGame, onClearGame, onRandomizeTeams, onBeginSelection }: TeamRevealScreenProps) {
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  function showTooltip(text: string, x: number, y: number) {
+    setTooltip({
+      text,
+      x: Math.max(16, Math.min(x, window.innerWidth - 336)),
+      y: Math.max(16, Math.min(y, window.innerHeight - 160)),
+    });
+  }
+
   return (
     <main className="app-shell screen-layout">
       <header className="top-bar">
@@ -37,12 +49,24 @@ export function TeamRevealScreen({ game, onNewGame, onClearGame, onBeginSelectio
                 }
 
                 return (
-                  <article className="racer-card" key={athlete.id} tabIndex={0} title={athlete.abilityText}>
+                  <article
+                    className="racer-card"
+                    key={athlete.id}
+                    tabIndex={0}
+                    onBlur={() => setTooltip(null)}
+                    onFocus={(event) => {
+                      const rect = event.currentTarget.getBoundingClientRect();
+                      showTooltip(athlete.abilityText, rect.left + 16, rect.bottom + 12);
+                    }}
+                    onPointerLeave={() => setTooltip(null)}
+                    onPointerMove={(event) =>
+                      showTooltip(athlete.abilityText, event.clientX + 16, event.clientY + 16)
+                    }
+                  >
                     <img src={athlete.imagePath} alt={athlete.displayName} />
                     <div>
                       <h3>{athlete.displayName}</h3>
                       <p>{athlete.standardName}</p>
-                      <p className="racer-ability">{athlete.abilityText}</p>
                     </div>
                     <span>{athlete.type}</span>
                   </article>
@@ -54,10 +78,18 @@ export function TeamRevealScreen({ game, onNewGame, onClearGame, onBeginSelectio
       </section>
 
       <footer className="bottom-actions">
+        <button className="secondary-button" type="button" onClick={onRandomizeTeams}>
+          Randomize Teams
+        </button>
         <button className="primary-button" type="button" onClick={onBeginSelection}>
           Choose Racers
         </button>
       </footer>
+      {tooltip ? (
+        <div className="ability-tooltip" style={{ left: tooltip.x, top: tooltip.y }}>
+          {tooltip.text}
+        </div>
+      ) : null}
     </main>
   );
 }

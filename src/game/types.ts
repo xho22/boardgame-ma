@@ -42,6 +42,7 @@ export type GameSettings = {
   playerNames: string[];
   aiPlayerIds: string[];
   racesCount: number;
+  racersPerPlayerPerRace: 1 | 2;
   athletesPerPlayer: number;
   trackLength: number;
   teamAssignment: "snake" | "random";
@@ -130,6 +131,7 @@ export type RaceState = {
 };
 
 export type Entrant = {
+  id: string;
   playerId: string;
   athleteId: string;
   copiedAbilityKey?: AbilityImplementationKey;
@@ -152,6 +154,7 @@ export type TemporaryEffect = {
 };
 
 export type Finisher = {
+  entrantId: string;
   playerId: string;
   athleteId: string;
   rank: number;
@@ -174,7 +177,7 @@ export type RaceSummary = {
 export type SelectionState = {
   raceNumber: number;
   activePlayerId: string | null;
-  selectionsByPlayerId: Record<string, string | null>;
+  selectionsByPlayerId: Record<string, string[]>;
   lockedPlayerIds: string[];
   revealed: boolean;
 };

@@ -19,8 +19,7 @@ export function RaceRevealScreen({ game, onStartRace }: RaceRevealScreenProps) {
 
       <section className="reveal-grid" aria-label="Revealed racers">
         {game.players.map((player) => {
-          const athleteId = selectionState?.selectionsByPlayerId[player.id] ?? null;
-          const athlete = athleteId ? STANDARD_ATHLETE_BY_ID.get(athleteId) : null;
+          const athleteIds = selectionState?.selectionsByPlayerId[player.id] ?? [];
 
           return (
             <article className="reveal-card" key={player.id}>
@@ -28,10 +27,25 @@ export function RaceRevealScreen({ game, onStartRace }: RaceRevealScreenProps) {
                 <span className={`player-dot player-dot-${player.color}`} />
                 <h2>{player.name}</h2>
               </div>
-              {athlete ? (
-                <div>
-                  <h3>{athlete.displayName}</h3>
-                  <p>{athlete.standardName}</p>
+              {athleteIds.length > 0 ? (
+                <div className="reveal-racer-list">
+                  {athleteIds.map((athleteId) => {
+                    const athlete = STANDARD_ATHLETE_BY_ID.get(athleteId);
+
+                    if (!athlete) {
+                      return null;
+                    }
+
+                    return (
+                      <div key={athlete.id}>
+                        <img src={athlete.imagePath} alt={athlete.displayName} />
+                        <div>
+                          <h3>{athlete.displayName}</h3>
+                          <p>{athlete.standardName}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p>No racer selected</p>

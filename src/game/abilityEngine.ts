@@ -170,7 +170,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
   players = beforeMain.players;
   logs.push(...beforeMain.logs);
   workingEntrant =
-    workingRace.entrants.find((candidate) => candidate.playerId === entrant.playerId) ?? workingEntrant;
+    workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
 
   if (key === "hare_fast_unless_alone_lead" && workingRace.finishers.length === 0 && isAloneInLead(workingRace, workingEntrant)) {
     return {
@@ -201,9 +201,9 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     const target = findLeaderOther(workingRace, workingEntrant);
 
     if (target) {
-      workingRace = swapEntrants(workingRace, workingEntrant.playerId, target.playerId);
+      workingRace = swapEntrants(workingRace, workingEntrant.id, target.id);
       workingEntrant =
-        workingRace.entrants.find((candidate) => candidate.playerId === entrant.playerId) ?? workingEntrant;
+        workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
       logs.push({
         type: "position_swap",
         message: `${racerName} used Flip Flop to swap positions with ${describeEntrant(game, target)}.`,
@@ -276,7 +276,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     if (dieRoll !== null && dicemonger && shouldAutoRerollDicemonger(dieRoll)) {
       const firstRoll = dieRoll;
       dieRoll = rng.rollDie(6);
-      workingRace = moveEntrantInRace(workingRace, dicemonger.playerId, 1);
+      workingRace = moveEntrantInRace(workingRace, dicemonger.id, 1);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, dicemonger)} granted a reroll: ${firstRoll} -> ${dieRoll}, then moved 1.`,
@@ -319,7 +319,7 @@ export function resolveMainMove({ game, race, entrant, rng }: ResolveMainMoveOpt
     }
 
     if (key === "predict_roll_extra_turn" && dieRoll === 4) {
-      extraTurnPlayerId = entrant.playerId;
+      extraTurnPlayerId = entrant.id;
       logs.push({
         type: "ability_trigger",
         message: `${racerName} used Genius and correctly predicted 4, earning another turn.`,
@@ -365,7 +365,7 @@ export function resolveAfterMove({
 
   const hugeBaby = workingRace.entrants.find(
     (entrant) =>
-      entrant.playerId !== moverAfter.playerId &&
+      entrant.id !== moverAfter.id &&
       !entrant.finished &&
       !entrant.eliminated &&
       entrant.position > 0 &&
@@ -375,7 +375,7 @@ export function resolveAfterMove({
 
   if (hugeBaby) {
     const pushedPosition = Math.max(0, hugeBaby.position - 1);
-    workingRace = updateEntrant(workingRace, moverAfter.playerId, (current) => ({
+    workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
       ...current,
       position: pushedPosition,
     }));
@@ -387,14 +387,14 @@ export function resolveAfterMove({
   }
 
   for (const entrant of workingRace.entrants) {
-    if (entrant.playerId === moverAfter.playerId || entrant.finished || entrant.eliminated) {
+    if (entrant.id === moverAfter.id || entrant.finished || entrant.eliminated) {
       continue;
     }
 
     const key = getEffectiveImplementationKey(game, workingRace, entrant);
 
     if (key === "trip_passing_racer" && passedSpaces.includes(entrant.position)) {
-      workingRace = updateEntrant(workingRace, moverAfter.playerId, (current) => ({
+      workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
         ...current,
         skippedTurns: current.skippedTurns + 1,
       }));
@@ -405,7 +405,7 @@ export function resolveAfterMove({
     }
 
     if (key === "follow_same_space_mover" && entrant.position === moverBefore.position && path.length > 0) {
-      workingRace = updateEntrant(workingRace, entrant.playerId, (current) => ({
+      workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
         ...current,
         position: moverAfter.position,
       }));
@@ -419,7 +419,7 @@ export function resolveAfterMove({
   if (moverKey === "move_passed_racer_back_two") {
     for (const entrant of workingRace.entrants) {
       if (
-        entrant.playerId !== moverAfter.playerId &&
+        entrant.id !== moverAfter.id &&
         !entrant.finished &&
         !entrant.eliminated &&
         passedSpaces.includes(entrant.position)
@@ -436,20 +436,20 @@ export function resolveAfterMove({
 
   const shared = path.length > 0 ? workingRace.entrants.filter(
     (entrant) =>
-      entrant.playerId !== moverAfter.playerId &&
+      entrant.id !== moverAfter.id &&
       !entrant.finished &&
       !entrant.eliminated &&
       entrant.position === moverAfter.position,
   ) : [];
 
   if (shared.length > 0) {
-    const moverCurrent = workingRace.entrants.find((entrant) => entrant.playerId === moverAfter.playerId) ?? moverAfter;
+    const moverCurrent = workingRace.entrants.find((entrant) => entrant.id === moverAfter.id) ?? moverAfter;
 
     for (const entrant of shared) {
       const key = getEffectiveImplementationKey(game, workingRace, entrant);
 
       if (key === "trip_on_shared_stop") {
-        workingRace = updateEntrant(workingRace, moverAfter.playerId, (current) => ({
+        workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
           ...current,
           skippedTurns: current.skippedTurns + 1,
         }));
@@ -462,7 +462,7 @@ export function resolveAfterMove({
 
     if (moverKey === "trip_on_shared_stop") {
       for (const entrant of shared) {
-        workingRace = updateEntrant(workingRace, entrant.playerId, (current) => ({
+        workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
           ...current,
           skippedTurns: current.skippedTurns + 1,
         }));
@@ -475,11 +475,11 @@ export function resolveAfterMove({
 
     if (moverKey === "duel_on_shared_space") {
       const opponent = shared[0];
-      workingRace = updateEntrant(workingRace, opponent.playerId, (current) => ({
+      workingRace = updateEntrant(workingRace, opponent.id, (current) => ({
         ...current,
         skippedTurns: current.skippedTurns + 1,
       }));
-      workingRace = moveEntrantInRace(workingRace, moverAfter.playerId, 2);
+      workingRace = moveEntrantInRace(workingRace, moverAfter.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, moverCurrent)} won an automatic duel, moved 2, and tripped ${describeEntrant(game, opponent)}.`,
@@ -487,7 +487,7 @@ export function resolveAfterMove({
     }
 
     if (moverKey === "eliminate_single_shared_racer" && shared.length === 1) {
-      workingRace = updateEntrant(workingRace, shared[0].playerId, (current) => ({
+      workingRace = updateEntrant(workingRace, shared[0].id, (current) => ({
         ...current,
         eliminated: true,
       }));
@@ -503,9 +503,9 @@ export function resolveAfterMove({
       getEffectiveImplementationKey(game, workingRace, romantic) === "move_two_on_pair_stop" &&
       !romantic.finished &&
       !romantic.eliminated &&
-      countOthersAt(workingRace, moverAfter.playerId, moverAfter.position) === 1
+      countOthersAt(workingRace, moverAfter.id, moverAfter.position) === 1
     ) {
-      workingRace = moveEntrantInRace(workingRace, romantic.playerId, 2);
+      workingRace = moveEntrantInRace(workingRace, romantic.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, romantic)} saw a pair sharing space and moved 2.`,
@@ -516,10 +516,10 @@ export function resolveAfterMove({
   for (const heckler of workingRace.entrants) {
     if (
       getEffectiveImplementationKey(game, workingRace, heckler) === "move_when_turn_ends_near_start" &&
-      heckler.playerId !== moverAfter.playerId &&
+      heckler.id !== moverAfter.id &&
       Math.abs(moverAfter.position - moverBefore.position) <= 1
     ) {
-      workingRace = moveEntrantInRace(workingRace, heckler.playerId, 2);
+      workingRace = moveEntrantInRace(workingRace, heckler.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, heckler)} heckled a short turn and moved 2.`,
@@ -531,11 +531,11 @@ export function resolveAfterMove({
     for (const scoocher of workingRace.entrants) {
       if (
         getEffectiveImplementationKey(game, workingRace, scoocher) === "move_one_on_other_power" &&
-        scoocher.playerId !== moverAfter.playerId &&
+        scoocher.id !== moverAfter.id &&
         !scoocher.finished &&
         !scoocher.eliminated
       ) {
-        workingRace = moveEntrantInRace(workingRace, scoocher.playerId, 1);
+        workingRace = moveEntrantInRace(workingRace, scoocher.id, 1);
         logs.push({
           type: "ability_trigger",
           message: `${describeEntrant(game, scoocher)} scooched 1 after another racer used a power.`,
@@ -599,9 +599,9 @@ function applyBeforeMainMove(
   if (key === "cheer_last_place_then_self") {
     const last = findAloneLast(workingRace);
 
-    if (last && last.playerId !== entrant.playerId) {
-      workingRace = moveEntrantInRace(workingRace, last.playerId, 2);
-      workingRace = moveEntrantInRace(workingRace, entrant.playerId, 1);
+    if (last && last.id !== entrant.id) {
+      workingRace = moveEntrantInRace(workingRace, last.id, 2);
+      workingRace = moveEntrantInRace(workingRace, entrant.id, 1);
       logs.push({
         type: "ability_trigger",
         message: `${name} cheered ${describeEntrant(game, last)} forward 2, then moved 1.`,
@@ -609,7 +609,7 @@ function applyBeforeMainMove(
     }
   }
 
-  if (key === "gain_point_if_alone_last_before_main" && findAloneLast(workingRace)?.playerId === entrant.playerId) {
+  if (key === "gain_point_if_alone_last_before_main" && findAloneLast(workingRace)?.id === entrant.id) {
     nextPlayers = addScore(nextPlayers, entrant.playerId, 1);
     logs.push({
       type: "score_awarded",
@@ -621,7 +621,7 @@ function applyBeforeMainMove(
     const target = findLeaderOther(workingRace, entrant);
 
     if (target) {
-      workingRace = updateEntrant(workingRace, target.playerId, (current) => ({
+      workingRace = updateEntrant(workingRace, target.id, (current) => ({
         ...current,
         position: entrant.position,
       }));
@@ -633,10 +633,10 @@ function applyBeforeMainMove(
   }
 
   if (key === "warp_to_exactly_two_before_main") {
-    const targetSpace = findSpaceWithExactOthers(workingRace, entrant.playerId, 2);
+    const targetSpace = findSpaceWithExactOthers(workingRace, entrant.id, 2);
 
     if (targetSpace !== null) {
-      workingRace = updateEntrant(workingRace, entrant.playerId, (current) => ({
+      workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
         ...current,
         position: targetSpace,
       }));
@@ -648,12 +648,12 @@ function applyBeforeMainMove(
   }
 
   if (key === "pull_all_then_bonus_per_guest") {
-    const party = workingRace.entrants.find((candidate) => candidate.playerId === entrant.playerId) ?? entrant;
+    const party = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
 
     workingRace = {
       ...workingRace,
       entrants: workingRace.entrants.map((candidate) => {
-        if (candidate.playerId === entrant.playerId || candidate.finished || candidate.eliminated) {
+        if (candidate.id === entrant.id || candidate.finished || candidate.eliminated) {
           return candidate;
         }
 
@@ -690,7 +690,7 @@ function applyRollReactions(
     const inchworm = findOtherByKey(game, workingRace, entrant, "skip_others_one_roll_move_self");
 
     if (inchworm) {
-      workingRace = moveEntrantInRace(workingRace, inchworm.playerId, 1);
+      workingRace = moveEntrantInRace(workingRace, inchworm.id, 1);
       skipMover = true;
       logs.push({
         type: "ability_trigger",
@@ -701,7 +701,7 @@ function applyRollReactions(
     const skipper = findOtherByKey(game, workingRace, entrant, "take_next_turn_on_roll_one");
 
     if (skipper) {
-      nextTurnPlayerId = skipper.playerId;
+      nextTurnPlayerId = skipper.id;
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, skipper)} saw roll 1 and will take the next turn.`,
@@ -713,7 +713,7 @@ function applyRollReactions(
     const lackey = findOtherByKey(game, workingRace, entrant, "move_two_before_other_six");
 
     if (lackey) {
-      workingRace = moveEntrantInRace(workingRace, lackey.playerId, 2);
+      workingRace = moveEntrantInRace(workingRace, lackey.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, lackey)} saw roll 6 and moved 2 before ${describeEntrant(game, entrant)}.`,
@@ -753,7 +753,7 @@ function applyMainMoveModifiers(
   }
 
   if (key === "pull_all_then_bonus_per_guest") {
-    const guests = countOthersAt(race, entrant.playerId, entrant.position);
+    const guests = countOthersAt(race, entrant.id, entrant.position);
     if (guests > 0) {
       moveValue += guests;
       logs.push({
@@ -819,7 +819,7 @@ function findOtherByKey(
   return (
     race.entrants.find(
       (candidate) =>
-        candidate.playerId !== entrant.playerId &&
+        candidate.id !== entrant.id &&
         !candidate.finished &&
         !candidate.eliminated &&
         getEffectiveImplementationKey(game, race, candidate) === key,
@@ -852,7 +852,7 @@ function isAloneInLead(race: RaceState, entrant: Entrant): boolean {
 }
 
 function findUniqueLeader(race: RaceState, except: Entrant): Entrant | null {
-  const activeEntrants = activeEntrantsOnly(race).filter((candidate) => candidate.playerId !== except.playerId);
+  const activeEntrants = activeEntrantsOnly(race).filter((candidate) => candidate.id !== except.id);
   const leadPosition = Math.max(...activeEntrants.map((candidate) => candidate.position));
   const leaders = activeEntrants.filter((candidate) => candidate.position === leadPosition);
 
@@ -861,7 +861,7 @@ function findUniqueLeader(race: RaceState, except: Entrant): Entrant | null {
 
 function findLeaderOther(race: RaceState, entrant: Entrant): Entrant | null {
   return [...activeEntrantsOnly(race)]
-    .filter((candidate) => candidate.playerId !== entrant.playerId)
+    .filter((candidate) => candidate.id !== entrant.id)
     .sort((first, second) => second.position - first.position)[0] ?? null;
 }
 
@@ -873,11 +873,11 @@ function findAloneLast(race: RaceState): Entrant | null {
   return last.length === 1 ? last[0] : null;
 }
 
-function findSpaceWithExactOthers(race: RaceState, playerId: string, count: number): number | null {
+function findSpaceWithExactOthers(race: RaceState, entrantId: string, count: number): number | null {
   const spaces = new Map<number, number>();
 
   for (const entrant of activeEntrantsOnly(race)) {
-    if (entrant.playerId !== playerId) {
+    if (entrant.id !== entrantId) {
       spaces.set(entrant.position, (spaces.get(entrant.position) ?? 0) + 1);
     }
   }
@@ -885,10 +885,10 @@ function findSpaceWithExactOthers(race: RaceState, playerId: string, count: numb
   return [...spaces.entries()].find(([, spaceCount]) => spaceCount === count)?.[0] ?? null;
 }
 
-function countOthersAt(race: RaceState, playerId: string, position: number): number {
+function countOthersAt(race: RaceState, entrantId: string, position: number): number {
   return race.entrants.filter(
     (entrant) =>
-      entrant.playerId !== playerId &&
+      entrant.id !== entrantId &&
       !entrant.finished &&
       !entrant.eliminated &&
       entrant.position === position,
@@ -899,24 +899,24 @@ function activeEntrantsOnly(race: RaceState): Entrant[] {
   return race.entrants.filter((entrant) => !entrant.finished && !entrant.eliminated);
 }
 
-function updateEntrant(race: RaceState, playerId: string, update: (entrant: Entrant) => Entrant): RaceState {
+function updateEntrant(race: RaceState, entrantId: string, update: (entrant: Entrant) => Entrant): RaceState {
   return {
     ...race,
-    entrants: race.entrants.map((entrant) => (entrant.playerId === playerId ? update(entrant) : entrant)),
+    entrants: race.entrants.map((entrant) => (entrant.id === entrantId ? update(entrant) : entrant)),
   };
 }
 
 function replaceEntrant(race: RaceState, entrant: Entrant): RaceState {
-  return updateEntrant(race, entrant.playerId, () => entrant);
+  return updateEntrant(race, entrant.id, () => entrant);
 }
 
-function moveEntrantInRace(race: RaceState, playerId: string, spaces: number): RaceState {
-  return updateEntrant(race, playerId, (entrant) => moveEntrantForward(entrant, spaces, race.trackLength).entrant);
+function moveEntrantInRace(race: RaceState, entrantId: string, spaces: number): RaceState {
+  return updateEntrant(race, entrantId, (entrant) => moveEntrantForward(entrant, spaces, race.trackLength).entrant);
 }
 
-function swapEntrants(race: RaceState, firstPlayerId: string, secondPlayerId: string): RaceState {
-  const first = race.entrants.find((entrant) => entrant.playerId === firstPlayerId);
-  const second = race.entrants.find((entrant) => entrant.playerId === secondPlayerId);
+function swapEntrants(race: RaceState, firstEntrantId: string, secondEntrantId: string): RaceState {
+  const first = race.entrants.find((entrant) => entrant.id === firstEntrantId);
+  const second = race.entrants.find((entrant) => entrant.id === secondEntrantId);
 
   if (!first || !second) {
     return race;
@@ -925,11 +925,11 @@ function swapEntrants(race: RaceState, firstPlayerId: string, secondPlayerId: st
   return {
     ...race,
     entrants: race.entrants.map((entrant) => {
-      if (entrant.playerId === firstPlayerId) {
+      if (entrant.id === firstEntrantId) {
         return { ...entrant, position: second.position };
       }
 
-      if (entrant.playerId === secondPlayerId) {
+      if (entrant.id === secondEntrantId) {
         return { ...entrant, position: first.position };
       }
 

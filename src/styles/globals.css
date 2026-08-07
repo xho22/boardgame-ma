@@ -173,6 +173,26 @@ h1 {
   gap: 8px;
 }
 
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(2, 56px);
+  gap: 8px;
+}
+
+.segmented-control button {
+  min-height: 44px;
+  border: 1px solid #1d6258;
+  border-radius: 8px;
+  background: #fffdf8;
+  color: #1d6258;
+  font-weight: 900;
+}
+
+.segmented-control button.selected {
+  background: #1d6258;
+  color: #fff;
+}
+
 .stepper button {
   width: 44px;
   height: 44px;
@@ -245,6 +265,12 @@ h1 {
   color: #5d564f;
   font-size: 18px;
   line-height: 1.45;
+}
+
+.selection-count {
+  color: #1d6258;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .selection-grid {
@@ -379,6 +405,25 @@ h1 {
 .reveal-card p {
   color: #665f57;
   font-weight: 800;
+}
+
+.reveal-racer-list {
+  display: grid;
+  gap: 12px;
+}
+
+.reveal-racer-list > div {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.reveal-racer-list img {
+  width: 58px;
+  aspect-ratio: 19 / 25;
+  border-radius: 5px;
+  object-fit: cover;
 }
 
 .race-layout {
@@ -748,17 +793,20 @@ h1 {
   padding: 6px 10px;
 }
 
-.racer-card .racer-ability {
-  display: none;
-  margin-top: 6px;
-  color: #4d4841;
-  line-height: 1.35;
-}
-
-.racer-card:hover .racer-ability,
-.racer-card:focus-within .racer-ability,
-.racer-card:focus-visible .racer-ability {
-  display: block;
+.ability-tooltip {
+  position: fixed;
+  z-index: 20;
+  width: min(320px, calc(100vw - 32px));
+  pointer-events: none;
+  border: 1px solid #1d6258;
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 18%);
+  color: #1c1b1a;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {

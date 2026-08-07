@@ -1,5 +1,5 @@
 import {
-  DEFAULT_ATHLETES_PER_PLAYER,
+  DEFAULT_RACERS_PER_PLAYER_PER_RACE,
   DEFAULT_RACES_COUNT,
   DEFAULT_SETTINGS,
   DEFAULT_TRACK_LENGTH,
@@ -62,13 +62,26 @@ export function normalizeSettings(settings: Partial<GameSettings> = {}): GameSet
     const name = settings.playerNames?.[index]?.trim();
     return name && name.length > 0 ? name : `Player ${index + 1}`;
   });
+  const racersPerPlayerPerRace = settings.racersPerPlayerPerRace ?? DEFAULT_RACERS_PER_PLAYER_PER_RACE;
+
+  if (racersPerPlayerPerRace !== 1 && racersPerPlayerPerRace !== 2) {
+    throw new Error("racersPerPlayerPerRace must be 1 or 2");
+  }
+
+  if (racersPerPlayerPerRace === 2 && playerCount > 3) {
+    throw new Error("racersPerPlayerPerRace can be 2 only for 2 or 3 players");
+  }
+
+  const racesCount = settings.racesCount ?? DEFAULT_RACES_COUNT;
+  const athletesPerPlayer = settings.athletesPerPlayer ?? racesCount * racersPerPlayerPerRace;
 
   return {
     playerCount,
     playerNames,
     aiPlayerIds: settings.aiPlayerIds ?? [],
-    racesCount: settings.racesCount ?? DEFAULT_RACES_COUNT,
-    athletesPerPlayer: settings.athletesPerPlayer ?? DEFAULT_ATHLETES_PER_PLAYER,
+    racesCount,
+    racersPerPlayerPerRace,
+    athletesPerPlayer,
     trackLength: settings.trackLength ?? DEFAULT_TRACK_LENGTH,
     teamAssignment: settings.teamAssignment ?? "snake",
   };

@@ -21,8 +21,8 @@ describe("selection flow", () => {
     expect(game.selectionState?.lockedPlayerIds).toEqual([]);
     expect(game.selectionState?.revealed).toBe(false);
     expect(game.selectionState?.selectionsByPlayerId).toEqual({
-      "player-1": null,
-      "player-2": null,
+      "player-1": [],
+      "player-2": [],
     });
   });
 
@@ -47,9 +47,28 @@ describe("selection flow", () => {
     expect(game.selectionState?.lockedPlayerIds).toEqual(["player-1", "player-2"]);
     expect(game.selectionState?.revealed).toBe(true);
     expect(game.selectionState?.selectionsByPlayerId).toEqual({
-      "player-1": firstAthlete,
-      "player-2": secondAthlete,
+      "player-1": [firstAthlete],
+      "player-2": [secondAthlete],
     });
+  });
+
+  it("requires two selected racers when the game is configured for two racers per player", () => {
+    let game = beginSelection(
+      createInitialGameState({
+        settings: { playerCount: 2, racersPerPlayerPerRace: 2 },
+        seed: "selection-two-racers",
+        now: 1_000,
+      }),
+    );
+    const [firstAthlete, secondAthlete] = game.players[0].athleteIds;
+
+    game = selectAthleteForRace(game, "player-1", firstAthlete);
+    expect(() => lockPlayerSelection(game, "player-1")).toThrow("must select 2 racer");
+
+    game = selectAthleteForRace(game, "player-1", secondAthlete);
+    game = lockPlayerSelection(game, "player-1");
+
+    expect(game.selectionState?.selectionsByPlayerId["player-1"]).toEqual([firstAthlete, secondAthlete]);
   });
 
   it("prevents selecting a used racer", () => {

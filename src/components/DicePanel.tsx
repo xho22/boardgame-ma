@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
-import type { Player, RaceState } from "../game/types";
+import type { Entrant, Player, RaceState } from "../game/types";
 
 type DicePanelProps = {
   race: RaceState;
   currentPlayer: Player;
+  currentEntrant: Entrant;
   onRoll: (playerId: string) => void;
 };
 
-export function DicePanel({ race, currentPlayer, onRoll }: DicePanelProps) {
+export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
   const intervalRef = useRef<number | null>(null);
@@ -47,13 +48,12 @@ export function DicePanel({ race, currentPlayer, onRoll }: DicePanelProps) {
       }
 
       timeoutRef.current = null;
-      onRoll(currentPlayer.id);
+      onRoll(currentEntrant.id);
     }, 2_000);
   }
 
   const displayValue = isRolling ? rollingValue : (race.previousFinalMoveValue ?? "-");
-  const currentEntrant = race.entrants.find((entrant) => entrant.playerId === currentPlayer.id);
-  const currentAthlete = currentEntrant ? STANDARD_ATHLETE_BY_ID.get(currentEntrant.athleteId) : null;
+  const currentAthlete = STANDARD_ATHLETE_BY_ID.get(currentEntrant.athleteId);
 
   return (
     <section className="dice-panel" aria-label="Current turn">

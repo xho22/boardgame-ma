@@ -16,6 +16,7 @@ type GameStore = {
   startNewGame: (settings: Partial<GameSettings>) => void;
   continueGame: () => void;
   clearGame: () => void;
+  randomizeTeams: () => void;
   beginSelection: () => void;
   backToTeams: () => void;
   selectAthlete: (playerId: string, athleteId: string) => void;
@@ -73,6 +74,16 @@ export const useGameStore = create<GameStore>((set) => ({
     clearSavedGame();
     set({ game: null, hasSavedGame: false, view: "home" });
   },
+  randomizeTeams: () =>
+    set((state) => {
+      if (!state.game || state.game.phase !== "teamReveal") {
+        return state;
+      }
+
+      const game = createInitialGameState({ settings: state.game.settings });
+      saveGame(game);
+      return { game, hasSavedGame: true, view: "teamReveal" };
+    }),
   beginSelection: () =>
     set((state) => {
       if (!state.game) {

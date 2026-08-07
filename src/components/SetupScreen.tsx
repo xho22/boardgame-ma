@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { DEFAULT_ATHLETES_PER_PLAYER, DEFAULT_RACES_COUNT, DEFAULT_TRACK_LENGTH } from "../game/constants";
+import { DEFAULT_RACES_COUNT, DEFAULT_TRACK_LENGTH } from "../game/constants";
 import type { GameSettings } from "../game/types";
 
 type SetupScreenProps = {
@@ -9,6 +9,7 @@ type SetupScreenProps = {
 
 export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
   const [playerCount, setPlayerCount] = useState(2);
+  const [racersPerPlayerPerRace, setRacersPerPlayerPerRace] = useState<1 | 2>(1);
   const [playerNames, setPlayerNames] = useState(["Dad", "Kid"]);
 
   const visibleNames = useMemo(
@@ -21,6 +22,9 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
 
   function updatePlayerCount(nextCount: number) {
     setPlayerCount(nextCount);
+    if (nextCount > 3) {
+      setRacersPerPlayerPerRace(1);
+    }
     setPlayerNames((currentNames) =>
       Array.from({ length: nextCount }, (_, index) => currentNames[index] ?? `Player ${index + 1}`),
     );
@@ -74,6 +78,27 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
           ))}
         </div>
 
+        <div className="control-band">
+          <label htmlFor="racers-per-player">Racers Per Player</label>
+          <div className="segmented-control" id="racers-per-player">
+            <button
+              className={racersPerPlayerPerRace === 1 ? "selected" : ""}
+              type="button"
+              onClick={() => setRacersPerPlayerPerRace(1)}
+            >
+              1
+            </button>
+            <button
+              className={racersPerPlayerPerRace === 2 ? "selected" : ""}
+              type="button"
+              disabled={playerCount > 3}
+              onClick={() => setRacersPerPlayerPerRace(2)}
+            >
+              2
+            </button>
+          </div>
+        </div>
+
         <dl className="summary-strip" aria-label="Game summary">
           <div>
             <dt>Races</dt>
@@ -81,7 +106,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
           </div>
           <div>
             <dt>Racers Each</dt>
-            <dd>{DEFAULT_ATHLETES_PER_PLAYER}</dd>
+            <dd>{DEFAULT_RACES_COUNT * racersPerPlayerPerRace}</dd>
           </div>
           <div>
             <dt>Track</dt>
@@ -98,6 +123,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
             onStartGame({
               playerCount,
               playerNames: visibleNames,
+              racersPerPlayerPerRace,
             })
           }
         >

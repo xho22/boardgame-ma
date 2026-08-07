@@ -11,12 +11,13 @@ const sixRng: Rng = {
   shuffle: (items) => [...items],
 };
 
-function createReadyRaceGame(trackLength = 6): GameState {
+function createReadyRaceGame(trackLength = 6, racersPerPlayerPerRace: 1 | 2 = 1): GameState {
   let game = createInitialGameState({
     settings: {
       playerCount: 2,
       playerNames: ["Dad", "Kid"],
       trackLength,
+      racersPerPlayerPerRace,
     },
     seed: "race-engine",
     now: 1_000,
@@ -25,13 +26,17 @@ function createReadyRaceGame(trackLength = 6): GameState {
   game = reduceGameCommand(game, { type: "BEGIN_SELECTION" }, sixRng);
 
   for (const player of game.players) {
-    const athleteId = player.athleteIds.find((candidate) => !player.usedAthleteIds.includes(candidate));
+    const athleteIds = player.athleteIds
+      .filter((candidate) => !player.usedAthleteIds.includes(candidate))
+      .slice(0, racersPerPlayerPerRace);
 
-    if (!athleteId) {
+    if (athleteIds.length !== racersPerPlayerPerRace) {
       throw new Error(`No available athlete for ${player.id}`);
     }
 
-    game = reduceGameCommand(game, { type: "SELECT_ATHLETE", playerId: player.id, athleteId }, sixRng);
+    for (const athleteId of athleteIds) {
+      game = reduceGameCommand(game, { type: "SELECT_ATHLETE", playerId: player.id, athleteId }, sixRng);
+    }
     game = reduceGameCommand(game, { type: "LOCK_SELECTION", playerId: player.id }, sixRng);
   }
 
@@ -69,6 +74,20 @@ describe("race engine", () => {
     expect(game.players[1].usedAthleteIds).toHaveLength(1);
   });
 
+  it("initializes a small game race with two racers per player", () => {
+    const game = createReadyRaceGame(6, 2);
+
+    expect(game.activeRace?.entrants).toHaveLength(4);
+    expect(game.activeRace?.turnOrder).toEqual([
+      "player-1:racer-1",
+      "player-1:racer-2",
+      "player-2:racer-1",
+      "player-2:racer-2",
+    ]);
+    expect(game.players[0].usedAthleteIds).toHaveLength(2);
+    expect(game.players[1].usedAthleteIds).toHaveLength(2);
+  });
+
   it("finishes a two player race and awards first and second place points", () => {
     const game = finishActiveRace(createReadyRaceGame());
 
@@ -76,11 +95,13 @@ describe("race engine", () => {
     expect(game.activeRace?.status).toBe("complete");
     expect(game.activeRace?.finishers).toEqual([
       {
+        entrantId: "player-1",
         playerId: "player-1",
         athleteId: game.players[0].usedAthleteIds[0],
         rank: 1,
       },
       {
+        entrantId: "player-2",
         playerId: "player-2",
         athleteId: game.players[1].usedAthleteIds[0],
         rank: 2,

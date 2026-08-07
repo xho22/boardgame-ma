@@ -22,6 +22,7 @@ export function App() {
     startNewGame,
     continueGame,
     clearGame,
+    randomizeTeams,
     beginSelection,
     backToTeams,
     selectAthlete,
@@ -45,6 +46,7 @@ export function App() {
         game={game}
         onNewGame={openSetup}
         onClearGame={clearGame}
+        onRandomizeTeams={randomizeTeams}
         onBeginSelection={beginSelection}
       />
     );

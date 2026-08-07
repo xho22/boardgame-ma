@@ -32,6 +32,8 @@ type GameState = {
 };
 ```
 
+`GameSettings` 增加 `racersPerPlayerPerRace: 1 | 2`。默认值为 `1`；仅 2-3 人局允许设置为 `2`。当该值为 `2` 时，每名玩家每场秘密选择 2 名 racer，初始发牌数默认为 `racesCount * racersPerPlayerPerRace`。
+
 ## 7.2 Player
 
 ```ts
@@ -87,6 +89,7 @@ type Athlete = {
   abilityText: string;
   abilityHooks: AbilityTiming[];
   implementationKey: AbilityImplementationKey;
+  imagePath: string;
   maxUsesPerRace?: number;
   maxUsesPerGame?: number;
   tags: string[];
@@ -114,15 +117,21 @@ type RaceState = {
 };
 ```
 
+`turnOrder` 存储的是 entrant id，而不是 player id。每名玩家每场 1 名 racer 时，entrant id 与 player id 相同以兼容旧流程；每名玩家每场 2 名 racer 时，entrant id 使用类似 `player-1:racer-1`、`player-1:racer-2` 的格式。
+
 ## 7.5 Entrant
 
 ```ts
 type Entrant = {
+  id: string;
   playerId: string;
   athleteId: string;
+  copiedAbilityKey?: AbilityImplementationKey;
+  predictedWinnerPlayerId?: string;
   position: number;
   finished: boolean;
   finishRank: number | null;
+  eliminated?: boolean;
   skippedTurns: number;
   actionCount: number;
   abilityUses: Record<string, number>;
@@ -203,6 +212,8 @@ type GameCommand =
   | { type: "BEGIN_NEXT_RACE" }
   | { type: "FINISH_GAME" };
 ```
+
+兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。
 
 命令处理函数必须是纯规则逻辑：
 
@@ -514,10 +525,14 @@ type ServerMessage =
 ```ts
 type SelectionState = {
   raceNumber: number;
-  selectionsByPlayerId: Record<string, string | null>;
+  activePlayerId: string | null;
+  selectionsByPlayerId: Record<string, string[]>;
   lockedPlayerIds: string[];
+  revealed: boolean;
 };
 ```
+
+选择状态按玩家保存数组。数组长度必须等于 `game.settings.racersPerPlayerPerRace` 才允许锁定。
 
 客户端视图过滤：
 

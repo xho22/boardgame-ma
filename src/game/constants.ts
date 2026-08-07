@@ -3,6 +3,7 @@ import type { GameSettings } from "./types";
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 6;
 export const DEFAULT_RACES_COUNT = 4;
+export const DEFAULT_RACERS_PER_PLAYER_PER_RACE = 1;
 export const DEFAULT_ATHLETES_PER_PLAYER = 4;
 export const DEFAULT_TRACK_LENGTH = 30;
 
@@ -59,6 +60,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   playerNames: ["Player 1", "Player 2"],
   aiPlayerIds: [],
   racesCount: DEFAULT_RACES_COUNT,
+  racersPerPlayerPerRace: DEFAULT_RACERS_PER_PLAYER_PER_RACE,
   athletesPerPlayer: DEFAULT_ATHLETES_PER_PLAYER,
   trackLength: DEFAULT_TRACK_LENGTH,
   teamAssignment: "snake",

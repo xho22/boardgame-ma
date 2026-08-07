@@ -47,7 +47,14 @@ function createRace(athleteNames: string[], trackLength = 30, previousWinnerName
           index === 0
             ? {
                 ...race,
-                finishers: [{ playerId: "player-2", athleteId: athleteId(previousWinnerName), rank: 1 }],
+                finishers: [
+                  {
+                    entrantId: "player-2",
+                    playerId: "player-2",
+                    athleteId: athleteId(previousWinnerName),
+                    rank: 1,
+                  },
+                ],
               }
             : race,
         )

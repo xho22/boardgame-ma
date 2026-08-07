@@ -16,7 +16,8 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
     return null;
   }
 
-  const selectedAthleteId = game.selectionState.selectionsByPlayerId[activePlayer.id];
+  const selectedAthleteIds = game.selectionState.selectionsByPlayerId[activePlayer.id] ?? [];
+  const requiredSelections = game.settings.racersPerPlayerPerRace;
 
   return (
     <main className="app-shell screen-layout">
@@ -27,7 +28,8 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
         <div>
           <p className="eyebrow">Secret selection</p>
           <h1>{activePlayer.name}</h1>
-          <p className="helper-text">Only this player should look. Pick one unused racer, then lock it.</p>
+          <p className="helper-text">{`Only this player should look. Pick ${requiredSelections} unused racer${requiredSelections > 1 ? "s" : ""}, then lock it.`}</p>
+          <p className="selection-count">{`${selectedAthleteIds.length} / ${requiredSelections} selected`}</p>
         </div>
         <span />
       </header>
@@ -36,7 +38,7 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
         {activePlayer.athleteIds.map((athleteId) => {
           const athlete = STANDARD_ATHLETE_BY_ID.get(athleteId);
           const isUsed = activePlayer.usedAthleteIds.includes(athleteId);
-          const isSelected = selectedAthleteId === athleteId;
+          const isSelected = selectedAthleteIds.includes(athleteId);
 
           if (!athlete) {
             return null;
@@ -63,7 +65,7 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
         <button
           className="primary-button"
           type="button"
-          disabled={!selectedAthleteId}
+          disabled={selectedAthleteIds.length !== requiredSelections}
           onClick={() => onLockSelection(activePlayer.id)}
         >
           Lock Choice

@@ -56,14 +56,15 @@ export function beginRaceFromSelection(game: GameState): GameState {
     throw new Error(`Missing race summary for index ${game.raceIndex}`);
   }
 
-  const baseEntrants = game.players.map((player) => {
-    const athleteId = selectionState.selectionsByPlayerId[player.id];
+  const baseEntrants = game.players.flatMap((player) => {
+    const athleteIds = selectionState.selectionsByPlayerId[player.id] ?? [];
 
-    if (!athleteId) {
+    if (athleteIds.length !== game.settings.racersPerPlayerPerRace) {
       throw new Error(`${player.name} has not selected a racer`);
     }
 
-    return {
+    return athleteIds.map((athleteId, index) => ({
+      id: athleteIds.length === 1 ? player.id : `${player.id}:racer-${index + 1}`,
       playerId: player.id,
       athleteId,
       position: 0,
@@ -73,7 +74,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
       actionCount: 0,
       abilityUses: {},
       temporaryEffects: [],
-    };
+    }));
   });
   const prepared = applyBeforeRaceAbilities({ game, entrants: baseEntrants });
   const activeRace: RaceState = {
@@ -82,7 +83,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
     trackLength: game.settings.trackLength,
     firstPlacePoints: raceSummary.firstPlacePoints,
     secondPlacePoints: raceSummary.secondPlacePoints,
-    turnOrder: game.players.map((player) => player.id),
+    turnOrder: baseEntrants.map((entrant) => entrant.id),
     currentTurnIndex: 0,
     entrants: prepared.entrants,
     finishers: [],
@@ -97,9 +98,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
     phase: "racing",
     players: prepared.players.map((player) => ({
       ...player,
-      usedAthleteIds: [...player.usedAthleteIds, selectionState.selectionsByPlayerId[player.id]].filter(
-        (athleteId): athleteId is string => athleteId !== null,
-      ),
+      usedAthleteIds: [...player.usedAthleteIds, ...(selectionState.selectionsByPlayerId[player.id] ?? [])],
     })),
     activeRace,
     selectionState: null,
@@ -128,7 +127,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     throw new Error(`It is ${currentPlayerId}'s turn, not ${playerId}'s`);
   }
 
-  const entrant = race.entrants.find((candidate) => candidate.playerId === playerId);
+  const entrant = race.entrants.find((candidate) => candidate.id === playerId || candidate.playerId === playerId);
 
   if (!entrant) {
     throw new Error(`${playerId} is not in the active race`);
@@ -151,6 +150,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     ? [
         ...mainMove.race.finishers,
         {
+          entrantId: entrant.id,
           playerId: entrant.playerId,
           athleteId: entrant.athleteId,
           rank: mainMove.race.finishers.length + 1,
@@ -158,7 +158,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
       ]
     : mainMove.race.finishers;
   const entrants = mainMove.race.entrants.map((candidate) =>
-    candidate.playerId === playerId
+    candidate.id === entrant.id
       ? {
           ...moveResult.entrant,
           finishRank: moveResult.finished ? finishers[finishers.length - 1].rank : null,
@@ -210,7 +210,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
             createLog(
               game,
               "finish",
-              `${playerId} finished in rank ${finishers[finishers.length - 1].rank}.`,
+              `${entrant.id} finished in rank ${finishers[finishers.length - 1].rank}.`,
               baseLogs.length + raceAfterSecondaryFinishes.logs.length,
             ),
           ]
@@ -299,7 +299,7 @@ function findNextTurn(race: RaceState): { currentTurnIndex: number; roundsAdvanc
   for (let offset = 1; offset <= race.turnOrder.length; offset += 1) {
     const nextTurnIndex = (race.currentTurnIndex + offset) % race.turnOrder.length;
     const playerId = race.turnOrder[nextTurnIndex];
-    const entrant = race.entrants.find((candidate) => candidate.playerId === playerId);
+    const entrant = race.entrants.find((candidate) => candidate.id === playerId || candidate.playerId === playerId);
 
     if (entrant && !entrant.finished && !entrant.eliminated) {
       return {
@@ -341,19 +341,20 @@ function syncFinishers(race: RaceState): { race: RaceState; logs: { type: GameLo
   const finishers = [...race.finishers];
   const logs: { type: GameLogEntry["type"]; message: string }[] = [];
   const entrants = race.entrants.map((entrant) => {
-    if (!entrant.finished || finishers.some((finisher) => finisher.playerId === entrant.playerId)) {
+    if (!entrant.finished || finishers.some((finisher) => finisher.entrantId === entrant.id)) {
       return entrant;
     }
 
     const rank = finishers.length + 1;
     finishers.push({
+      entrantId: entrant.id,
       playerId: entrant.playerId,
       athleteId: entrant.athleteId,
       rank,
     });
     logs.push({
       type: "finish",
-      message: `${entrant.playerId} finished in rank ${rank}.`,
+      message: `${entrant.id} finished in rank ${rank}.`,
     });
     return {
       ...entrant,
@@ -441,6 +442,7 @@ function applyMastermindPredictions(
   const finishers = [
     ...withoutSecond,
     {
+      entrantId: mastermind.id,
       playerId: mastermind.playerId,
       athleteId: mastermind.athleteId,
       rank: 2,

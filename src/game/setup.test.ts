@@ -47,6 +47,20 @@ describe("createInitialGameState", () => {
     expect(() => createInitialGameState({ settings: { playerCount: 1 } })).toThrow("playerCount");
     expect(() => createInitialGameState({ settings: { playerCount: 7 } })).toThrow("playerCount");
   });
+
+  it("supports two racers per player per race only for two or three player games", () => {
+    const game = createInitialGameState({
+      settings: { playerCount: 3, racersPerPlayerPerRace: 2 },
+      seed: "two-racers",
+      now: 1_000,
+    });
+
+    expect(game.settings.racersPerPlayerPerRace).toBe(2);
+    expect(game.players.every((player) => player.athleteIds.length === 8)).toBe(true);
+    expect(() =>
+      createInitialGameState({ settings: { playerCount: 4, racersPerPlayerPerRace: 2 } }),
+    ).toThrow("only for 2 or 3 players");
+  });
 });
 
 describe("createRng", () => {

@@ -15,10 +15,11 @@ export function RaceScreen({ game, onRoll }: RaceScreenProps) {
     return null;
   }
 
-  const currentPlayerId = race.turnOrder[race.currentTurnIndex];
-  const currentPlayer = game.players.find((player) => player.id === currentPlayerId);
+  const currentEntrantId = race.turnOrder[race.currentTurnIndex];
+  const currentEntrant = race.entrants.find((entrant) => entrant.id === currentEntrantId);
+  const currentPlayer = game.players.find((player) => player.id === currentEntrant?.playerId);
 
-  if (!currentPlayer) {
+  if (!currentPlayer || !currentEntrant) {
     return null;
   }
 
@@ -42,7 +43,7 @@ export function RaceScreen({ game, onRoll }: RaceScreenProps) {
       <Track game={game} race={race} />
 
       <div className="race-control-grid">
-        <DicePanel race={race} currentPlayer={currentPlayer} onRoll={onRoll} />
+        <DicePanel race={race} currentPlayer={currentPlayer} currentEntrant={currentEntrant} onRoll={onRoll} />
         <GameLog entries={game.log} />
       </div>
     </main>

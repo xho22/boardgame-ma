@@ -29,7 +29,7 @@ export function RaceResultsScreen({ game, onContinue }: RaceResultsScreenProps) 
           const points = finisher.rank === 1 ? race.firstPlacePoints : race.secondPlacePoints;
 
           return (
-            <article className="result-row" key={`${finisher.playerId}-${finisher.rank}`}>
+            <article className="result-row" key={`${finisher.entrantId}-${finisher.rank}`}>
               <strong>{`#${finisher.rank}`}</strong>
               <div>
                 <h2>{player?.name ?? finisher.playerId}</h2>

@@ -4,7 +4,7 @@ export function beginSelection(game: GameState): GameState {
   const selectionState: SelectionState = {
     raceNumber: game.raceIndex + 1,
     activePlayerId: game.players[0]?.id ?? null,
-    selectionsByPlayerId: Object.fromEntries(game.players.map((player) => [player.id, null])),
+    selectionsByPlayerId: Object.fromEntries(game.players.map((player) => [player.id, []])),
     lockedPlayerIds: [],
     revealed: false,
   };
@@ -37,13 +37,18 @@ export function selectAthleteForRace(game: GameState, playerId: string, athleteI
     throw new Error(`${athleteId} has already been used`);
   }
 
+  const selectedAthleteIds = selectionState.selectionsByPlayerId[playerId] ?? [];
+  const nextSelectedAthleteIds = selectedAthleteIds.includes(athleteId)
+    ? selectedAthleteIds.filter((selectedAthleteId) => selectedAthleteId !== athleteId)
+    : [...selectedAthleteIds, athleteId].slice(-game.settings.racersPerPlayerPerRace);
+
   return {
     ...game,
     selectionState: {
       ...selectionState,
       selectionsByPlayerId: {
         ...selectionState.selectionsByPlayerId,
-        [playerId]: athleteId,
+        [playerId]: nextSelectedAthleteIds,
       },
     },
     revision: game.revision + 1,
@@ -58,10 +63,12 @@ export function lockPlayerSelection(game: GameState, playerId: string): GameStat
     throw new Error(`Unknown player: ${playerId}`);
   }
 
-  const selectedAthleteId = selectionState.selectionsByPlayerId[playerId];
+  const selectedAthleteIds = selectionState.selectionsByPlayerId[playerId] ?? [];
 
-  if (!selectedAthleteId) {
-    throw new Error(`${game.players[playerIndex].name} must select a racer before locking`);
+  if (selectedAthleteIds.length !== game.settings.racersPerPlayerPerRace) {
+    throw new Error(
+      `${game.players[playerIndex].name} must select ${game.settings.racersPerPlayerPerRace} racer(s) before locking`,
+    );
   }
 
   const lockedPlayerIds = selectionState.lockedPlayerIds.includes(playerId)
