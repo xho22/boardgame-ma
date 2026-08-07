@@ -1,0 +1,6 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+rules/How-to-play-MAGICAL-ATHLETE.pdf
