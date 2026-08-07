@@ -243,6 +243,51 @@ h1 {
   margin-top: 28px;
 }
 
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.catalog-card {
+  min-height: 210px;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 12px;
+  border: 1px solid #d8cfc0;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 16px;
+}
+
+.catalog-card h2 {
+  font-size: 26px;
+}
+
+.catalog-card p {
+  color: #4d4841;
+  line-height: 1.45;
+}
+
+.catalog-card > span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #e5f0eb;
+  color: #1d6258;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.catalog-card code {
+  overflow-wrap: anywhere;
+  color: #665f57;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .selectable-racer {
   min-height: 96px;
   display: grid;

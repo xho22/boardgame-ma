@@ -37,3 +37,37 @@ export function moveEntrantForward(entrant: Entrant, spaces: number, trackLength
     finished,
   };
 }
+
+export function moveEntrantBackward(entrant: Entrant, spaces: number): MoveResult {
+  if (!Number.isInteger(spaces) || spaces < 0) {
+    throw new Error("spaces must be a non-negative integer");
+  }
+
+  if (entrant.finished || spaces === 0) {
+    return {
+      entrant,
+      path: [],
+      finished: entrant.finished,
+    };
+  }
+
+  const path = Array.from({ length: spaces }, (_, index) => Math.max(0, entrant.position - index - 1));
+  const nextPosition = Math.max(0, entrant.position - spaces);
+
+  return {
+    entrant: {
+      ...entrant,
+      position: nextPosition,
+    },
+    path,
+    finished: false,
+  };
+}
+
+export function getPassedSpaces(startPosition: number, endPosition: number): number[] {
+  if (endPosition <= startPosition + 1) {
+    return [];
+  }
+
+  return Array.from({ length: endPosition - startPosition - 1 }, (_, index) => startPosition + index + 1);
+}

@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { AthleteCatalogScreen } from "./components/AthleteCatalogScreen";
 import { HomeScreen } from "./components/HomeScreen";
 import { FinalResultsScreen } from "./components/FinalResultsScreen";
 import { RaceRevealScreen } from "./components/RaceRevealScreen";
@@ -10,6 +12,7 @@ import { useGameStore } from "./store/gameStore";
 import "./styles/globals.css";
 
 export function App() {
+  const [showCatalog, setShowCatalog] = useState(false);
   const {
     view,
     game,
@@ -26,6 +29,10 @@ export function App() {
     rollDice,
     beginNextRace,
   } = useGameStore();
+
+  if (showCatalog) {
+    return <AthleteCatalogScreen onBack={() => setShowCatalog(false)} />;
+  }
 
   if (view === "setup") {
     return <SetupScreen onStartGame={startNewGame} onBack={returnHome} />;
@@ -62,5 +69,12 @@ export function App() {
     return <FinalResultsScreen game={game} onNewGame={openSetup} />;
   }
 
-  return <HomeScreen hasSavedGame={hasSavedGame} onNewGame={openSetup} onContinueGame={continueGame} />;
+  return (
+    <HomeScreen
+      hasSavedGame={hasSavedGame}
+      onNewGame={openSetup}
+      onContinueGame={continueGame}
+      onOpenCatalog={() => setShowCatalog(true)}
+    />
+  );
 }

@@ -29,8 +29,8 @@
 | 5 | 基础比赛引擎 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 24 tests passed | 已实现比赛初始化、命令驱动掷骰移动、冲线、前两名结算、4 场后终局 |
 | 6 | 比赛 UI | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 24 tests passed；页面模块校验: 通过 | 已实现棋盘、棋子、骰子按钮、比赛日志、赛后结算页和最终排名页 |
 | 7 | 第一批能力实现 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 32 tests passed | 已实现 7 个第一批 main move 能力、能力日志和 trip 跳过效果 |
-| 8 | 复杂移动与第二批能力 | 未开始 | 未验收 | - | - |
-| 9 | 第三批能力与完整 36 角色 | 未开始 | 未验收 | - | - |
+| 8 | 复杂移动与第二批能力 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 已实现 passing、sharing、on-roll、on-power、trip、二次移动冲线同步和死锁保护 |
+| 9 | 第三批能力与完整 36 角色 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 36 个角色均有本地 MVP 行为；可选/选择类能力暂用自动策略；已补角色图鉴 |
 | 10 | 体验打磨 | 未开始 | 未验收 | - | - |
 | 11 | 在线房间技术验证 | 未开始 | 未验收 | - | - |
 | 12 | 在线完整游玩 | 未开始 | 未验收 | - | - |

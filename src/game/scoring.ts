@@ -40,19 +40,15 @@ function scorePlayer(
   firstPlacePoints: number,
   secondPlacePoints: number,
 ): Player {
-  if (firstFinisher?.playerId === player.id) {
-    return {
-      ...player,
-      score: player.score + firstPlacePoints,
-      firstPlaces: player.firstPlaces + 1,
-    };
-  }
+  const firstPoints = firstFinisher?.playerId === player.id ? firstPlacePoints : 0;
+  const secondPoints = secondFinisher?.playerId === player.id ? secondPlacePoints : 0;
 
-  if (secondFinisher?.playerId === player.id) {
+  if (firstPoints > 0 || secondPoints > 0) {
     return {
       ...player,
-      score: player.score + secondPlacePoints,
-      secondPlaces: player.secondPlaces + 1,
+      score: player.score + firstPoints + secondPoints,
+      firstPlaces: player.firstPlaces + (firstPoints > 0 ? 1 : 0),
+      secondPlaces: player.secondPlaces + (secondPoints > 0 ? 1 : 0),
     };
   }
 

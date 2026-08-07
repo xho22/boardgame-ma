@@ -131,9 +131,12 @@ export type RaceState = {
 export type Entrant = {
   playerId: string;
   athleteId: string;
+  copiedAbilityKey?: AbilityImplementationKey;
+  predictedWinnerPlayerId?: string;
   position: number;
   finished: boolean;
   finishRank: number | null;
+  eliminated?: boolean;
   skippedTurns: number;
   actionCount: number;
   abilityUses: Record<string, number>;

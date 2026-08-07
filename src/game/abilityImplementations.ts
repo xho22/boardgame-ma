@@ -17,3 +17,17 @@ export function shouldAutoRerollMagician(roll: number, rerollsUsed: number): boo
 export function shouldAutoUseRocketScientist(moveValue: number): boolean {
   return moveValue > 0;
 }
+
+export function shouldAutoRerollDicemonger(roll: number): boolean {
+  return roll <= 3;
+}
+
+export function shouldAutoUseFlipFlop(race: { entrants: { playerId: string; position: number; finished: boolean; eliminated?: boolean }[] }, entrant: { playerId: string; position: number }): boolean {
+  return race.entrants.some(
+    (candidate) =>
+      candidate.playerId !== entrant.playerId &&
+      !candidate.finished &&
+      !candidate.eliminated &&
+      candidate.position > entrant.position,
+  );
+}

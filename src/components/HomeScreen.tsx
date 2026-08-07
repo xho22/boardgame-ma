@@ -2,9 +2,10 @@ type HomeScreenProps = {
   hasSavedGame: boolean;
   onNewGame: () => void;
   onContinueGame: () => void;
+  onOpenCatalog: () => void;
 };
 
-export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame }: HomeScreenProps) {
+export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame, onOpenCatalog }: HomeScreenProps) {
   return (
     <main className="app-shell home-layout">
       <section className="hero">
@@ -16,6 +17,9 @@ export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame }: HomeScre
           </button>
           <button className="secondary-button" type="button" onClick={onContinueGame} disabled={!hasSavedGame}>
             Continue
+          </button>
+          <button className="ghost-button" type="button" onClick={onOpenCatalog}>
+            Racers
           </button>
         </div>
       </section>
