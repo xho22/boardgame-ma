@@ -7,10 +7,10 @@ import {
   MIN_PLAYERS,
   PLAYER_COLORS,
   RACE_POINTS,
-  STANDARD_RACER_NAMES,
 } from "./constants";
+import { STANDARD_ATHLETES } from "./athletes";
 import { createRng } from "./rng";
-import type { Athlete, GameSettings, GameState, Player, RaceSummary } from "./types";
+import type { GameSettings, GameState, Player, RaceSummary } from "./types";
 
 export type CreateGameOptions = {
   settings?: Partial<GameSettings>;
@@ -23,7 +23,7 @@ export function createInitialGameState(options: CreateGameOptions = {}): GameSta
   const seed = options.seed ?? createDefaultSeed(options.now ?? Date.now());
   const rng = createRng(seed);
   const players = createPlayers(settings);
-  const athletes = createPlaceholderAthletes();
+  const athletes = STANDARD_ATHLETES;
   const shuffledAthleteIds = rng.shuffle(athletes.map((athlete) => athlete.id));
 
   assignAthletes(players, shuffledAthleteIds, settings);
@@ -113,25 +113,6 @@ function assignAthletes(players: Player[], athleteIds: string[], settings: GameS
       athleteIndex += 1;
     }
   }
-}
-
-function createPlaceholderAthletes(): Athlete[] {
-  return STANDARD_RACER_NAMES.map((standardName) => {
-    const sourceKey = standardName.toLowerCase().replaceAll(/[^a-z0-9]+/g, "_").replaceAll(/^_|_$/g, "");
-
-    return {
-      id: `athlete-${sourceKey}`,
-      sourceKey: `standard_${sourceKey}`,
-      standardName,
-      displayName: standardName,
-      type: "special",
-      abilityText: "Ability data will be filled in during stage 2.",
-      abilityHooks: [],
-      implementationKey: "unimplemented",
-      tags: ["standard"],
-      artPrompt: `${standardName} fantasy racing character`,
-    };
-  });
 }
 
 function createRaceSummaries(settings: GameSettings): RaceSummary[] {

@@ -1,3 +1,5 @@
+import type { AbilityImplementationKey } from "./abilityTypes";
+
 export type GamePhase =
   | "home"
   | "setup"
@@ -34,16 +36,6 @@ export type AbilityTiming =
   | "onOtherRoll"
   | "onFinish"
   | "afterRace";
-
-export type AbilityImplementationKey =
-  | "unimplemented"
-  | "main_roll_low_becomes_four"
-  | "same_space_main_move_plus_one"
-  | "others_main_move_minus_one"
-  | "hare_fast_unless_alone_lead"
-  | "main_move_fixed_five_optional"
-  | "reroll_main_move_up_to_two"
-  | "optional_double_roll_then_trip";
 
 export type GameSettings = {
   playerCount: number;
