@@ -21,6 +21,7 @@ type GameStore = {
   backToTeams: () => void;
   selectAthlete: (playerId: string, athleteId: string) => void;
   lockSelection: (playerId: string) => void;
+  setMastermindPrediction: (athleteId: string, predictedAthleteId: string) => void;
   revealRace: () => void;
   rollDice: (playerId: string, choice?: MainMoveChoice) => void;
   beginNextRace: () => void;
@@ -132,6 +133,20 @@ export const useGameStore = create<GameStore>((set) => ({
       const game = reduceGameCommand(state.game, { type: "LOCK_SELECTION", playerId }, rngForGame(state.game));
       saveGame(game);
       return { game, hasSavedGame: true, view: game.phase === "raceReveal" ? "raceReveal" : "selecting" };
+    }),
+  setMastermindPrediction: (athleteId, predictedAthleteId) =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = reduceGameCommand(
+        state.game,
+        { type: "SET_MASTERMIND_PREDICTION", athleteId, predictedAthleteId },
+        rngForGame(state.game),
+      );
+      saveGame(game);
+      return { game, hasSavedGame: true };
     }),
   revealRace: () =>
     set((state) => {

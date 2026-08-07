@@ -366,7 +366,7 @@ afterRace          比赛结束时
 | 11 | Egg | 鸡蛋 | 替身能力 | before race 抽 3 名新选手并选择 1 名，使用 Egg 棋子参赛但获得所选角色能力，包括 before race 能力 | `draft_temp_power_before_race` |
 | 12 | Flip Flop | 人字拖 | 换位 warp | main move 可以不掷骰，改为与任意选手交换位置；这是 warp，不算 move，双方同时换位 | `warp_swap_instead_main_move` |
 | 13 | Genius | 天才 | 预测骰点 | main move 前预测本次会掷出的点数；若猜中，完成当前回合后再获得一个回合 | `predict_roll_extra_turn` |
-| 14 | Gunk | 黏液 | 全局减速 | 其他选手 main move -1；修改移动值而不是修改骰面 | `others_main_move_minus_one` |
+| 14 | Gunk | 黏液 | 全局减速 | 其他选手 main move -1；修改移动值而不是修改骰面；这是能力触发，需写日志，并会触发 Scoocher | `others_main_move_minus_one` |
 | 15 | Hare | 野兔 | 领先惩罚 | main move +2；但若回合开始时独自在 lead，则跳过 main move | `hare_fast_unless_alone_lead` |
 | 16 | Heckler | 起哄者 | 原地嘲讽 | 任意选手结束回合时，若距离本回合开始位置不超过 1 格，Heckler move 2；trip 恢复也可触发 | `move_when_turn_ends_near_start` |
 | 17 | Huge Baby | 巨婴 | 占位阻挡 | 除起点外，其他选手不能停在 Huge Baby 的格子；若本该停在该格，则放到 Huge Baby 后一格，这不是 move | `prevent_sharing_space_push_behind` |
@@ -377,7 +377,7 @@ afterRace          比赛结束时
 | 22 | Legs | 长腿 | 固定主移动 | main move 可以不掷骰，改为 move 5；这仍算 main move | `main_move_fixed_five_optional` |
 | 23 | Lovable Loser | 可爱输家 | 落后得分 | main move 前，若自己独自在 last place，获得 1 个 1 分筹码 | `gain_point_if_alone_last_before_main` |
 | 24 | Magician | 魔术师 | 多次重掷 | main move 最多可重掷两次，必须使用最后一次结果 | `reroll_main_move_up_to_two` |
-| 25 | Mastermind | 幕后大师 | 预测冠军 | 第一次行动开始时预测本场胜者；若猜中，比赛立即结束，Mastermind 得第 2 名；若预测自己且成真，可同时得第 1 和第 2 | `predict_winner_finish_second` |
+| 25 | Mastermind | 幕后大师 | 预测冠军 | 开赛前在揭示页面选择预测本场冠军 racer；若该 racer 成为第 1 名，比赛立即结束，Mastermind 自动成为第 2 名；若预测自己且成真，可同时得第 1 和第 2 | `predict_winner_finish_second` |
 | 26 | M.O.U.T.H. | 大嘴 | 吞噬淘汰 | 停在正好有 1 名其他选手的格子时，将该选手移出本场比赛 | `eliminate_single_shared_racer` |
 | 27 | Party Animal | 派对动物 | 聚集增益 | main move 前，所有选手各 move 1 朝向 Party Animal；之后其格子上每有 1 名其他选手，main move +1 | `pull_all_then_bonus_per_guest` |
 | 28 | Rocket Scientist | 火箭科学家 | 加倍冒险 | main move 掷骰后，可以移动双倍点数；若这样做，自己 trip | `optional_double_roll_then_trip` |
@@ -537,6 +537,7 @@ AI：关闭
 - Cheerleader、Hypnotist、Third Wheel：在 before main move 时提供是否使用能力的开关。
 - Magician、Rocket Scientist：严格规则时机是掷骰后决定是否重掷/加倍。当前本地 MVP 可先使用回合开始前的策略开关，但在线多人阶段应升级为 after-roll pending prompt。
 - Dicemonger 等别人回合的反应能力，未来在线同步时应通过 reaction prompt 明确确认；本地 MVP 可暂用自动策略。
+- Mastermind：揭示本场 racer 后、正式开赛前必须选择预测目标。目标是具体 racer，不是玩家；未选择时不能开始比赛。
 
 赛道表现：
 

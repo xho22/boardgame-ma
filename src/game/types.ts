@@ -135,7 +135,7 @@ export type Entrant = {
   playerId: string;
   athleteId: string;
   copiedAbilityKey?: AbilityImplementationKey;
-  predictedWinnerPlayerId?: string;
+  predictedWinnerEntrantId?: string;
   position: number;
   finished: boolean;
   finishRank: number | null;
@@ -188,6 +188,7 @@ export type SelectionState = {
   raceNumber: number;
   activePlayerId: string | null;
   selectionsByPlayerId: Record<string, string[]>;
+  mastermindPredictionsByAthleteId: Record<string, string>;
   lockedPlayerIds: string[];
   revealed: boolean;
 };
@@ -218,6 +219,7 @@ export type GameCommand =
   | { type: "ASSIGN_TEAMS" }
   | { type: "BEGIN_SELECTION" }
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
+  | { type: "SET_MASTERMIND_PREDICTION"; athleteId: string; predictedAthleteId: string }
   | { type: "LOCK_SELECTION"; playerId: string }
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }

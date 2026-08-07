@@ -127,7 +127,7 @@ type Entrant = {
   playerId: string;
   athleteId: string;
   copiedAbilityKey?: AbilityImplementationKey;
-  predictedWinnerPlayerId?: string;
+  predictedWinnerEntrantId?: string;
   position: number;
   finished: boolean;
   finishRank: number | null;
@@ -205,6 +205,7 @@ type GameCommand =
   | { type: "START_GAME"; payload: GameSettings }
   | { type: "ASSIGN_TEAMS" }
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
+  | { type: "SET_MASTERMIND_PREDICTION"; athleteId: string; predictedAthleteId: string }
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
@@ -213,7 +214,7 @@ type GameCommand =
   | { type: "FINISH_GAME" };
 ```
 
-兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。`choice` 用来记录本次主移动前后的玩家选择，例如 Legs 是否直接移动 5 格、Flip Flop 是否换位、Rocket Scientist 是否加倍。
+兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。`choice` 用来记录本次主移动前后的玩家选择，例如 Legs 是否直接移动 5 格、Flip Flop 是否换位、Rocket Scientist 是否加倍。`SET_MASTERMIND_PREDICTION` 在 Race Reveal 阶段写入选择状态，`predictedAthleteId` 指向本场已揭示的具体 racer。
 
 命令处理函数必须是纯规则逻辑：
 
@@ -534,6 +535,7 @@ type SelectionState = {
   raceNumber: number;
   activePlayerId: string | null;
   selectionsByPlayerId: Record<string, string[]>;
+  mastermindPredictionsByAthleteId: Record<string, string>;
   lockedPlayerIds: string[];
   revealed: boolean;
 };

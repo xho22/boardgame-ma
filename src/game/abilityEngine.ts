@@ -46,6 +46,7 @@ type ResolveMainMoveOptions = {
 type ApplyBeforeRaceOptions = {
   game: GameState;
   entrants: Entrant[];
+  mastermindPredictionsByAthleteId?: Record<string, string>;
 };
 
 type ResolveAfterMoveOptions = {
@@ -58,7 +59,7 @@ type ResolveAfterMoveOptions = {
   abilityTriggered: boolean;
 };
 
-export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOptions): {
+export function applyBeforeRaceAbilities({ game, entrants, mastermindPredictionsByAthleteId = {} }: ApplyBeforeRaceOptions): {
   entrants: Entrant[];
   players: Player[];
   logs: AbilityLog[];
@@ -103,15 +104,18 @@ export function applyBeforeRaceAbilities({ game, entrants }: ApplyBeforeRaceOpti
     }
 
     if (key === "predict_winner_finish_second") {
-      const predicted = entrants.reduce((leader, candidate) =>
-        candidate.playerId < leader.playerId ? candidate : leader,
-      );
+      const predictedAthleteId = mastermindPredictionsByAthleteId[entrant.athleteId];
+      const predicted =
+        entrants.find((candidate) => candidate.athleteId === predictedAthleteId) ??
+        entrants.reduce((leader, candidate) =>
+          candidate.playerId < leader.playerId ? candidate : leader,
+        );
 
       logs.push({
         type: "ability_trigger",
         message: `${name} 使用预言家，预测${describeEntrant(game, predicted)}会夺冠。`,
       });
-      return { ...entrant, predictedWinnerPlayerId: predicted.playerId };
+      return { ...entrant, predictedWinnerEntrantId: predicted.id };
     }
 
     return entrant;
@@ -780,10 +784,11 @@ function applyMainMoveModifiers(
   const gunk = findOtherByKey(game, race, entrant, "others_main_move_minus_one");
 
   if (gunk) {
+    const nextMoveValue = Math.max(0, moveValue - 1);
     moveValue -= 1;
     logs.push({
       type: "ability_trigger",
-      message: `${describeEntrant(game, gunk)} 拖慢${describeEntrant(game, entrant)}，主移动 -1，当前为 ${Math.max(0, moveValue)}。`,
+      message: `${describeEntrant(game, gunk)} 触发黏液，${describeEntrant(game, entrant)}的主移动从 ${Math.max(0, moveValue + 1)} 减为 ${nextMoveValue}，只能移动 ${nextMoveValue} 格。`,
     });
   }
 

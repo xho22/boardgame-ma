@@ -27,7 +27,12 @@ function athleteId(standardName: string): string {
   return athlete.id;
 }
 
-function createRace(athleteNames: string[], trackLength = 30, previousWinnerName?: string): GameState {
+function createRace(
+  athleteNames: string[],
+  trackLength = 30,
+  previousWinnerName?: string,
+  mastermindPredictionName?: string,
+): GameState {
   const rng = scriptedRng([6]);
   let game = createInitialGameState({
     settings: {
@@ -72,6 +77,8 @@ function createRace(athleteNames: string[], trackLength = 30, previousWinnerName
     game = reduceGameCommand(game, { type: "SELECT_ATHLETE", playerId, athleteId: athleteId(athleteName) }, rng);
     game = reduceGameCommand(game, { type: "LOCK_SELECTION", playerId }, rng);
   }
+
+  game = setDefaultMastermindPredictions(game, rng, mastermindPredictionName);
 
   return reduceGameCommand(game, { type: "REVEAL_RACE" }, rng);
 }
@@ -121,6 +128,28 @@ function requireRace(game: GameState): RaceState {
 
 function messages(game: GameState): string[] {
   return game.log.map((entry) => entry.message);
+}
+
+function setDefaultMastermindPredictions(game: GameState, rng: Rng, mastermindPredictionName?: string): GameState {
+  const selectedAthleteIds = Object.values(game.selectionState?.selectionsByPlayerId ?? {}).flat();
+  let nextGame = game;
+
+  for (const selectedAthleteId of selectedAthleteIds) {
+    const athlete = STANDARD_ATHLETES.find((candidate) => candidate.id === selectedAthleteId);
+
+    if (athlete?.implementationKey !== "predict_winner_finish_second") {
+      continue;
+    }
+
+    const targetAthleteId = mastermindPredictionName ? athleteId(mastermindPredictionName) : selectedAthleteId;
+    nextGame = reduceGameCommand(
+      nextGame,
+      { type: "SET_MASTERMIND_PREDICTION", athleteId: selectedAthleteId, predictedAthleteId: targetAthleteId },
+      rng,
+    );
+  }
+
+  return nextGame;
 }
 
 describe("phase 8 abilities", () => {
@@ -187,6 +216,16 @@ describe("phase 8 abilities", () => {
     game = roll(createRace(["Alchemist", "Lackey"]), "player-1", [6]);
     expect(position(game, "player-2")).toBe(2);
   });
+
+  it("Gunk reduces other racers' main move and triggers Scoocher", () => {
+    const game = roll(createRace(["Baba Yaga", "Gunk", "Scoocher"]), "player-1", [6]);
+
+    expect(requireRace(game).previousFinalMoveValue).toBe(5);
+    expect(position(game, "player-1")).toBe(5);
+    expect(position(game, "player-3")).toBe(1);
+    expect(messages(game).some((message) => message.includes("主移动从 6 减为 5"))).toBe(true);
+    expect(messages(game).some((message) => message.includes("在其他选手使用能力后移动 1 格"))).toBe(true);
+  });
 });
 
 describe("phase 9 abilities", () => {
@@ -240,10 +279,14 @@ describe("phase 9 abilities", () => {
   });
 
   it("Mastermind, M.O.U.T.H., Party Animal, Sisyphus, Skipper, Stickler, Third Wheel, and Twin can trigger", () => {
-    let game = roll(createRace(["Mastermind", "Baba Yaga"], 1), "player-1", [6]);
-    game = roll(game, "player-2", [6]);
+    let game = roll(
+      setPositions(createRace(["Mastermind", "Baba Yaga"], 1, undefined, "Baba Yaga"), {}, "player-2"),
+      "player-2",
+      [6],
+    );
     expect(game.phase).toBe("raceResults");
-    expect(game.players[0].score).toBe(4);
+    expect(game.players[0].score).toBe(1);
+    expect(messages(game).some((message) => message.includes("预测命中"))).toBe(true);
 
     game = roll(setPositions(createRace(["M.O.U.T.H.", "Baba Yaga"]), {
       "player-1": 0,
@@ -320,6 +363,7 @@ describe("ability simulation", () => {
             game = reduceGameCommand(game, { type: "SELECT_ATHLETE", playerId: player.id, athleteId }, rng);
             game = reduceGameCommand(game, { type: "LOCK_SELECTION", playerId: player.id }, rng);
           }
+          game = setDefaultMastermindPredictions(game, rng);
           game = reduceGameCommand(game, { type: "REVEAL_RACE" }, rng);
           continue;
         }

@@ -27,6 +27,7 @@ export function App() {
     backToTeams,
     selectAthlete,
     lockSelection,
+    setMastermindPrediction,
     revealRace,
     rollDice,
     beginNextRace,
@@ -64,7 +65,7 @@ export function App() {
   }
 
   if (view === "raceReveal" && game) {
-    return <RaceRevealScreen game={game} onStartRace={revealRace} />;
+    return <RaceRevealScreen game={game} onPredictionChange={setMastermindPrediction} onStartRace={revealRace} />;
   }
 
   if (view === "racing" && game) {

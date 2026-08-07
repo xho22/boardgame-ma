@@ -1,4 +1,4 @@
-import { beginSelection, lockPlayerSelection, selectAthleteForRace } from "./selection";
+import { beginSelection, lockPlayerSelection, selectAthleteForRace, setMastermindPrediction } from "./selection";
 import { createInitialGameState } from "./setup";
 import { moveEntrantForward } from "./movement";
 import { applyRaceScoring, isGameComplete } from "./scoring";
@@ -21,6 +21,8 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
       return beginSelection(game);
     case "SELECT_ATHLETE":
       return selectAthleteForRace(game, command.playerId, command.athleteId);
+    case "SET_MASTERMIND_PREDICTION":
+      return setMastermindPrediction(game, command.athleteId, command.predictedAthleteId);
     case "LOCK_SELECTION":
       return lockPlayerSelection(game, command.playerId);
     case "REVEAL_RACE":
@@ -76,7 +78,18 @@ export function beginRaceFromSelection(game: GameState): GameState {
       temporaryEffects: [],
     }));
   });
-  const prepared = applyBeforeRaceAbilities({ game, entrants: baseEntrants });
+  const mastermindPredictionsByAthleteId = selectionState.mastermindPredictionsByAthleteId ?? {};
+  const missingMastermindPrediction = baseEntrants.find((entrant) => {
+    const athlete = game.athletes.find((candidate) => candidate.id === entrant.athleteId);
+
+    return athlete?.implementationKey === "predict_winner_finish_second" && !mastermindPredictionsByAthleteId[entrant.athleteId];
+  });
+
+  if (missingMastermindPrediction) {
+    throw new Error("Mastermind must predict a racer before the race starts");
+  }
+
+  const prepared = applyBeforeRaceAbilities({ game, entrants: baseEntrants, mastermindPredictionsByAthleteId });
   const activeRace: RaceState = {
     id: `race-${raceSummary.raceNumber}`,
     raceNumber: raceSummary.raceNumber,
@@ -219,7 +232,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     revision: game.revision + 1,
   };
 
-  if (raceAfterSecondaryFinishes.race.finishers.length >= getRequiredFinishers(raceAfterSecondaryFinishes.race)) {
+  if (shouldCompleteRace(gameWithMove, raceAfterSecondaryFinishes.race)) {
     return completeRace(gameWithMove);
   }
 
@@ -337,6 +350,10 @@ function getRequiredFinishers(race: RaceState): number {
   return Math.min(2, eligibleEntrants);
 }
 
+function shouldCompleteRace(game: GameState, race: RaceState): boolean {
+  return race.finishers.length >= getRequiredFinishers(race) || findSatisfiedMastermind(game, race) !== null;
+}
+
 function syncFinishers(race: RaceState): { race: RaceState; logs: { type: GameLogEntry["type"]; message: string }[] } {
   const finishers = [...race.finishers];
   const logs: { type: GameLogEntry["type"]; message: string }[] = [];
@@ -429,9 +446,7 @@ function applyMastermindPredictions(
   }
 
   const mastermind = race.entrants.find(
-    (entrant) =>
-      getEffectiveImplementationKey(game, race, entrant) === "predict_winner_finish_second" &&
-      entrant.predictedWinnerPlayerId === firstFinisher.playerId,
+    (entrant) => entrant.id === findSatisfiedMastermind(game, race)?.id,
   );
 
   if (!mastermind) {
@@ -454,10 +469,26 @@ function applyMastermindPredictions(
     logs: [
       {
         type: "ability_trigger",
-        message: `${mastermind.playerId} 的预言家预测命中，结算为第 2 名。`,
+        message: `${describeRaceEntrant(game, mastermind)} 预测命中，自动成为第 2 名。`,
       },
     ],
   };
+}
+
+function findSatisfiedMastermind(game: GameState, race: RaceState): Entrant | null {
+  const firstFinisher = race.finishers.find((finisher) => finisher.rank === 1);
+
+  if (!firstFinisher) {
+    return null;
+  }
+
+  return (
+    race.entrants.find(
+      (entrant) =>
+        getEffectiveImplementationKey(game, race, entrant) === "predict_winner_finish_second" &&
+        entrant.predictedWinnerEntrantId === firstFinisher.entrantId,
+    ) ?? null
+  );
 }
 
 function requireActiveRace(game: GameState): RaceState {

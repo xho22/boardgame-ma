@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beginSelection, lockPlayerSelection, selectAthleteForRace } from "./selection";
+import { beginSelection, lockPlayerSelection, selectAthleteForRace, setMastermindPrediction } from "./selection";
 import { createInitialGameState } from "./setup";
 
 function createSelectionGame() {
@@ -24,6 +24,7 @@ describe("selection flow", () => {
       "player-1": [],
       "player-2": [],
     });
+    expect(game.selectionState?.mastermindPredictionsByAthleteId).toEqual({});
   });
 
   it("locks players one by one and only reveals after everyone is locked", () => {
@@ -50,6 +51,20 @@ describe("selection flow", () => {
       "player-1": [firstAthlete],
       "player-2": [secondAthlete],
     });
+  });
+
+  it("stores Mastermind predictions after racers are revealed", () => {
+    let game = createSelectionGame();
+    const firstAthlete = game.players[0].athleteIds[0];
+    const secondAthlete = game.players[1].athleteIds[0];
+
+    game = selectAthleteForRace(game, "player-1", firstAthlete);
+    game = lockPlayerSelection(game, "player-1");
+    game = selectAthleteForRace(game, "player-2", secondAthlete);
+    game = lockPlayerSelection(game, "player-2");
+    game = setMastermindPrediction(game, firstAthlete, secondAthlete);
+
+    expect(game.selectionState?.mastermindPredictionsByAthleteId[firstAthlete]).toBe(secondAthlete);
   });
 
   it("requires two selected racers when the game is configured for two racers per player", () => {

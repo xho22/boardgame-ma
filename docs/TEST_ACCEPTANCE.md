@@ -199,6 +199,8 @@ npm run lint
 
 - 自动模拟 1000 局不卡死。
 - 每个角色至少 1 个能力测试。
+- Mastermind 在开赛前必须能选择具体预测 racer；预测命中时 Mastermind 自动成为第 2 名并结束比赛。
+- Gunk 必须让其他 racer 的 main move -1，日志说明原移动值和最终移动值；该触发应能带动 Scoocher move 1。
 - 完整 2 人局可手动跑通。
 
 ### 阶段 10：体验打磨

@@ -5,6 +5,7 @@ export function beginSelection(game: GameState): GameState {
     raceNumber: game.raceIndex + 1,
     activePlayerId: game.players[0]?.id ?? null,
     selectionsByPlayerId: Object.fromEntries(game.players.map((player) => [player.id, []])),
+    mastermindPredictionsByAthleteId: {},
     lockedPlayerIds: [],
     revealed: false,
   };
@@ -49,6 +50,40 @@ export function selectAthleteForRace(game: GameState, playerId: string, athleteI
       selectionsByPlayerId: {
         ...selectionState.selectionsByPlayerId,
         [playerId]: nextSelectedAthleteIds,
+      },
+      mastermindPredictionsByAthleteId: Object.fromEntries(
+        Object.entries(selectionState.mastermindPredictionsByAthleteId ?? {}).filter(([mastermindAthleteId, predictedAthleteId]) =>
+          nextSelectedAthleteIds.includes(mastermindAthleteId) || predictedAthleteId !== athleteId,
+        ),
+      ),
+    },
+    revision: game.revision + 1,
+  };
+}
+
+export function setMastermindPrediction(game: GameState, athleteId: string, predictedAthleteId: string): GameState {
+  const selectionState = requireSelectionState(game);
+  const selectedAthleteIds = Object.values(selectionState.selectionsByPlayerId).flat();
+
+  if (!selectionState.revealed) {
+    throw new Error("Mastermind predictions can only be set after racers are revealed");
+  }
+
+  if (!selectedAthleteIds.includes(athleteId)) {
+    throw new Error(`${athleteId} is not selected for this race`);
+  }
+
+  if (!selectedAthleteIds.includes(predictedAthleteId)) {
+    throw new Error(`${predictedAthleteId} is not selected for this race`);
+  }
+
+  return {
+    ...game,
+    selectionState: {
+      ...selectionState,
+      mastermindPredictionsByAthleteId: {
+        ...(selectionState.mastermindPredictionsByAthleteId ?? {}),
+        [athleteId]: predictedAthleteId,
       },
     },
     revision: game.revision + 1,

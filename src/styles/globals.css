@@ -426,6 +426,38 @@ h1 {
   object-fit: cover;
 }
 
+.prediction-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid #ddd5ca;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 16px;
+}
+
+.prediction-panel h2 {
+  font-size: 22px;
+}
+
+.prediction-panel label {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(180px, 2fr);
+  align-items: center;
+  gap: 12px;
+  color: #4d4841;
+  font-weight: 900;
+}
+
+.prediction-panel select {
+  width: 100%;
+  border: 1px solid #cfc5b7;
+  border-radius: 6px;
+  background: #fff;
+  padding: 9px 10px;
+  color: #24211d;
+  font-weight: 800;
+}
+
 .race-layout {
   display: grid;
   gap: 22px;
