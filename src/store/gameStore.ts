@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { beginSelection, lockPlayerSelection, selectAthleteForRace } from "../game/selection";
+import { reduceGameCommand } from "../game/raceEngine";
+import { createRng } from "../game/rng";
 import { createInitialGameState } from "../game/setup";
 import type { GameSettings, GameState } from "../game/types";
 import { clearSavedGame, loadSavedGame, saveGame } from "./persistence";
@@ -51,7 +52,7 @@ export const useGameStore = create<GameStore>((set) => ({
         return state;
       }
 
-      const game = beginSelection(state.game);
+      const game = reduceGameCommand(state.game, { type: "BEGIN_SELECTION" }, createRng(state.game.rngSeed));
       saveGame(game);
       return { game, hasSavedGame: true, view: "selecting" };
     }),
@@ -61,7 +62,11 @@ export const useGameStore = create<GameStore>((set) => ({
         return state;
       }
 
-      const game = selectAthleteForRace(state.game, playerId, athleteId);
+      const game = reduceGameCommand(
+        state.game,
+        { type: "SELECT_ATHLETE", playerId, athleteId },
+        createRng(state.game.rngSeed),
+      );
       saveGame(game);
       return { game, hasSavedGame: true };
     }),
@@ -71,7 +76,7 @@ export const useGameStore = create<GameStore>((set) => ({
         return state;
       }
 
-      const game = lockPlayerSelection(state.game, playerId);
+      const game = reduceGameCommand(state.game, { type: "LOCK_SELECTION", playerId }, createRng(state.game.rngSeed));
       saveGame(game);
       return { game, hasSavedGame: true, view: game.phase === "raceReveal" ? "raceReveal" : "selecting" };
     }),

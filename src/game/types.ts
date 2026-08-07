@@ -199,7 +199,9 @@ export type GameLogEntry = {
 export type GameCommand =
   | { type: "START_GAME"; payload: GameSettings }
   | { type: "ASSIGN_TEAMS" }
+  | { type: "BEGIN_SELECTION" }
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
+  | { type: "LOCK_SELECTION"; playerId: string }
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
