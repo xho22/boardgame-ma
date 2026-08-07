@@ -473,16 +473,36 @@ h1 {
   font-size: 22px;
 }
 
-.game-log ol {
+.game-log-list {
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   display: grid;
   gap: 8px;
   margin: 0;
-  padding-left: 22px;
+  padding: 0 8px 0 0;
+  list-style: none;
 }
 
-.game-log li {
+.game-log-list li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 10px;
+  align-items: start;
   color: #4b4742;
   line-height: 1.35;
+}
+
+.game-log-list span {
+  min-height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #efe6d6;
+  color: #5d564f;
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .results-list {

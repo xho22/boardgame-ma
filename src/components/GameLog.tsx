@@ -5,14 +5,17 @@ type GameLogProps = {
 };
 
 export function GameLog({ entries }: GameLogProps) {
-  const visibleEntries = entries.slice(-10).reverse();
+  const visibleEntries = entries.map((entry, index) => ({ entry, number: index + 1 })).reverse();
 
   return (
     <section className="game-log" aria-label="Game log">
       <h2>Log</h2>
-      <ol>
-        {visibleEntries.map((entry) => (
-          <li key={entry.id}>{entry.message}</li>
+      <ol className="game-log-list">
+        {visibleEntries.map(({ entry, number }) => (
+          <li key={entry.id}>
+            <span>{number}</span>
+            <p>{entry.message}</p>
+          </li>
         ))}
       </ol>
     </section>
