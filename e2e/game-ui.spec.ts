@@ -16,6 +16,17 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "New Game" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
+
+  const firstTeamRacer = page.locator(".racer-card").first();
+  await expect(firstTeamRacer.locator("img")).toBeVisible();
+  await expect(firstTeamRacer.locator(".racer-ability")).toBeHidden();
+  await firstTeamRacer.hover();
+  await expect(firstTeamRacer.locator(".racer-ability")).toBeVisible();
+
+  await page.getByRole("button", { name: "Choose Racers" }).click();
+  await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "Teams" })).toBeVisible();
   await page.getByRole("button", { name: "Choose Racers" }).click();
 
   const firstSelectableRacer = page.locator(".selectable-racer").first();

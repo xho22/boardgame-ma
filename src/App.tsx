@@ -23,6 +23,7 @@ export function App() {
     continueGame,
     clearGame,
     beginSelection,
+    backToTeams,
     selectAthlete,
     lockSelection,
     revealRace,
@@ -50,7 +51,14 @@ export function App() {
   }
 
   if (view === "selecting" && game) {
-    return <SelectionScreen game={game} onSelectAthlete={selectAthlete} onLockSelection={lockSelection} />;
+    return (
+      <SelectionScreen
+        game={game}
+        onBack={backToTeams}
+        onSelectAthlete={selectAthlete}
+        onLockSelection={lockSelection}
+      />
+    );
   }
 
   if (view === "raceReveal" && game) {

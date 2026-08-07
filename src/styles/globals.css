@@ -130,6 +130,17 @@ h1 {
   font-size: clamp(32px, 6vw, 56px);
 }
 
+.selection-top-bar {
+  grid-template-columns: 80px 1fr 80px;
+}
+
+.selection-top-bar > div {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
 .setup-grid {
   display: grid;
   gap: 20px;
@@ -695,14 +706,28 @@ h1 {
 
 .racer-card {
   min-height: 82px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   border: 1px solid #ddd5ca;
   border-radius: 8px;
   background: #fffdf8;
-  padding: 14px;
+  padding: 10px;
+  outline: none;
+}
+
+.racer-card:hover,
+.racer-card:focus-visible {
+  border-color: #1d6258;
+  background: #f7fbf8;
+}
+
+.racer-card img {
+  width: 48px;
+  aspect-ratio: 19 / 25;
+  border-radius: 5px;
+  object-fit: cover;
 }
 
 .racer-card h3 {
@@ -723,6 +748,19 @@ h1 {
   padding: 6px 10px;
 }
 
+.racer-card .racer-ability {
+  display: none;
+  margin-top: 6px;
+  color: #4d4841;
+  line-height: 1.35;
+}
+
+.racer-card:hover .racer-ability,
+.racer-card:focus-within .racer-ability,
+.racer-card:focus-visible .racer-ability {
+  display: block;
+}
+
 @media (max-width: 640px) {
   .app-shell {
     padding: 20px;
@@ -739,7 +777,16 @@ h1 {
 
   .racer-card {
     align-items: flex-start;
-    flex-direction: column;
+    grid-template-columns: 44px 1fr;
+  }
+
+  .racer-card img {
+    width: 44px;
+  }
+
+  .racer-card span {
+    grid-column: 2;
+    width: fit-content;
   }
 
   .race-header,

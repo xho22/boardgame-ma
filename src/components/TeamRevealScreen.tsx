@@ -37,10 +37,12 @@ export function TeamRevealScreen({ game, onNewGame, onClearGame, onBeginSelectio
                 }
 
                 return (
-                  <article className="racer-card" key={athlete.id}>
+                  <article className="racer-card" key={athlete.id} tabIndex={0} title={athlete.abilityText}>
+                    <img src={athlete.imagePath} alt={athlete.displayName} />
                     <div>
                       <h3>{athlete.displayName}</h3>
                       <p>{athlete.standardName}</p>
+                      <p className="racer-ability">{athlete.abilityText}</p>
                     </div>
                     <span>{athlete.type}</span>
                   </article>

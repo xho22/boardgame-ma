@@ -4,11 +4,12 @@ import type { GameState } from "../game/types";
 
 type SelectionScreenProps = {
   game: GameState;
+  onBack: () => void;
   onSelectAthlete: (playerId: string, athleteId: string) => void;
   onLockSelection: (playerId: string) => void;
 };
 
-export function SelectionScreen({ game, onSelectAthlete, onLockSelection }: SelectionScreenProps) {
+export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection }: SelectionScreenProps) {
   const activePlayer = getActiveSelectionPlayer(game);
 
   if (!activePlayer || !game.selectionState) {
@@ -19,10 +20,16 @@ export function SelectionScreen({ game, onSelectAthlete, onLockSelection }: Sele
 
   return (
     <main className="app-shell screen-layout">
-      <header className="selection-cover">
-        <p className="eyebrow">Secret selection</p>
-        <h1>{activePlayer.name}</h1>
-        <p className="helper-text">Only this player should look. Pick one unused racer, then lock it.</p>
+      <header className="top-bar selection-top-bar">
+        <button className="ghost-button" type="button" onClick={onBack}>
+          Back
+        </button>
+        <div>
+          <p className="eyebrow">Secret selection</p>
+          <h1>{activePlayer.name}</h1>
+          <p className="helper-text">Only this player should look. Pick one unused racer, then lock it.</p>
+        </div>
+        <span />
       </header>
 
       <section className="selection-grid" aria-label={`${activePlayer.name} available racers`}>

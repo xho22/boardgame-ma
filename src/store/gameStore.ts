@@ -17,6 +17,7 @@ type GameStore = {
   continueGame: () => void;
   clearGame: () => void;
   beginSelection: () => void;
+  backToTeams: () => void;
   selectAthlete: (playerId: string, athleteId: string) => void;
   lockSelection: (playerId: string) => void;
   revealRace: () => void;
@@ -81,6 +82,21 @@ export const useGameStore = create<GameStore>((set) => ({
       const game = reduceGameCommand(state.game, { type: "BEGIN_SELECTION" }, rngForGame(state.game));
       saveGame(game);
       return { game, hasSavedGame: true, view: "selecting" };
+    }),
+  backToTeams: () =>
+    set((state) => {
+      if (!state.game || (state.game.phase !== "selecting" && state.game.phase !== "raceReveal")) {
+        return state;
+      }
+
+      const game: GameState = {
+        ...state.game,
+        phase: "teamReveal",
+        selectionState: null,
+        revision: state.game.revision + 1,
+      };
+      saveGame(game);
+      return { game, hasSavedGame: true, view: "teamReveal" };
     }),
   selectAthlete: (playerId, athleteId) =>
     set((state) => {
