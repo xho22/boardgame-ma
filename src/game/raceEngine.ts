@@ -2,6 +2,7 @@ import { beginSelection, lockPlayerSelection, selectAthleteForRace } from "./sel
 import { createInitialGameState } from "./setup";
 import { moveEntrantForward } from "./movement";
 import { applyRaceScoring, isGameComplete } from "./scoring";
+import { resolveMainMove } from "./abilityEngine";
 import type { GameCommand, GameLogEntry, GameState, RaceState } from "./types";
 import type { Rng } from "./rng";
 
@@ -130,13 +131,10 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     return advanceTurn(game, race);
   }
 
-  const dieRoll = rng.rollDie(6);
+  const mainMove = resolveMainMove({ game, race, entrant, rng });
   const moveResult = moveEntrantForward(
-    {
-      ...entrant,
-      actionCount: entrant.actionCount + 1,
-    },
-    dieRoll,
+    mainMove.entrant,
+    mainMove.finalMove,
     race.trackLength,
   );
   const finishers = moveResult.finished
@@ -161,17 +159,36 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     ...race,
     entrants,
     finishers,
-    previousFinalMoveValue: dieRoll,
+    previousFinalMoveValue: mainMove.finalMove,
   };
+  const baseLogs = [
+    ...mainMove.logs,
+    ...(mainMove.dieRoll === null
+      ? []
+      : [{ type: "dice_roll" as const, message: `${playerId} rolled ${mainMove.dieRoll}.` }]),
+    {
+      type: "movement" as const,
+      message:
+        mainMove.finalMove === 0
+          ? `${playerId} stayed at ${moveResult.entrant.position}.`
+          : `${playerId} moved ${mainMove.finalMove} spaces to ${moveResult.entrant.position}.`,
+    },
+  ];
   const gameWithMove = {
     ...game,
     activeRace: updatedRace,
     log: [
       ...game.log,
-      createLog(game, "dice_roll", `${playerId} rolled ${dieRoll}.`, 0),
-      createLog(game, "movement", `${playerId} moved ${dieRoll} spaces to ${moveResult.entrant.position}.`, 1),
+      ...baseLogs.map((log, index) => createLog(game, log.type, log.message, index)),
       ...(moveResult.finished
-        ? [createLog(game, "finish", `${playerId} finished in rank ${finishers[finishers.length - 1].rank}.`, 2)]
+        ? [
+            createLog(
+              game,
+              "finish",
+              `${playerId} finished in rank ${finishers[finishers.length - 1].rank}.`,
+              baseLogs.length,
+            ),
+          ]
         : []),
     ],
     revision: game.revision + 1,
