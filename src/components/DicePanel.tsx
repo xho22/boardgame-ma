@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
 import type { Player, RaceState } from "../game/types";
 
 type DicePanelProps = {
@@ -51,12 +52,23 @@ export function DicePanel({ race, currentPlayer, onRoll }: DicePanelProps) {
   }
 
   const displayValue = isRolling ? rollingValue : (race.previousFinalMoveValue ?? "-");
+  const currentEntrant = race.entrants.find((entrant) => entrant.playerId === currentPlayer.id);
+  const currentAthlete = currentEntrant ? STANDARD_ATHLETE_BY_ID.get(currentEntrant.athleteId) : null;
 
   return (
     <section className="dice-panel" aria-label="Current turn">
-      <div>
+      {currentAthlete ? (
+        <img className="current-racer-image" src={currentAthlete.imagePath} alt={currentAthlete.displayName} />
+      ) : null}
+      <div className="current-racer-copy">
         <p className="eyebrow">Current turn</p>
         <h2>{currentPlayer.name}</h2>
+        {currentAthlete ? (
+          <>
+            <h3>{`${currentAthlete.displayName} / ${currentAthlete.standardName}`}</h3>
+            <p>{currentAthlete.abilityText}</p>
+          </>
+        ) : null}
       </div>
       <div className={`dice-readout ${isRolling ? "rolling" : ""}`} aria-label="Last die roll">
         {displayValue}

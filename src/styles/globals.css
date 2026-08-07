@@ -238,8 +238,8 @@ h1 {
 
 .selection-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
   margin-top: 28px;
 }
 
@@ -253,12 +253,20 @@ h1 {
 .catalog-card {
   min-height: 210px;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: 94px 1fr;
   gap: 12px;
   border: 1px solid #d8cfc0;
   border-radius: 8px;
   background: #fffdf8;
   padding: 16px;
+}
+
+.catalog-card img {
+  width: 94px;
+  aspect-ratio: 19 / 25;
+  grid-row: span 4;
+  border-radius: 6px;
+  object-fit: cover;
 }
 
 .catalog-card h2 {
@@ -289,10 +297,12 @@ h1 {
 }
 
 .selectable-racer {
-  min-height: 96px;
+  min-height: 210px;
   display: grid;
-  gap: 6px;
-  align-content: center;
+  grid-template-columns: 96px 1fr;
+  grid-template-rows: auto auto 1fr;
+  gap: 6px 14px;
+  align-content: start;
   border: 2px solid #d8cfc0;
   border-radius: 8px;
   background: #fffdf8;
@@ -306,6 +316,14 @@ h1 {
   background: #fff1ec;
 }
 
+.selectable-racer img {
+  width: 96px;
+  aspect-ratio: 19 / 25;
+  grid-row: span 3;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
 .selectable-racer span {
   font-size: 22px;
   font-weight: 900;
@@ -315,6 +333,12 @@ h1 {
   color: #665f57;
   font-size: 13px;
   font-weight: 800;
+}
+
+.selectable-racer p {
+  color: #4d4841;
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 .reveal-top-bar {
@@ -453,13 +477,36 @@ h1 {
 
 .dice-panel {
   display: grid;
-  grid-template-columns: 1fr 84px;
+  grid-template-columns: 92px 1fr 84px;
   gap: 18px;
   align-items: center;
 }
 
 .dice-panel .primary-button {
   grid-column: 1 / -1;
+}
+
+.current-racer-image {
+  width: 92px;
+  aspect-ratio: 19 / 25;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.current-racer-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.current-racer-copy h3 {
+  font-size: 17px;
+}
+
+.current-racer-copy p {
+  color: #4d4841;
+  font-size: 14px;
+  line-height: 1.35;
 }
 
 .dice-readout {
@@ -698,6 +745,29 @@ h1 {
   .race-header,
   .race-control-grid {
     grid-template-columns: 1fr;
+  }
+
+  .catalog-card,
+  .selectable-racer {
+    grid-template-columns: 82px 1fr;
+  }
+
+  .catalog-card img,
+  .selectable-racer img {
+    width: 82px;
+  }
+
+  .dice-panel {
+    grid-template-columns: 76px 1fr;
+  }
+
+  .current-racer-image {
+    width: 76px;
+  }
+
+  .dice-readout {
+    grid-column: 1 / -1;
+    justify-self: start;
   }
 
   .result-row {

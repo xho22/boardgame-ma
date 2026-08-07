@@ -18,6 +18,7 @@ export function AthleteCatalogScreen({ onBack }: AthleteCatalogScreenProps) {
       <section className="catalog-grid" aria-label="Racer catalog">
         {STANDARD_ATHLETES.map((athlete) => (
           <article className="catalog-card" key={athlete.id}>
+            <img src={athlete.imagePath} alt={athlete.displayName} />
             <div>
               <h2>{athlete.displayName}</h2>
               <p>{athlete.standardName}</p>

@@ -43,8 +43,10 @@ export function SelectionScreen({ game, onSelectAthlete, onLockSelection }: Sele
               disabled={isUsed}
               onClick={() => onSelectAthlete(activePlayer.id, athlete.id)}
             >
+              <img src={athlete.imagePath} alt={athlete.displayName} />
               <span>{athlete.displayName}</span>
               <small>{athlete.standardName}</small>
+              <p>{athlete.abilityText}</p>
             </button>
           );
         })}

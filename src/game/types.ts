@@ -106,6 +106,7 @@ export type Athlete = {
   abilityText: string;
   abilityHooks: AbilityTiming[];
   implementationKey: AbilityImplementationKey;
+  imagePath: string;
   maxUsesPerRace?: number;
   maxUsesPerGame?: number;
   tags: string[];

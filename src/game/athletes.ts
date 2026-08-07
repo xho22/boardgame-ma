@@ -1,6 +1,6 @@
 import type { Athlete } from "./types";
 
-type AthleteData = Omit<Athlete, "id" | "sourceKey" | "artPrompt">;
+type AthleteData = Omit<Athlete, "id" | "sourceKey" | "imagePath" | "artPrompt">;
 
 const STANDARD_ATHLETE_DATA = [
   {
@@ -334,11 +334,13 @@ export const STANDARD_ATHLETES: Athlete[] = STANDARD_ATHLETE_DATA.map((athlete) 
     .toLowerCase()
     .replaceAll(/[^a-z0-9]+/g, "_")
     .replaceAll(/^_|_$/g, "");
+  const id = `athlete-${sourceKey}`;
 
   return {
     ...athlete,
-    id: `athlete-${sourceKey}`,
+    id,
     sourceKey: `standard_${sourceKey}`,
+    imagePath: `/racers/${id}.png`,
     artPrompt: `${athlete.standardName} fantasy racing character`,
   };
 }) satisfies Athlete[];

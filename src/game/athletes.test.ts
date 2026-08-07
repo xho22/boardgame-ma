@@ -34,6 +34,7 @@ describe("STANDARD_ATHLETES", () => {
     for (const athlete of STANDARD_ATHLETES) {
       expect(athlete.id).toMatch(/^athlete-[a-z0-9_]+$/);
       expect(athlete.sourceKey).toMatch(/^standard_[a-z0-9_]+$/);
+      expect(athlete.imagePath).toBe(`/racers/${athlete.id}.png`);
       expect(athlete.displayName.length).toBeGreaterThan(0);
       expect(athlete.abilityText.length).toBeGreaterThan(10);
       expect(athlete.abilityHooks.length).toBeGreaterThan(0);
