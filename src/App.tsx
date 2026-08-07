@@ -1,5 +1,8 @@
 import { HomeScreen } from "./components/HomeScreen";
+import { FinalResultsScreen } from "./components/FinalResultsScreen";
 import { RaceRevealScreen } from "./components/RaceRevealScreen";
+import { RaceResultsScreen } from "./components/RaceResultsScreen";
+import { RaceScreen } from "./components/RaceScreen";
 import { SelectionScreen } from "./components/SelectionScreen";
 import { SetupScreen } from "./components/SetupScreen";
 import { TeamRevealScreen } from "./components/TeamRevealScreen";
@@ -19,6 +22,9 @@ export function App() {
     beginSelection,
     selectAthlete,
     lockSelection,
+    revealRace,
+    rollDice,
+    beginNextRace,
   } = useGameStore();
 
   if (view === "setup") {
@@ -41,7 +47,19 @@ export function App() {
   }
 
   if (view === "raceReveal" && game) {
-    return <RaceRevealScreen game={game} />;
+    return <RaceRevealScreen game={game} onStartRace={revealRace} />;
+  }
+
+  if (view === "racing" && game) {
+    return <RaceScreen game={game} onRoll={rollDice} />;
+  }
+
+  if (view === "raceResults" && game) {
+    return <RaceResultsScreen game={game} onContinue={beginNextRace} />;
+  }
+
+  if (view === "finalResults" && game) {
+    return <FinalResultsScreen game={game} onNewGame={openSetup} />;
   }
 
   return <HomeScreen hasSavedGame={hasSavedGame} onNewGame={openSetup} onContinueGame={continueGame} />;

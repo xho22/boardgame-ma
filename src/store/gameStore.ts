@@ -5,7 +5,7 @@ import { createInitialGameState } from "../game/setup";
 import type { GameSettings, GameState } from "../game/types";
 import { clearSavedGame, loadSavedGame, saveGame } from "./persistence";
 
-type AppView = "home" | "setup" | "teamReveal" | "selecting" | "raceReveal";
+type AppView = "home" | "setup" | "teamReveal" | "selecting" | "raceReveal" | "racing" | "raceResults" | "finalResults";
 
 type GameStore = {
   view: AppView;
@@ -19,9 +19,35 @@ type GameStore = {
   beginSelection: () => void;
   selectAthlete: (playerId: string, athleteId: string) => void;
   lockSelection: (playerId: string) => void;
+  revealRace: () => void;
+  rollDice: (playerId: string) => void;
+  beginNextRace: () => void;
 };
 
 const initialSavedGame = loadSavedGame();
+
+function viewFromGame(game: GameState | null): AppView {
+  if (!game) {
+    return "home";
+  }
+
+  if (
+    game.phase === "teamReveal" ||
+    game.phase === "selecting" ||
+    game.phase === "raceReveal" ||
+    game.phase === "racing" ||
+    game.phase === "raceResults" ||
+    game.phase === "finalResults"
+  ) {
+    return game.phase;
+  }
+
+  return "home";
+}
+
+function rngForGame(game: GameState) {
+  return createRng(`${game.rngSeed}:${game.revision}`);
+}
 
 export const useGameStore = create<GameStore>((set) => ({
   view: initialSavedGame ? "home" : "home",
@@ -39,7 +65,7 @@ export const useGameStore = create<GameStore>((set) => ({
     set({
       game,
       hasSavedGame: game !== null,
-      view: game ? "teamReveal" : "home",
+      view: viewFromGame(game),
     });
   },
   clearGame: () => {
@@ -52,7 +78,7 @@ export const useGameStore = create<GameStore>((set) => ({
         return state;
       }
 
-      const game = reduceGameCommand(state.game, { type: "BEGIN_SELECTION" }, createRng(state.game.rngSeed));
+      const game = reduceGameCommand(state.game, { type: "BEGIN_SELECTION" }, rngForGame(state.game));
       saveGame(game);
       return { game, hasSavedGame: true, view: "selecting" };
     }),
@@ -65,7 +91,7 @@ export const useGameStore = create<GameStore>((set) => ({
       const game = reduceGameCommand(
         state.game,
         { type: "SELECT_ATHLETE", playerId, athleteId },
-        createRng(state.game.rngSeed),
+        rngForGame(state.game),
       );
       saveGame(game);
       return { game, hasSavedGame: true };
@@ -76,8 +102,38 @@ export const useGameStore = create<GameStore>((set) => ({
         return state;
       }
 
-      const game = reduceGameCommand(state.game, { type: "LOCK_SELECTION", playerId }, createRng(state.game.rngSeed));
+      const game = reduceGameCommand(state.game, { type: "LOCK_SELECTION", playerId }, rngForGame(state.game));
       saveGame(game);
       return { game, hasSavedGame: true, view: game.phase === "raceReveal" ? "raceReveal" : "selecting" };
+    }),
+  revealRace: () =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = reduceGameCommand(state.game, { type: "REVEAL_RACE" }, rngForGame(state.game));
+      saveGame(game);
+      return { game, hasSavedGame: true, view: "racing" };
+    }),
+  rollDice: (playerId) =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = reduceGameCommand(state.game, { type: "ROLL_DICE", playerId }, rngForGame(state.game));
+      saveGame(game);
+      return { game, hasSavedGame: true, view: viewFromGame(game) };
+    }),
+  beginNextRace: () =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = reduceGameCommand(state.game, { type: "BEGIN_NEXT_RACE" }, rngForGame(state.game));
+      saveGame(game);
+      return { game, hasSavedGame: true, view: viewFromGame(game) };
     }),
 }));

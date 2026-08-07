@@ -3,9 +3,10 @@ import type { GameState } from "../game/types";
 
 type RaceRevealScreenProps = {
   game: GameState;
+  onStartRace: () => void;
 };
 
-export function RaceRevealScreen({ game }: RaceRevealScreenProps) {
+export function RaceRevealScreen({ game, onStartRace }: RaceRevealScreenProps) {
   const selectionState = game.selectionState;
 
   return (
@@ -39,6 +40,12 @@ export function RaceRevealScreen({ game }: RaceRevealScreenProps) {
           );
         })}
       </section>
+
+      <footer className="bottom-actions">
+        <button className="primary-button" type="button" onClick={onStartRace}>
+          Start Race
+        </button>
+      </footer>
     </main>
   );
 }

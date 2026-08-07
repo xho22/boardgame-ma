@@ -301,6 +301,196 @@ h1 {
   font-weight: 800;
 }
 
+.race-layout {
+  display: grid;
+  gap: 22px;
+}
+
+.race-header {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr);
+  align-items: end;
+  gap: 24px;
+}
+
+.race-score-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.race-score-strip div {
+  border: 1px solid #ddd5ca;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 10px;
+}
+
+.race-score-strip dt {
+  color: #665f57;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.race-score-strip dd {
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.track-section {
+  overflow-x: auto;
+  border-block: 1px solid #ddd5ca;
+  padding-block: 18px;
+}
+
+.track-grid {
+  min-width: 1120px;
+  display: grid;
+  gap: 6px;
+}
+
+.track-space {
+  min-height: 108px;
+  display: grid;
+  grid-template-rows: 22px 1fr;
+  border: 1px solid #d8cfc0;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 6px;
+}
+
+.space-label {
+  color: #6b6258;
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.piece-stack {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.track-piece {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.race-control-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(280px, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.dice-panel,
+.game-log {
+  border: 1px solid #ddd5ca;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 18px;
+}
+
+.dice-panel {
+  display: grid;
+  grid-template-columns: 1fr 84px;
+  gap: 18px;
+  align-items: center;
+}
+
+.dice-panel .primary-button {
+  grid-column: 1 / -1;
+}
+
+.dice-readout {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #1d6258;
+  border-radius: 8px;
+  color: #1d6258;
+  font-size: 42px;
+  font-weight: 900;
+}
+
+.game-log {
+  display: grid;
+  gap: 12px;
+}
+
+.game-log h2 {
+  font-size: 22px;
+}
+
+.game-log ol {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.game-log li {
+  color: #4b4742;
+  line-height: 1.35;
+}
+
+.results-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.result-row {
+  min-height: 86px;
+  display: grid;
+  grid-template-columns: 58px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #ddd5ca;
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 14px;
+}
+
+.result-row strong {
+  color: #e94f2f;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.result-row h2 {
+  font-size: 24px;
+}
+
+.result-row p {
+  color: #665f57;
+  font-weight: 700;
+}
+
+.result-row span {
+  color: #1d6258;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.final-header {
+  display: grid;
+  gap: 12px;
+  margin-top: 48px;
+}
+
 .player-column {
   display: grid;
   gap: 12px;
@@ -399,5 +589,18 @@ h1 {
   .racer-card {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .race-header,
+  .race-control-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .result-row {
+    grid-template-columns: 48px 1fr;
+  }
+
+  .result-row span {
+    grid-column: 2;
   }
 }
