@@ -625,6 +625,12 @@ type SelectionState = {
 - after roll：Magician、Rocket Scientist 当前使用回合开始前策略选项；后续应升级为真正掷骰后暂停确认。
 - on other roll：Dicemonger、Inchworm、Lackey 当前仍是本地自动反应；在线多人阶段应通过 `pendingReactions` 或同类状态补确认流。
 
+trip UI 状态：
+
+- 棋盘头像根据 `entrant.skippedTurns > 0` 判定是否倒置。
+- 轮到 trip 中的 entrant 时，DicePanel 不显示掷骰操作，显示“绊倒恢复中”和自动推进提示。
+- 自动恢复仍然通过 `ROLL_DICE` 命令进入规则引擎，保持日志、回合推进和未来在线同步路径一致。
+
 ## 15.4 版本校准
 
 由于不同版本角色池和能力数量可能不同，角色实现要数据化。

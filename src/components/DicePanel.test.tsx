@@ -60,4 +60,19 @@ describe("DicePanel", () => {
     expect(markup).toContain("掷骰移动");
     expect(markup).toContain("直接移动 5 格");
   });
+
+  it("shows recovery state instead of roll controls for a tripped racer", () => {
+    const markup = renderToStaticMarkup(
+      <DicePanel
+        race={race}
+        currentPlayer={player}
+        currentEntrant={{ ...entrant, skippedTurns: 1 }}
+        onRoll={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("绊倒恢复中");
+    expect(markup).toContain("3 秒后自动进入下一回合");
+    expect(markup).not.toContain("直接移动 5 格");
+  });
 });

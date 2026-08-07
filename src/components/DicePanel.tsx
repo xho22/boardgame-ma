@@ -38,6 +38,18 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
     };
   }, []);
 
+  useEffect(() => {
+    if (currentEntrant.skippedTurns <= 0 || isRolling) {
+      return;
+    }
+
+    const recoveryTimer = window.setTimeout(() => {
+      onRoll(currentEntrant.id);
+    }, 3_000);
+
+    return () => window.clearTimeout(recoveryTimer);
+  }, [currentEntrant.id, currentEntrant.skippedTurns, isRolling, onRoll]);
+
   function startRollAnimation(choice?: MainMoveChoice) {
     if (isRolling) {
       return;
@@ -104,10 +116,15 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
         ) : null}
       </div>
       <div className={`dice-readout ${isRolling ? "rolling" : ""}`} aria-label="Last die roll">
-        {displayValue}
+        {currentEntrant.skippedTurns > 0 ? "休" : displayValue}
       </div>
       <div className="ability-choice-panel">
-        {abilityKey === "main_move_fixed_five_optional" ? (
+        {currentEntrant.skippedTurns > 0 ? (
+          <div className="recovery-panel" role="status">
+            <strong>绊倒恢复中</strong>
+            <span>3 秒后自动进入下一回合</span>
+          </div>
+        ) : abilityKey === "main_move_fixed_five_optional" ? (
           <div className="ability-choice-actions" aria-label="长腿能力选择">
             <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
               {isRolling ? "掷骰中..." : "掷骰移动"}
