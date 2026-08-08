@@ -46,6 +46,7 @@ export type GameSettings = {
   athletesPerPlayer: number;
   trackLength: number;
   teamAssignment: "snake" | "random";
+  debugMode: boolean;
 };
 
 export type GameState = {
@@ -181,6 +182,7 @@ export type MainMoveChoice = {
   useRocketScientistDouble?: boolean;
   magicianMaxRerolls?: 0 | 1 | 2;
   geniusGuess?: 1 | 2 | 3 | 4 | 5 | 6;
+  forcedDieRoll?: 1 | 2 | 3 | 4 | 5 | 6;
 };
 
 export type PendingTurnState = {

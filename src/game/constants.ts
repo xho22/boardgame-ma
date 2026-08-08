@@ -64,4 +64,5 @@ export const DEFAULT_SETTINGS: GameSettings = {
   athletesPerPlayer: DEFAULT_ATHLETES_PER_PLAYER,
   trackLength: DEFAULT_TRACK_LENGTH,
   teamAssignment: "snake",
+  debugMode: false,
 };

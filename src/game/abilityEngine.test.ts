@@ -97,6 +97,15 @@ describe("phase 7 abilities", () => {
     expect(latestMessages(game).some((message) => message.includes("掷出了 4"))).toBe(true);
   });
 
+  it("uses a forced debug die roll when provided", () => {
+    const game = roll(createRace("Baba Yaga", "Baba Yaga"), "player-1", [1], {
+      forcedDieRoll: 6,
+    });
+
+    expect(entrantPosition(game, "player-1")).toBe(6);
+    expect(latestMessages(game).some((message) => message.includes("掷出了 6"))).toBe(true);
+  });
+
   it("Hare gains +2 unless it starts the turn alone in the lead", () => {
     const boosted = roll(createRace("Hare", "Baba Yaga"), "player-1", [1]);
 

@@ -61,6 +61,16 @@ describe("createInitialGameState", () => {
       createInitialGameState({ settings: { playerCount: 4, racersPerPlayerPerRace: 2 } }),
     ).toThrow("only for 2 or 3 players");
   });
+
+  it("supports opting into debug mode at game setup", () => {
+    const game = createInitialGameState({
+      settings: { playerCount: 2, debugMode: true },
+      seed: "debug-mode",
+      now: 1_000,
+    });
+
+    expect(game.settings.debugMode).toBe(true);
+  });
 });
 
 describe("createRng", () => {

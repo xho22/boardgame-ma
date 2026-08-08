@@ -74,7 +74,13 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
             </div>
           </section>
         ) : (
-          <DicePanel race={race} currentPlayer={currentPlayer} currentEntrant={currentEntrant} onRoll={onRoll} />
+          <DicePanel
+            debugMode={game.settings.debugMode}
+            race={race}
+            currentPlayer={currentPlayer}
+            currentEntrant={currentEntrant}
+            onRoll={onRoll}
+          />
         )}
         <GameLog entries={game.log} />
       </div>

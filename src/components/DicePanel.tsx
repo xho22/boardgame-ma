@@ -3,21 +3,37 @@ import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
 import type { Entrant, MainMoveChoice, Player, RaceState } from "../game/types";
 
 type DicePanelProps = {
+  debugMode: boolean;
   race: RaceState;
   currentPlayer: Player;
   currentEntrant: Entrant;
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
-export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DicePanelProps) {
+export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
   const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(true);
   const [useRocketDouble, setUseRocketDouble] = useState(true);
   const [magicianMaxRerolls, setMagicianMaxRerolls] = useState<0 | 1 | 2>(2);
   const [geniusGuess, setGeniusGuess] = useState<"" | 1 | 2 | 3 | 4 | 5 | 6>("");
+  const [forcedDieRoll, setForcedDieRoll] = useState<1 | 2 | 3 | 4 | 5 | 6>(6);
   const intervalRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+
+  function stopRollAnimation() {
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    setIsRolling(false);
+  }
 
   useEffect(() => {
     setIsRolling(false);
@@ -26,17 +42,12 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
     setUseRocketDouble(true);
     setMagicianMaxRerolls(2);
     setGeniusGuess("");
+    setForcedDieRoll(6);
   }, [currentEntrant.id, currentPlayer.id, race.previousFinalMoveValue]);
 
   useEffect(() => {
     return () => {
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-      }
-
-      if (timeoutRef.current !== null) {
-        window.clearTimeout(timeoutRef.current);
-      }
+      stopRollAnimation();
     };
   }, []);
 
@@ -62,12 +73,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
       setRollingValue(Math.floor(Math.random() * 6) + 1);
     }, 80);
     timeoutRef.current = window.setTimeout(() => {
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-
-      timeoutRef.current = null;
+      stopRollAnimation();
       onRoll(currentEntrant.id, choice);
     }, 2_000);
   }
@@ -101,6 +107,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
     useRocketScientistDouble: abilityKey === "optional_double_roll_then_trip" ? useRocketDouble : undefined,
     magicianMaxRerolls: abilityKey === "reroll_main_move_up_to_two" ? magicianMaxRerolls : undefined,
     geniusGuess: abilityKey === "predict_roll_extra_turn" && geniusGuess !== "" ? geniusGuess : undefined,
+    forcedDieRoll: debugMode ? forcedDieRoll : undefined,
   };
 
   return (
@@ -163,24 +170,58 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
                 <option value={6}>6</option>
               </select>
             </label>
+            {debugMode ? (
+              <label className="ability-select">
+                <span>本次骰点</span>
+                <select
+                  value={forcedDieRoll}
+                  onChange={(event) => setForcedDieRoll(Number(event.target.value) as 1 | 2 | 3 | 4 | 5 | 6)}
+                >
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                  <option value={5}>5</option>
+                  <option value={6}>6</option>
+                </select>
+              </label>
+            ) : null}
             <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
               {isRolling ? "掷骰中..." : "猜好后掷骰"}
             </button>
           </>
         ) : abilityKey === "main_move_fixed_five_optional" ? (
-          <div className="ability-choice-actions" aria-label="长腿能力选择">
-            <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
-              {isRolling ? "掷骰中..." : "掷骰移动"}
-            </button>
-            <button
-              className="primary-button"
-              type="button"
-              onClick={() => useDirectAbility({ useLegsFixedMove: true })}
-              disabled={isRolling}
-            >
-              直接移动 5 格
-            </button>
-          </div>
+          <>
+            {debugMode ? (
+              <label className="ability-select">
+                <span>本次骰点</span>
+                <select
+                  value={forcedDieRoll}
+                  onChange={(event) => setForcedDieRoll(Number(event.target.value) as 1 | 2 | 3 | 4 | 5 | 6)}
+                >
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                  <option value={5}>5</option>
+                  <option value={6}>6</option>
+                </select>
+              </label>
+            ) : null}
+            <div className="ability-choice-actions" aria-label="长腿能力选择">
+              <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+                {isRolling ? "掷骰中..." : "掷骰移动"}
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => useDirectAbility({ useLegsFixedMove: true })}
+                disabled={isRolling}
+              >
+                直接移动 5 格
+              </button>
+            </div>
+          </>
         ) : (
           <>
             {abilityKey === "warp_swap_instead_main_move" && hasFlipFlopTarget ? (
@@ -227,6 +268,23 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
                   <option value={0}>0</option>
                   <option value={1}>1</option>
                   <option value={2}>2</option>
+                </select>
+              </label>
+            ) : null}
+
+            {debugMode ? (
+              <label className="ability-select">
+                <span>本次骰点</span>
+                <select
+                  value={forcedDieRoll}
+                  onChange={(event) => setForcedDieRoll(Number(event.target.value) as 1 | 2 | 3 | 4 | 5 | 6)}
+                >
+                  <option value={1}>1</option>
+                  <option value={2}>2</option>
+                  <option value={3}>3</option>
+                  <option value={4}>4</option>
+                  <option value={5}>5</option>
+                  <option value={6}>6</option>
                 </select>
               </label>
             ) : null}

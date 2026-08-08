@@ -84,6 +84,7 @@ export function normalizeSettings(settings: Partial<GameSettings> = {}): GameSet
     athletesPerPlayer,
     trackLength: settings.trackLength ?? DEFAULT_TRACK_LENGTH,
     teamAssignment: settings.teamAssignment ?? "snake",
+    debugMode: settings.debugMode ?? false,
   };
 }
 

@@ -48,6 +48,7 @@ const game = {
     athletesPerPlayer: 4,
     trackLength: 30,
     teamAssignment: "snake",
+    debugMode: false,
   },
   players,
   athletes: STANDARD_ATHLETES,

@@ -240,7 +240,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
       message: `${racerName} 使用长腿，不掷骰并将主移动设为 5。`,
     });
   } else {
-    dieRoll = rng.rollDie(6);
+    dieRoll = choice.forcedDieRoll ?? rng.rollDie(6);
 
     const rollReaction = applyRollReactions(game, workingRace, workingEntrant, dieRoll);
     workingRace = rollReaction.race;

@@ -6,6 +6,16 @@ test.beforeEach(async ({ page }) => {
   await page.reload();
 });
 
+async function fillMastermindPredictions(page: Parameters<typeof test>[0]["page"]) {
+  const predictionSelects = page.locator(".prediction-panel select");
+  const count = await predictionSelects.count();
+
+  for (let index = 0; index < count; index += 1) {
+    const select = predictionSelects.nth(index);
+    await select.selectOption({ index: 1 });
+  }
+}
+
 test("shows racer card images in catalog, selection, and current turn", async ({ page }) => {
   await page.getByRole("button", { name: "Racers" }).click();
 
@@ -46,6 +56,7 @@ test("shows racer card images in catalog, selection, and current turn", async ({
 
   await secondSelectableRacer.click();
   await page.getByRole("button", { name: "Lock Choice" }).click();
+  await fillMastermindPredictions(page);
   await page.getByRole("button", { name: "Start Race" }).click();
 
   await expect(page.getByRole("heading", { name: "Track" })).toBeVisible();
@@ -74,6 +85,7 @@ test("supports choosing two racers per player in a small game", async ({ page })
 
   await expect(page.getByRole("heading", { name: "Race 1" })).toBeVisible();
   await expect(page.locator(".reveal-racer-list img")).toHaveCount(4);
+  await fillMastermindPredictions(page);
   await page.getByRole("button", { name: "Start Race" }).click();
   await expect(page.locator(".track-piece")).toHaveCount(4);
 });

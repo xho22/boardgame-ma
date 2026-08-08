@@ -11,6 +11,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
   const [playerCount, setPlayerCount] = useState(2);
   const [racersPerPlayerPerRace, setRacersPerPlayerPerRace] = useState<1 | 2>(1);
   const [playerNames, setPlayerNames] = useState(["Dad", "Kid"]);
+  const [debugMode, setDebugMode] = useState(false);
 
   const visibleNames = useMemo(
     () =>
@@ -99,6 +100,16 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
           </div>
         </div>
 
+        <label className="toggle-row" htmlFor="debug-mode">
+          <span>Debug Mode</span>
+          <input
+            checked={debugMode}
+            id="debug-mode"
+            type="checkbox"
+            onChange={(event) => setDebugMode(event.target.checked)}
+          />
+        </label>
+
         <dl className="summary-strip" aria-label="Game summary">
           <div>
             <dt>Races</dt>
@@ -124,6 +135,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
               playerCount,
               playerNames: visibleNames,
               racersPerPlayerPerRace,
+              debugMode,
             })
           }
         >
