@@ -266,7 +266,7 @@ describe("phase 9 abilities", () => {
     game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga"]), {
       "player-1": 0,
       "player-2": 5,
-    }), "player-1", [6]);
+    }), "player-1", [6], { useFlipFlopSwap: true });
     expect(position(game, "player-1")).toBe(5);
     expect(position(game, "player-2")).toBe(0);
 
@@ -322,6 +322,12 @@ describe("phase 9 abilities", () => {
     }), "player-1", [1]);
     expect(position(game, "player-1")).toBe(5);
 
+    game = roll(setPositions(createRace(["Party Animal", "Baba Yaga"]), {
+      "player-1": 3,
+      "player-2": 3,
+    }), "player-1", [1]);
+    expect(position(game, "player-2")).toBe(3);
+
     game = roll(createRace(["Sisyphus", "Baba Yaga"]), "player-1", [6]);
     expect(game.players[0].score).toBe(3);
     expect(position(game, "player-1")).toBe(6);
@@ -345,6 +351,45 @@ describe("phase 9 abilities", () => {
 
     game = roll(createRace(["Twin", "Baba Yaga"], 30, "Alchemist"), "player-1", [1]);
     expect(position(game, "player-1")).toBe(4);
+  });
+
+  it("Duelist triggers whether it moves in or gets moved into, and logs both rolls", () => {
+    let game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 3,
+    }), "player-1", [3, 6, 2]);
+
+    expect(position(game, "player-1")).toBe(5);
+    expect(entrant(game, "player-2").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("双方掷出 6 比 2"))).toBe(true);
+
+    game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
+      "player-1": 3,
+      "player-2": 0,
+    }, "player-2"), "player-2", [3, 1, 5]);
+
+    expect(position(game, "player-2")).toBe(5);
+    expect(entrant(game, "player-1").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("双方掷出 1 比 5"))).toBe(true);
+  });
+
+  it("Duelist wins ties but can also lose duels", () => {
+    let game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 2,
+    }), "player-1", [2, 4, 4]);
+
+    expect(position(game, "player-1")).toBe(4);
+    expect(entrant(game, "player-2").skippedTurns).toBe(1);
+
+    game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 2,
+    }), "player-1", [2, 1, 6]);
+
+    expect(position(game, "player-1")).toBe(2);
+    expect(entrant(game, "player-1").skippedTurns).toBe(1);
+    expect(position(game, "player-2")).toBe(4);
   });
 });
 

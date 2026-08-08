@@ -193,6 +193,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     moverBefore,
     moverAfter: moveResult.entrant,
     path: moveResult.path,
+    rng,
     abilityTriggered: mainMove.logs.some((log) => log.type === "ability_trigger"),
   });
   const raceAfterSecondaryFinishes = syncFinishers(afterMove.race);

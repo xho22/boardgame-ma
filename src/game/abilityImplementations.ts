@@ -23,11 +23,16 @@ export function shouldAutoRerollDicemonger(roll: number): boolean {
 }
 
 export function shouldAutoUseFlipFlop(race: { entrants: { playerId: string; position: number; finished: boolean; eliminated?: boolean }[] }, entrant: { playerId: string; position: number }): boolean {
-  return race.entrants.some(
+  const activeOpponents = race.entrants.filter(
     (candidate) =>
       candidate.playerId !== entrant.playerId &&
       !candidate.finished &&
-      !candidate.eliminated &&
-      candidate.position > entrant.position,
+      !candidate.eliminated,
   );
+
+  if (activeOpponents.length <= 1) {
+    return false;
+  }
+
+  return activeOpponents.some((candidate) => candidate.position > entrant.position);
 }

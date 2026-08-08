@@ -56,6 +56,7 @@ type ResolveAfterMoveOptions = {
   moverBefore: Entrant;
   moverAfter: Entrant;
   path: number[];
+  rng: Rng;
   abilityTriggered: boolean;
 };
 
@@ -202,7 +203,10 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
     };
   }
 
-  if (key === "warp_swap_instead_main_move" && (choice.useFlipFlopSwap ?? true) && shouldAutoUseFlipFlop(workingRace, workingEntrant)) {
+  if (
+    key === "warp_swap_instead_main_move" &&
+    (choice.useFlipFlopSwap === true || ((choice.useFlipFlopSwap ?? true) && shouldAutoUseFlipFlop(workingRace, workingEntrant)))
+  ) {
     const target = findLeaderOther(workingRace, workingEntrant);
 
     if (target) {
@@ -369,6 +373,7 @@ export function resolveAfterMove({
   moverBefore,
   moverAfter,
   path,
+  rng,
   abilityTriggered,
 }: ResolveAfterMoveOptions): AfterMoveResolution {
   const logs: AbilityLog[] = [];
@@ -377,6 +382,7 @@ export function resolveAfterMove({
   const moverKey = getEffectiveImplementationKey(game, race, moverAfter);
   const passedSpaces = getPassedSpaces(moverBefore.position, moverAfter.position);
   const movedOutFromSharedStart = moverAfter.position > moverBefore.position;
+  let didAnyAbilityTrigger = abilityTriggered;
 
   const hugeBaby = workingRace.entrants.find(
     (entrant) =>
@@ -399,6 +405,7 @@ export function resolveAfterMove({
       type: "ability_trigger",
       message: `${describeEntrant(game, hugeBaby)} 挡住格子，将${describeEntrant(game, moverAfter)}推回到 ${pushedPosition}。`,
     });
+    didAnyAbilityTrigger = true;
   }
 
   for (const entrant of workingRace.entrants) {
@@ -420,6 +427,7 @@ export function resolveAfterMove({
         type: "status_added",
         message: `${describeEntrant(game, entrant)} 在经过判定中绊倒了${describeEntrant(game, moverAfter)}。`,
       });
+      didAnyAbilityTrigger = true;
     }
 
     if (key === "follow_same_space_mover" && entrant.position === moverBefore.position && path.length > 0) {
@@ -452,12 +460,13 @@ export function resolveAfterMove({
       ) {
         const moved = moveEntrantBackward(entrant, 2).entrant;
         workingRace = replaceEntrant(workingRace, moved);
-        logs.push({
-          type: "movement",
-          message: `${describeEntrant(game, moverAfter)} 经过${describeEntrant(game, entrant)}，将其推回到 ${moved.position}。`,
-        });
-      }
+      logs.push({
+        type: "movement",
+        message: `${describeEntrant(game, moverAfter)} 经过${describeEntrant(game, entrant)}，将其推回到 ${moved.position}。`,
+      });
+      didAnyAbilityTrigger = true;
     }
+  }
   }
 
   const shared = path.length > 0 ? workingRace.entrants.filter(
@@ -479,11 +488,12 @@ export function resolveAfterMove({
           ...current,
           skippedTurns: current.skippedTurns + 1,
         }));
-        logs.push({
-          type: "status_added",
-          message: `${describeEntrant(game, entrant)} 在同格停留时绊倒了${describeEntrant(game, moverCurrent)}。`,
-        });
-      }
+      logs.push({
+        type: "status_added",
+        message: `${describeEntrant(game, entrant)} 在同格停留时绊倒了${describeEntrant(game, moverCurrent)}。`,
+      });
+      didAnyAbilityTrigger = true;
+    }
     }
 
     if (moverKey === "trip_on_shared_stop") {
@@ -497,19 +507,7 @@ export function resolveAfterMove({
         type: "status_added",
         message: `${describeEntrant(game, moverCurrent)} 在同格停留时绊倒了${shared.map((entrant) => describeEntrant(game, entrant)).join("、")}。`,
       });
-    }
-
-    if (moverKey === "duel_on_shared_space") {
-      const opponent = shared[0];
-      workingRace = updateEntrant(workingRace, opponent.id, (current) => ({
-        ...current,
-        skippedTurns: current.skippedTurns + 1,
-      }));
-      workingRace = moveEntrantInRace(workingRace, moverAfter.id, 2);
-      logs.push({
-        type: "ability_trigger",
-        message: `${describeEntrant(game, moverCurrent)} 赢得自动决斗，移动 2 格，并绊倒${describeEntrant(game, opponent)}。`,
-      });
+      didAnyAbilityTrigger = true;
     }
 
     if (moverKey === "eliminate_single_shared_racer" && shared.length === 1) {
@@ -521,6 +519,48 @@ export function resolveAfterMove({
         type: "ability_trigger",
         message: `${describeEntrant(game, moverCurrent)} 将${describeEntrant(game, shared[0])}移出本场比赛。`,
       });
+      didAnyAbilityTrigger = true;
+    }
+  }
+
+  const duelists =
+    path.length > 0
+      ? workingRace.entrants.filter(
+          (entrant) =>
+            !entrant.finished &&
+            !entrant.eliminated &&
+            entrant.position === moverAfter.position &&
+            getEffectiveImplementationKey(game, workingRace, entrant) === "duel_on_shared_space",
+        )
+      : [];
+
+  if (duelists.length > 0) {
+    const duelist = duelists[0];
+    const opponent = workingRace.entrants.find(
+      (entrant) =>
+        entrant.id !== duelist.id &&
+        !entrant.finished &&
+        !entrant.eliminated &&
+        entrant.position === duelist.position,
+    );
+
+    if (opponent) {
+      const duelistRoll = rng.rollDie(6);
+      const opponentRoll = rng.rollDie(6);
+      const duelistWins = duelistRoll >= opponentRoll;
+      const winner = duelistWins ? duelist : opponent;
+      const loser = duelistWins ? opponent : duelist;
+
+      workingRace = updateEntrant(workingRace, loser.id, (current) => ({
+        ...current,
+        skippedTurns: current.skippedTurns + 1,
+      }));
+      workingRace = moveEntrantInRace(workingRace, winner.id, 2);
+      logs.push({
+        type: "ability_trigger",
+        message: `${describeEntrant(game, duelist)} 发起自动决斗，对阵${describeEntrant(game, opponent)}；双方掷出 ${duelistRoll} 比 ${opponentRoll}，${describeEntrant(game, winner)}获胜并前进 2 格，${describeEntrant(game, loser)}被绊倒。`,
+      });
+      didAnyAbilityTrigger = true;
     }
   }
 
@@ -536,6 +576,7 @@ export function resolveAfterMove({
         type: "ability_trigger",
         message: `${describeEntrant(game, romantic)} 看到一对选手同格，移动 2 格。`,
       });
+      didAnyAbilityTrigger = true;
     }
   }
 
@@ -550,10 +591,11 @@ export function resolveAfterMove({
         type: "ability_trigger",
         message: `${describeEntrant(game, heckler)} 嘲讽短移动回合，移动 2 格。`,
       });
+      didAnyAbilityTrigger = true;
     }
   }
 
-  if (abilityTriggered) {
+  if (didAnyAbilityTrigger) {
     for (const scoocher of workingRace.entrants) {
       if (
         getEffectiveImplementationKey(game, workingRace, scoocher) === "move_one_on_other_power" &&
@@ -562,11 +604,11 @@ export function resolveAfterMove({
         !scoocher.eliminated
       ) {
         workingRace = moveEntrantInRace(workingRace, scoocher.id, 1);
-        logs.push({
-          type: "ability_trigger",
-          message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
-        });
-      }
+      logs.push({
+        type: "ability_trigger",
+        message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
+      });
+    }
     }
   }
 
@@ -689,7 +731,9 @@ function applyBeforeMainMove(
           position:
             candidate.position < party.position
               ? candidate.position + 1
-              : Math.max(0, candidate.position - 1),
+              : candidate.position > party.position
+                ? Math.max(0, candidate.position - 1)
+                : candidate.position,
         };
       }),
     };
