@@ -65,6 +65,7 @@ const race: RaceState = {
   round: 1,
   previousFinalMoveValue: null,
   pendingReactions: [],
+  pendingTurnState: null,
   status: "active",
 };
 

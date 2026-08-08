@@ -30,6 +30,7 @@ export function App() {
     setMastermindPrediction,
     revealRace,
     rollDice,
+    confirmReaction,
     beginNextRace,
   } = useGameStore();
 
@@ -69,7 +70,7 @@ export function App() {
   }
 
   if (view === "racing" && game) {
-    return <RaceScreen game={game} onRoll={rollDice} />;
+    return <RaceScreen game={game} onConfirmReaction={confirmReaction} onRoll={rollDice} />;
   }
 
   if (view === "raceResults" && game) {

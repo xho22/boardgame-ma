@@ -624,6 +624,8 @@ type SelectionState = {
 当前主动能力交互状态：
 
 - before main move：Legs、Flip Flop、Cheerleader、Hypnotist、Third Wheel 已有本地 UI 选择。
+- pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
+- after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
 - after roll：Magician、Rocket Scientist 当前使用回合开始前策略选项；后续应升级为真正掷骰后暂停确认。
 - on other roll：Dicemonger、Inchworm、Lackey 当前仍是本地自动反应；在线多人阶段应通过 `pendingReactions` 或同类状态补确认流。
 

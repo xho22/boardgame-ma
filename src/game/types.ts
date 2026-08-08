@@ -127,6 +127,7 @@ export type RaceState = {
   round: number;
   previousFinalMoveValue: number | null;
   pendingReactions: ReactionPrompt[];
+  pendingTurnState: PendingTurnState | null;
   status: "revealing" | "active" | "complete";
 };
 
@@ -165,6 +166,10 @@ export type ReactionPrompt = {
   playerId: string;
   athleteId: string;
   promptType: "optionalPower" | "reroll" | "duel";
+  sourceEntrantId?: string;
+  targetEntrantId?: string;
+  title?: string;
+  description?: string;
 };
 
 export type MainMoveChoice = {
@@ -175,6 +180,12 @@ export type MainMoveChoice = {
   useThirdWheel?: boolean;
   useRocketScientistDouble?: boolean;
   magicianMaxRerolls?: 0 | 1 | 2;
+  geniusGuess?: 1 | 2 | 3 | 4 | 5 | 6;
+};
+
+export type PendingTurnState = {
+  extraTurnPlayerId: string | null;
+  nextTurnPlayerId: string | null;
 };
 
 export type RaceSummary = {

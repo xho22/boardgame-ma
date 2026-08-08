@@ -162,9 +162,16 @@ describe("phase 8 abilities", () => {
 
     expect(position(game, "player-2")).toBe(0);
     expect(entrant(game, "player-1").skippedTurns).toBeGreaterThanOrEqual(1);
-    expect(messages(game).some((message) => message.includes("被经过"))).toBe(true);
+    expect(messages(game).some((message) => message.includes("经过判定"))).toBe(true);
     expect(messages(game).some((message) => message.includes("推回"))).toBe(true);
     expect(messages(game).some((message) => message.includes("同格停留"))).toBe(true);
+
+    const sharedStartBanana = roll(setPositions(createRace(["Banana", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 0,
+    }, "player-2"), "player-2", [3]);
+    expect(entrant(sharedStartBanana, "player-2").skippedTurns).toBeGreaterThanOrEqual(1);
+    expect(messages(sharedStartBanana).some((message) => message.includes("经过判定"))).toBe(true);
   });
 
   it("Cheerleader, Lovable Loser, Heckler, Romantic, Scoocher, and Suckerfish can trigger", () => {
@@ -173,9 +180,11 @@ describe("phase 8 abilities", () => {
       "player-2": 0,
       "player-3": 4,
       "player-4": 8,
-    }), "player-1", [1]);
+    }), "player-1", [1], { useCheerleader: true });
 
     expect(messages(game).some((message) => message.includes("啦啦队长"))).toBe(true);
+    expect(position(game, "player-2")).toBe(2);
+    expect(position(game, "player-1")).toBe(5);
 
     game = roll(setPositions(createRace(["Lovable Loser", "Baba Yaga"]), {
       "player-1": 0,
@@ -200,7 +209,19 @@ describe("phase 8 abilities", () => {
     expect(position(game, "player-2")).toBe(1);
 
     game = roll(createRace(["Alchemist", "Suckerfish"]), "player-1", [3]);
+    expect(requireRace(game).pendingReactions).toHaveLength(1);
+    game = reduceGameCommand(
+      game,
+      {
+        type: "CONFIRM_REACTION",
+        playerId: "player-2",
+        reactionId: requireRace(game).pendingReactions[0].id,
+        accepted: true,
+      },
+      scriptedRng([1]),
+    );
     expect(position(game, "player-2")).toBe(position(game, "player-1"));
+    expect(messages(game).some((message) => message.includes("跟随"))).toBe(true);
   });
 
   it("Dicemonger, Inchworm, and Lackey react to other racers' rolls", () => {
@@ -256,7 +277,7 @@ describe("phase 9 abilities", () => {
     expect(position(game, "player-1")).toBe(2);
     expect(position(game, "player-2")).toBe(5);
 
-    game = roll(createRace(["Genius", "Baba Yaga"]), "player-1", [4]);
+    game = roll(createRace(["Genius", "Baba Yaga"]), "player-1", [4], { geniusGuess: 4 });
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-1");
 
     game = roll(setPositions(createRace(["Alchemist", "Huge Baby"]), {
@@ -370,6 +391,23 @@ describe("ability simulation", () => {
 
         if (game.phase === "racing") {
           const race = requireRace(game);
+
+          if (race.pendingReactions.length > 0) {
+            const prompt = race.pendingReactions[0];
+            game = reduceGameCommand(
+              game,
+              {
+                type: "CONFIRM_REACTION",
+                playerId: prompt.playerId,
+                reactionId: prompt.id,
+                accepted: true,
+              },
+              rng,
+            );
+            actions += 1;
+            continue;
+          }
+
           const playerId = race.turnOrder[race.currentTurnIndex];
           game = reduceGameCommand(game, { type: "ROLL_DICE", playerId }, rng);
           actions += 1;

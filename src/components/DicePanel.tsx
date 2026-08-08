@@ -15,6 +15,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
   const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(true);
   const [useRocketDouble, setUseRocketDouble] = useState(true);
   const [magicianMaxRerolls, setMagicianMaxRerolls] = useState<0 | 1 | 2>(2);
+  const [geniusGuess, setGeniusGuess] = useState<"" | 1 | 2 | 3 | 4 | 5 | 6>("");
   const intervalRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
@@ -24,6 +25,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
     setUseBeforeMainAbility(true);
     setUseRocketDouble(true);
     setMagicianMaxRerolls(2);
+    setGeniusGuess("");
   }, [currentEntrant.id, currentPlayer.id, race.previousFinalMoveValue]);
 
   useEffect(() => {
@@ -98,6 +100,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
     useThirdWheel: abilityKey === "warp_to_exactly_two_before_main" ? useBeforeMainAbility : undefined,
     useRocketScientistDouble: abilityKey === "optional_double_roll_then_trip" ? useRocketDouble : undefined,
     magicianMaxRerolls: abilityKey === "reroll_main_move_up_to_two" ? magicianMaxRerolls : undefined,
+    geniusGuess: abilityKey === "predict_roll_extra_turn" && geniusGuess !== "" ? geniusGuess : undefined,
   };
 
   return (
@@ -124,6 +127,46 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
             <strong>绊倒恢复中</strong>
             <span>3 秒后自动进入下一回合</span>
           </div>
+        ) : abilityKey === "cheer_last_place_then_self" ? (
+          <>
+            <div className="ability-choice-actions" aria-label="啦啦队长能力选择">
+              <button className="secondary-button" type="button" onClick={() => startRollAnimation({ ...rollChoice, useCheerleader: false })} disabled={isRolling}>
+                {isRolling ? "掷骰中..." : "直接掷骰"}
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => startRollAnimation({ ...rollChoice, useCheerleader: true })}
+                disabled={isRolling}
+              >
+                先支援最后一名再掷骰
+              </button>
+            </div>
+          </>
+        ) : abilityKey === "predict_roll_extra_turn" ? (
+          <>
+            <label className="ability-select">
+              <span>预测点数</span>
+              <select
+                value={geniusGuess}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  setGeniusGuess(nextValue === "" ? "" : (Number(nextValue) as 1 | 2 | 3 | 4 | 5 | 6));
+                }}
+              >
+                <option value="">不预测</option>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+                <option value={5}>5</option>
+                <option value={6}>6</option>
+              </select>
+            </label>
+            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+              {isRolling ? "掷骰中..." : "猜好后掷骰"}
+            </button>
+          </>
         ) : abilityKey === "main_move_fixed_five_optional" ? (
           <div className="ability-choice-actions" aria-label="长腿能力选择">
             <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
@@ -151,8 +194,7 @@ export function DicePanel({ race, currentPlayer, currentEntrant, onRoll }: DiceP
               </button>
             ) : null}
 
-            {abilityKey === "cheer_last_place_then_self" ||
-            abilityKey === "warp_racer_to_self_before_main" ||
+            {abilityKey === "warp_racer_to_self_before_main" ||
             abilityKey === "warp_to_exactly_two_before_main" ? (
               <label className="ability-toggle">
                 <input

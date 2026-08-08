@@ -5,10 +5,11 @@ import type { GameState, MainMoveChoice } from "../game/types";
 
 type RaceScreenProps = {
   game: GameState;
+  onConfirmReaction: (playerId: string, reactionId: string, accepted: boolean) => void;
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
-export function RaceScreen({ game, onRoll }: RaceScreenProps) {
+export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps) {
   const race = game.activeRace;
 
   if (!race) {
@@ -18,6 +19,8 @@ export function RaceScreen({ game, onRoll }: RaceScreenProps) {
   const currentEntrantId = race.turnOrder[race.currentTurnIndex];
   const currentEntrant = race.entrants.find((entrant) => entrant.id === currentEntrantId);
   const currentPlayer = game.players.find((player) => player.id === currentEntrant?.playerId);
+  const pendingReaction = race.pendingReactions[0];
+  const reactionPlayer = game.players.find((player) => player.id === pendingReaction?.playerId);
 
   if (!currentPlayer || !currentEntrant) {
     return null;
@@ -43,7 +46,36 @@ export function RaceScreen({ game, onRoll }: RaceScreenProps) {
       <Track game={game} race={race} />
 
       <div className="race-control-grid">
-        <DicePanel race={race} currentPlayer={currentPlayer} currentEntrant={currentEntrant} onRoll={onRoll} />
+        {pendingReaction ? (
+          <section className="dice-panel" aria-label="Reaction prompt">
+            <div className="current-racer-copy reaction-copy">
+              <p className="eyebrow">Reaction</p>
+              <h2>{reactionPlayer?.name ?? pendingReaction.playerId}</h2>
+              <h3>{pendingReaction.title ?? "能力确认"}</h3>
+              <p>{pendingReaction.description ?? "请决定是否使用这个能力。"}</p>
+            </div>
+            <div className="ability-choice-panel">
+              <div className="ability-choice-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, false)}
+                >
+                  放弃
+                </button>
+                <button
+                  className="primary-button"
+                  type="button"
+                  onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, true)}
+                >
+                  使用能力
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <DicePanel race={race} currentPlayer={currentPlayer} currentEntrant={currentEntrant} onRoll={onRoll} />
+        )}
         <GameLog entries={game.log} />
       </div>
     </main>

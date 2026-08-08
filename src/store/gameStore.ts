@@ -24,6 +24,7 @@ type GameStore = {
   setMastermindPrediction: (athleteId: string, predictedAthleteId: string) => void;
   revealRace: () => void;
   rollDice: (playerId: string, choice?: MainMoveChoice) => void;
+  confirmReaction: (playerId: string, reactionId: string, accepted: boolean) => void;
   beginNextRace: () => void;
 };
 
@@ -165,6 +166,20 @@ export const useGameStore = create<GameStore>((set) => ({
       }
 
       const game = reduceGameCommand(state.game, { type: "ROLL_DICE", playerId, choice }, rngForGame(state.game));
+      saveGame(game);
+      return { game, hasSavedGame: true, view: viewFromGame(game) };
+    }),
+  confirmReaction: (playerId, reactionId, accepted) =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = reduceGameCommand(
+        state.game,
+        { type: "CONFIRM_REACTION", playerId, reactionId, accepted },
+        rngForGame(state.game),
+      );
       saveGame(game);
       return { game, hasSavedGame: true, view: viewFromGame(game) };
     }),

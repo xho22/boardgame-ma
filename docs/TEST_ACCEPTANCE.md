@@ -226,6 +226,8 @@ npm run lint
 - 最新日志位于最上方，日志序号保留真实追加顺序。
 - 日志超过可视区域后可以滚动查看历史。
 - before main move 可选能力有明确交互：Legs、Flip Flop、Cheerleader、Hypnotist、Third Wheel。
+- Genius 必须在掷骰前提供主动猜点流程；猜中才获得额外回合。
+- Suckerfish 必须在同格目标移动后弹出是否跟随的确认；确认完成后比赛再继续。
 - after-roll 选择类能力若尚未实现暂停确认，需要在计划文档中保留明确缺口。
 
 ### 阶段 11：在线房间技术验证

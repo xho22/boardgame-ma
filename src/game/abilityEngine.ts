@@ -325,12 +325,19 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
       });
     }
 
-    if (key === "predict_roll_extra_turn" && dieRoll === 4) {
-      extraTurnPlayerId = entrant.id;
-      logs.push({
-        type: "ability_trigger",
-        message: `${racerName} 使用天才并猜中 4，获得一个额外回合。`,
-      });
+    if (key === "predict_roll_extra_turn" && choice.geniusGuess) {
+      if (choice.geniusGuess === dieRoll) {
+        extraTurnPlayerId = entrant.id;
+        logs.push({
+          type: "ability_trigger",
+          message: `${racerName} 预测点数 ${choice.geniusGuess} 并成功命中，获得一个额外回合。`,
+        });
+      } else {
+        logs.push({
+          type: "ability_trigger",
+          message: `${racerName} 预测点数 ${choice.geniusGuess}，实际为 ${dieRoll}，未命中。`,
+        });
+      }
     }
 
     if (rollReaction.nextTurnPlayerId) {
@@ -369,6 +376,7 @@ export function resolveAfterMove({
   let nextPlayers = players;
   const moverKey = getEffectiveImplementationKey(game, race, moverAfter);
   const passedSpaces = getPassedSpaces(moverBefore.position, moverAfter.position);
+  const movedOutFromSharedStart = moverAfter.position > moverBefore.position;
 
   const hugeBaby = workingRace.entrants.find(
     (entrant) =>
@@ -400,26 +408,37 @@ export function resolveAfterMove({
 
     const key = getEffectiveImplementationKey(game, workingRace, entrant);
 
-    if (key === "trip_passing_racer" && passedSpaces.includes(entrant.position)) {
+    if (
+      key === "trip_passing_racer" &&
+      (passedSpaces.includes(entrant.position) || (entrant.position === moverBefore.position && movedOutFromSharedStart))
+    ) {
       workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
         ...current,
         skippedTurns: current.skippedTurns + 1,
       }));
       logs.push({
         type: "status_added",
-        message: `${describeEntrant(game, entrant)} 在被经过时绊倒了${describeEntrant(game, moverAfter)}。`,
+        message: `${describeEntrant(game, entrant)} 在经过判定中绊倒了${describeEntrant(game, moverAfter)}。`,
       });
     }
 
     if (key === "follow_same_space_mover" && entrant.position === moverBefore.position && path.length > 0) {
-      workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
-        ...current,
-        position: moverAfter.position,
-      }));
-      logs.push({
-        type: "ability_trigger",
-        message: `${describeEntrant(game, entrant)} 跟随${describeEntrant(game, moverAfter)}移动到 ${moverAfter.position}。`,
-      });
+      workingRace = {
+        ...workingRace,
+        pendingReactions: [
+          ...workingRace.pendingReactions,
+          {
+            id: `follow:${entrant.id}:${moverAfter.id}:${workingRace.round}:${workingRace.finishers.length}`,
+            playerId: entrant.playerId,
+            athleteId: entrant.athleteId,
+            promptType: "optionalPower",
+            sourceEntrantId: entrant.id,
+            targetEntrantId: moverAfter.id,
+            title: "吸盘鱼跟随",
+            description: `${describeEntrant(game, entrant)} 可以跟随${describeEntrant(game, moverAfter)}移动到 ${moverAfter.position}。`,
+          },
+        ],
+      };
     }
   }
 
@@ -967,6 +986,7 @@ function emptyRace(game: GameState): RaceState {
     round: 1,
     previousFinalMoveValue: null,
     pendingReactions: [],
+    pendingTurnState: null,
     status: "active",
   };
 }

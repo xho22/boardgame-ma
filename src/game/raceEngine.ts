@@ -29,6 +29,8 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
       return beginRaceFromSelection(game);
     case "ROLL_DICE":
       return rollForCurrentPlayer(game, command.playerId, rng, command.choice);
+    case "CONFIRM_REACTION":
+      return confirmReaction(game, command.playerId, command.reactionId, command.accepted);
     case "BEGIN_NEXT_RACE":
       return beginNextRace(game);
     case "FINISH_GAME":
@@ -40,7 +42,6 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
         revision: game.revision + 1,
       };
     case "USE_ABILITY":
-    case "CONFIRM_REACTION":
       return game;
   }
 }
@@ -103,6 +104,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
     round: 1,
     previousFinalMoveValue: null,
     pendingReactions: [],
+    pendingTurnState: null,
     status: "active",
   };
 
@@ -211,7 +213,16 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
   const gameWithMove = {
     ...game,
     players: afterMove.players,
-    activeRace: raceAfterSecondaryFinishes.race,
+    activeRace: {
+      ...raceAfterSecondaryFinishes.race,
+      pendingTurnState:
+        raceAfterSecondaryFinishes.race.pendingReactions.length > 0
+          ? {
+              extraTurnPlayerId: mainMove.extraTurnPlayerId,
+              nextTurnPlayerId: mainMove.nextTurnPlayerId,
+            }
+          : null,
+    },
     log: [
       ...game.log,
       ...baseLogs.map((log, index) => createLog(game, log.type, log.message, index)),
@@ -232,6 +243,10 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     revision: game.revision + 1,
   };
 
+  if (raceAfterSecondaryFinishes.race.pendingReactions.length > 0) {
+    return gameWithMove;
+  }
+
   if (shouldCompleteRace(gameWithMove, raceAfterSecondaryFinishes.race)) {
     return completeRace(gameWithMove);
   }
@@ -245,6 +260,109 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
   }
 
   return advanceTurn(gameWithMove, raceAfterSecondaryFinishes.race);
+}
+
+function confirmReaction(game: GameState, playerId: string, reactionId: string, accepted: boolean): GameState {
+  const race = requireActiveRace(game);
+  const prompt = race.pendingReactions.find((candidate) => candidate.id === reactionId);
+
+  if (!prompt) {
+    throw new Error(`Missing reaction prompt: ${reactionId}`);
+  }
+
+  if (prompt.playerId !== playerId) {
+    throw new Error(`Reaction ${reactionId} belongs to ${prompt.playerId}, not ${playerId}`);
+  }
+
+  let workingRace: RaceState = {
+    ...race,
+    pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== reactionId),
+  };
+  const reactionLogs: GameLogEntry[] = [];
+
+  if (prompt.sourceEntrantId && prompt.targetEntrantId) {
+    const reactor = workingRace.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId);
+    const target = workingRace.entrants.find((entrant) => entrant.id === prompt.targetEntrantId);
+
+    if (reactor && target) {
+      if (accepted) {
+        const reachesFinish = target.position >= workingRace.trackLength;
+        const followRank = reachesFinish ? workingRace.finishers.length + 1 : null;
+        workingRace = {
+          ...workingRace,
+          entrants: workingRace.entrants.map((entrant) =>
+            entrant.id === reactor.id
+              ? {
+                  ...entrant,
+                  position: target.position,
+                  finished: reachesFinish,
+                  finishRank: followRank,
+                }
+              : entrant,
+          ),
+          finishers:
+            reachesFinish && !workingRace.finishers.some((finisher) => finisher.entrantId === reactor.id)
+              ? [
+                  ...workingRace.finishers,
+                  {
+                    entrantId: reactor.id,
+                    playerId: reactor.playerId,
+                    athleteId: reactor.athleteId,
+                    rank: followRank ?? workingRace.finishers.length + 1,
+                  },
+                ]
+              : workingRace.finishers,
+        };
+        reactionLogs.push(
+          createLog(game, "ability_trigger", `${describeRaceEntrant(game, reactor)} 跟随${describeRaceEntrant(game, target)}移动到 ${target.position}。`, 0),
+        );
+        if (reachesFinish && followRank !== null) {
+          reactionLogs.push(
+            createLog(game, "finish", `${describeRaceEntrant(game, reactor)} 以第 ${followRank} 名冲线。`, 1),
+          );
+        }
+      } else {
+        reactionLogs.push(
+          createLog(game, "ability_trigger", `${describeRaceEntrant(game, reactor)} 放弃跟随${describeRaceEntrant(game, target)}。`, 0),
+        );
+      }
+    }
+  }
+
+  let nextGame: GameState = {
+    ...game,
+    activeRace: workingRace,
+    log: [...game.log, ...reactionLogs],
+    revision: game.revision + 1,
+  };
+
+  if (workingRace.pendingReactions.length > 0) {
+    return nextGame;
+  }
+
+  const continuation = race.pendingTurnState;
+  workingRace = {
+    ...workingRace,
+    pendingTurnState: null,
+  };
+  nextGame = {
+    ...nextGame,
+    activeRace: workingRace,
+  };
+
+  if (shouldCompleteRace(nextGame, workingRace)) {
+    return completeRace(nextGame);
+  }
+
+  if (continuation?.extraTurnPlayerId) {
+    return setNextTurn(nextGame, workingRace, continuation.extraTurnPlayerId);
+  }
+
+  if (continuation?.nextTurnPlayerId) {
+    return setNextTurn(nextGame, workingRace, continuation.nextTurnPlayerId);
+  }
+
+  return advanceTurn(nextGame, workingRace);
 }
 
 export function beginNextRace(game: GameState): GameState {

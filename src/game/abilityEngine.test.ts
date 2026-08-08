@@ -164,4 +164,20 @@ describe("phase 7 abilities", () => {
     expect(entrantPosition(game, "player-1")).toBe(3);
     expect(game.activeRace?.entrants.find((entrant) => entrant.playerId === "player-1")?.skippedTurns).toBe(0);
   });
+
+  it("Genius gains an extra turn only when the guessed die matches", () => {
+    let game = roll(createRace("Genius", "Baba Yaga"), "player-1", [4], {
+      geniusGuess: 4,
+    });
+
+    expect(game.activeRace?.turnOrder[game.activeRace.currentTurnIndex]).toBe("player-1");
+    expect(latestMessages(game).some((message) => message.includes("成功命中"))).toBe(true);
+
+    game = roll(createRace("Genius", "Baba Yaga"), "player-1", [4], {
+      geniusGuess: 3,
+    });
+
+    expect(game.activeRace?.turnOrder[game.activeRace.currentTurnIndex]).toBe("player-2");
+    expect(latestMessages(game).some((message) => message.includes("未命中"))).toBe(true);
+  });
 });
