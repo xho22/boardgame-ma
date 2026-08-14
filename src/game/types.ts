@@ -176,9 +176,12 @@ export type ReactionPrompt = {
 export type MainMoveChoice = {
   useLegsFixedMove?: boolean;
   useFlipFlopSwap?: boolean;
+  flipFlopTargetEntrantId?: string;
   useCheerleader?: boolean;
   useHypnotist?: boolean;
+  hypnotistTargetEntrantId?: string;
   useThirdWheel?: boolean;
+  thirdWheelTargetPosition?: number;
   useRocketScientistDouble?: boolean;
   magicianMaxRerolls?: 0 | 1 | 2;
   geniusGuess?: 1 | 2 | 3 | 4 | 5 | 6;

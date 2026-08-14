@@ -224,6 +224,45 @@ describe("phase 8 abilities", () => {
     expect(messages(game).some((message) => message.includes("跟随"))).toBe(true);
   });
 
+  it("Cheerleader supports only a unique last racer and resolves Banana while doing so", () => {
+    const game = roll(setPositions(createRace(["Cheerleader", "Alchemist", "Banana"]), {
+      "player-1": 3,
+      "player-2": 0,
+      "player-3": 1,
+    }), "player-1", [1], { useCheerleader: true });
+
+    expect(position(game, "player-2")).toBe(2);
+    expect(entrant(game, "player-2").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("经过判定"))).toBe(true);
+  });
+
+  it("Suckerfish queues every shared racer and keeps resolving follow movements", () => {
+    let game = roll(createRace(["Alchemist", "Suckerfish", "Suckerfish"]), "player-1", [3]);
+
+    expect(requireRace(game).pendingReactions).toHaveLength(2);
+
+    const firstPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: firstPrompt.playerId, reactionId: firstPrompt.id, accepted: true },
+      scriptedRng([1]),
+    );
+    expect(requireRace(game).pendingReactions).toHaveLength(2);
+
+    while (requireRace(game).pendingReactions.length > 0) {
+      const nextPrompt = requireRace(game).pendingReactions[0];
+      game = reduceGameCommand(
+        game,
+        { type: "CONFIRM_REACTION", playerId: nextPrompt.playerId, reactionId: nextPrompt.id, accepted: true },
+        scriptedRng([1]),
+      );
+    }
+
+    expect(requireRace(game).pendingReactions).toHaveLength(0);
+    expect(position(game, "player-2")).toBe(3);
+    expect(position(game, "player-3")).toBe(3);
+  });
+
   it("Dicemonger, Inchworm, and Lackey react to other racers' rolls", () => {
     let game = roll(createRace(["Alchemist", "Dicemonger"]), "player-1", [2, 6]);
 
@@ -277,6 +316,14 @@ describe("phase 9 abilities", () => {
     expect(position(game, "player-1")).toBe(2);
     expect(position(game, "player-2")).toBe(5);
 
+    game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga", "Banana"]), {
+      "player-1": 5,
+      "player-2": 2,
+      "player-3": 8,
+    }), "player-1", [1], { useFlipFlopSwap: true, flipFlopTargetEntrantId: "player-2" });
+    expect(position(game, "player-1")).toBe(2);
+    expect(position(game, "player-2")).toBe(5);
+
     game = roll(createRace(["Genius", "Baba Yaga"]), "player-1", [4], { geniusGuess: 4 });
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-1");
 
@@ -291,6 +338,13 @@ describe("phase 9 abilities", () => {
       "player-2": 6,
     }), "player-1", [1]);
     expect(position(game, "player-2")).toBe(0);
+
+    game = roll(setPositions(createRace(["Hypnotist", "Baba Yaga", "Banana"]), {
+      "player-1": 0,
+      "player-2": 6,
+      "player-3": 4,
+    }), "player-1", [1], { useHypnotist: true, hypnotistTargetEntrantId: "player-3" });
+    expect(position(game, "player-3")).toBe(0);
 
     game = roll(setPositions(createRace(["Leaptoad", "Baba Yaga"]), {
       "player-1": 0,
@@ -348,6 +402,15 @@ describe("phase 9 abilities", () => {
       "player-3": 4,
     }), "player-1", [1]);
     expect(position(game, "player-1")).toBe(5);
+
+    game = roll(setPositions(createRace(["Third Wheel", "Baba Yaga", "Banana", "Alchemist", "Legs"]), {
+      "player-1": 0,
+      "player-2": 4,
+      "player-3": 4,
+      "player-4": 7,
+      "player-5": 7,
+    }), "player-1", [1], { useThirdWheel: true, thirdWheelTargetPosition: 7 });
+    expect(position(game, "player-1")).toBe(8);
 
     game = roll(createRace(["Twin", "Baba Yaga"], 30, "Alchemist"), "player-1", [1]);
     expect(position(game, "player-1")).toBe(4);

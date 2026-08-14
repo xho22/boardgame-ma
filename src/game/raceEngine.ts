@@ -30,7 +30,7 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
     case "ROLL_DICE":
       return rollForCurrentPlayer(game, command.playerId, rng, command.choice);
     case "CONFIRM_REACTION":
-      return confirmReaction(game, command.playerId, command.reactionId, command.accepted);
+      return confirmReaction(game, command.playerId, command.reactionId, command.accepted, rng);
     case "BEGIN_NEXT_RACE":
       return beginNextRace(game);
     case "FINISH_GAME":
@@ -263,7 +263,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
   return advanceTurn(gameWithMove, raceAfterSecondaryFinishes.race);
 }
 
-function confirmReaction(game: GameState, playerId: string, reactionId: string, accepted: boolean): GameState {
+function confirmReaction(game: GameState, playerId: string, reactionId: string, accepted: boolean, rng: Rng): GameState {
   const race = requireActiveRace(game);
   const prompt = race.pendingReactions.find((candidate) => candidate.id === reactionId);
 
@@ -280,6 +280,7 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
     pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== reactionId),
   };
   const reactionLogs: GameLogEntry[] = [];
+  let reactionPlayers = game.players;
 
   if (prompt.sourceEntrantId && prompt.targetEntrantId) {
     const reactor = workingRace.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId);
@@ -289,6 +290,11 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
       if (accepted) {
         const reachesFinish = target.position >= workingRace.trackLength;
         const followRank = reachesFinish ? workingRace.finishers.length + 1 : null;
+        const reactorBefore = reactor;
+        const followPath = Array.from(
+          { length: Math.max(0, target.position - reactor.position) },
+          (_, index) => reactor.position + index + 1,
+        );
         workingRace = {
           ...workingRace,
           entrants: workingRace.entrants.map((entrant) =>
@@ -322,6 +328,23 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
             createLog(game, "finish", `${describeRaceEntrant(game, reactor)} 以第 ${followRank} 名冲线。`, 1),
           );
         }
+
+        const reactorAfter = workingRace.entrants.find((entrant) => entrant.id === reactor.id) ?? reactor;
+        const afterFollow = resolveAfterMove({
+          game: { ...game, players: reactionPlayers, activeRace: workingRace },
+          race: workingRace,
+          players: reactionPlayers,
+          moverBefore: reactorBefore,
+          moverAfter: reactorAfter,
+          path: followPath,
+          rng,
+          abilityTriggered: true,
+        });
+        workingRace = afterFollow.race;
+        reactionPlayers = afterFollow.players;
+        reactionLogs.push(
+          ...afterFollow.logs.map((log, index) => createLog(game, log.type, log.message, reactionLogs.length + index)),
+        );
       } else {
         reactionLogs.push(
           createLog(game, "ability_trigger", `${describeRaceEntrant(game, reactor)} 放弃跟随${describeRaceEntrant(game, target)}。`, 0),
@@ -330,8 +353,15 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
     }
   }
 
+  const syncedFollowRace = syncFinishers(workingRace);
+  workingRace = syncedFollowRace.race;
+  reactionLogs.push(
+    ...syncedFollowRace.logs.map((log, index) => createLog(game, log.type, log.message, reactionLogs.length + index)),
+  );
+
   let nextGame: GameState = {
     ...game,
+    players: reactionPlayers,
     activeRace: workingRace,
     log: [...game.log, ...reactionLogs],
     revision: game.revision + 1,

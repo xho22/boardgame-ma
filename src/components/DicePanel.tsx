@@ -13,7 +13,9 @@ type DicePanelProps = {
 export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
-  const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(true);
+  const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(false);
+  const [selectedTargetEntrantId, setSelectedTargetEntrantId] = useState("");
+  const [selectedThirdWheelPosition, setSelectedThirdWheelPosition] = useState<number | "">("");
   const [useRocketDouble, setUseRocketDouble] = useState(true);
   const [magicianMaxRerolls, setMagicianMaxRerolls] = useState<0 | 1 | 2>(2);
   const [geniusGuess, setGeniusGuess] = useState<"" | 1 | 2 | 3 | 4 | 5 | 6>("");
@@ -38,7 +40,9 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
   useEffect(() => {
     setIsRolling(false);
     setRollingValue(race.previousFinalMoveValue ?? 1);
-    setUseBeforeMainAbility(true);
+    setUseBeforeMainAbility(false);
+    setSelectedTargetEntrantId("");
+    setSelectedThirdWheelPosition("");
     setUseRocketDouble(true);
     setMagicianMaxRerolls(2);
     setGeniusGuess("");
@@ -95,20 +99,54 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
       (entrant) =>
         entrant.id !== currentEntrant.id &&
         !entrant.finished &&
-        !entrant.eliminated &&
-        entrant.position > currentEntrant.position,
+        !entrant.eliminated,
     );
+  const activeOpponents = race.entrants.filter(
+    (entrant) => entrant.id !== currentEntrant.id && !entrant.finished && !entrant.eliminated,
+  );
+  const uniqueLast = (() => {
+    const activeEntrants = race.entrants.filter((entrant) => !entrant.finished && !entrant.eliminated);
+    const lastPosition = Math.min(...activeEntrants.map((entrant) => entrant.position));
+    const lastEntrants = activeEntrants.filter((entrant) => entrant.position === lastPosition);
+
+    return lastEntrants.length === 1 && lastEntrants[0].id !== currentEntrant.id ? lastEntrants[0] : null;
+  })();
+  const thirdWheelSpaces = (() => {
+    const counts = new Map<number, number>();
+
+    for (const entrant of activeOpponents) {
+      counts.set(entrant.position, (counts.get(entrant.position) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .filter(([, count]) => count === 2)
+      .map(([position]) => position)
+      .sort((first, second) => first - second);
+  })();
+  const entrantLabel = (entrant: Entrant) => {
+    const player = race.entrants.find((candidate) => candidate.id === entrant.id);
+    const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+
+    return `${athlete?.displayName ?? entrant.id}（${player?.position ?? entrant.position} 格）`;
+  };
   const rollChoice: MainMoveChoice = {
     useLegsFixedMove: false,
     useFlipFlopSwap: false,
+    flipFlopTargetEntrantId: selectedTargetEntrantId || undefined,
     useCheerleader: abilityKey === "cheer_last_place_then_self" ? useBeforeMainAbility : undefined,
     useHypnotist: abilityKey === "warp_racer_to_self_before_main" ? useBeforeMainAbility : undefined,
+    hypnotistTargetEntrantId: selectedTargetEntrantId || undefined,
     useThirdWheel: abilityKey === "warp_to_exactly_two_before_main" ? useBeforeMainAbility : undefined,
+    thirdWheelTargetPosition: selectedThirdWheelPosition === "" ? undefined : selectedThirdWheelPosition,
     useRocketScientistDouble: abilityKey === "optional_double_roll_then_trip" ? useRocketDouble : undefined,
     magicianMaxRerolls: abilityKey === "reroll_main_move_up_to_two" ? magicianMaxRerolls : undefined,
     geniusGuess: abilityKey === "predict_roll_extra_turn" && geniusGuess !== "" ? geniusGuess : undefined,
     forcedDieRoll: debugMode ? forcedDieRoll : undefined,
   };
+  const needsSelectedTarget =
+    useBeforeMainAbility &&
+    ((abilityKey === "warp_racer_to_self_before_main" && !selectedTargetEntrantId) ||
+      (abilityKey === "warp_to_exactly_two_before_main" && selectedThirdWheelPosition === ""));
 
   return (
     <section className="dice-panel" aria-label="Current turn">
@@ -144,11 +182,12 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
                 className="primary-button"
                 type="button"
                 onClick={() => startRollAnimation({ ...rollChoice, useCheerleader: true })}
-                disabled={isRolling}
+                disabled={isRolling || !uniqueLast}
               >
                 先支援最后一名再掷骰
               </button>
             </div>
+            {!uniqueLast ? <p className="choice-hint">没有唯一的最后一名，本回合不能使用支援。</p> : null}
           </>
         ) : abilityKey === "predict_roll_extra_turn" ? (
           <>
@@ -225,14 +264,27 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
         ) : (
           <>
             {abilityKey === "warp_swap_instead_main_move" && hasFlipFlopTarget ? (
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => useDirectAbility({ useFlipFlopSwap: true })}
-                disabled={isRolling}
-              >
-                使用能力换位
-              </button>
+              <div className="ability-choice-actions">
+                <label className="ability-select">
+                  <span>换位目标</span>
+                  <select value={selectedTargetEntrantId} onChange={(event) => setSelectedTargetEntrantId(event.target.value)}>
+                    <option value="">请选择选手</option>
+                    {activeOpponents.map((entrant) => (
+                      <option key={entrant.id} value={entrant.id}>
+                        {entrantLabel(entrant)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => useDirectAbility({ useFlipFlopSwap: true, flipFlopTargetEntrantId: selectedTargetEntrantId })}
+                  disabled={isRolling || !selectedTargetEntrantId}
+                >
+                  使用能力换位
+                </button>
+              </div>
             ) : null}
 
             {abilityKey === "warp_racer_to_self_before_main" ||
@@ -244,6 +296,35 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
                   onChange={(event) => setUseBeforeMainAbility(event.target.checked)}
                 />
                 本回合使用可选能力
+              </label>
+            ) : null}
+
+            {abilityKey === "warp_racer_to_self_before_main" && useBeforeMainAbility ? (
+              <label className="ability-select">
+                <span>传送目标</span>
+                <select value={selectedTargetEntrantId} onChange={(event) => setSelectedTargetEntrantId(event.target.value)}>
+                  <option value="">请选择选手</option>
+                  {activeOpponents.map((entrant) => (
+                    <option key={entrant.id} value={entrant.id}>
+                      {entrantLabel(entrant)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+
+            {abilityKey === "warp_to_exactly_two_before_main" && useBeforeMainAbility ? (
+              <label className="ability-select">
+                <span>传送格</span>
+                <select
+                  value={selectedThirdWheelPosition}
+                  onChange={(event) => setSelectedThirdWheelPosition(event.target.value === "" ? "" : Number(event.target.value))}
+                >
+                  <option value="">请选择格子</option>
+                  {thirdWheelSpaces.map((position) => (
+                    <option key={position} value={position}>{`${position} 格`}</option>
+                  ))}
+                </select>
               </label>
             ) : null}
 
@@ -289,7 +370,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
               </label>
             ) : null}
 
-            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling || needsSelectedTarget}>
               {isRolling ? "掷骰中..." : "掷骰"}
             </button>
           </>

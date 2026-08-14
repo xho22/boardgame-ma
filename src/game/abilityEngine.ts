@@ -207,9 +207,9 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
     key === "warp_swap_instead_main_move" &&
     (choice.useFlipFlopSwap === true || ((choice.useFlipFlopSwap ?? true) && shouldAutoUseFlipFlop(workingRace, workingEntrant)))
   ) {
-    const target = findLeaderOther(workingRace, workingEntrant);
+    const target = findEntrantById(workingRace, choice.flipFlopTargetEntrantId) ?? findLeaderOther(workingRace, workingEntrant);
 
-    if (target) {
+    if (target && target.id !== workingEntrant.id && !target.finished && !target.eliminated) {
       workingRace = swapEntrants(workingRace, workingEntrant.id, target.id);
       workingEntrant =
         workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
@@ -430,7 +430,12 @@ export function resolveAfterMove({
       didAnyAbilityTrigger = true;
     }
 
-    if (key === "follow_same_space_mover" && entrant.position === moverBefore.position && path.length > 0) {
+    if (
+      key === "follow_same_space_mover" &&
+      entrant.position === moverBefore.position &&
+      path.length > 0 &&
+      !hasPendingFollowReaction(workingRace, entrant.id, moverAfter.id)
+    ) {
       workingRace = {
         ...workingRace,
         pendingReactions: [
@@ -669,8 +674,14 @@ function applyBeforeMainMove(
     const last = findAloneLast(workingRace);
 
     if (last && last.id !== entrant.id) {
+      const lastBefore = last;
       workingRace = moveEntrantInRace(workingRace, last.id, 2);
+      const lastAfter = workingRace.entrants.find((candidate) => candidate.id === last.id) ?? last;
+      const cheerleaderBefore = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
       workingRace = moveEntrantInRace(workingRace, entrant.id, 1);
+      const cheerleaderAfter = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
+      workingRace = applyBananaPassTraps(game, workingRace, lastBefore, lastAfter, logs);
+      workingRace = applyBananaPassTraps(game, workingRace, cheerleaderBefore, cheerleaderAfter, logs);
       logs.push({
         type: "ability_trigger",
         message: `${name} 使用啦啦队长，让${describeEntrant(game, last)}前进 2 格，自己再移动 1 格。`,
@@ -687,9 +698,9 @@ function applyBeforeMainMove(
   }
 
   if (key === "warp_racer_to_self_before_main" && (choice.useHypnotist ?? true)) {
-    const target = findLeaderOther(workingRace, entrant);
+    const target = findEntrantById(workingRace, choice.hypnotistTargetEntrantId) ?? findLeaderOther(workingRace, entrant);
 
-    if (target) {
+    if (target && target.id !== entrant.id && !target.finished && !target.eliminated) {
       workingRace = updateEntrant(workingRace, target.id, (current) => ({
         ...current,
         position: entrant.position,
@@ -702,7 +713,11 @@ function applyBeforeMainMove(
   }
 
   if (key === "warp_to_exactly_two_before_main" && (choice.useThirdWheel ?? true)) {
-    const targetSpace = findSpaceWithExactOthers(workingRace, entrant.id, 2);
+    const eligibleSpaces = findSpacesWithExactOthers(workingRace, entrant.id, 2);
+    const targetSpace =
+      (choice.thirdWheelTargetPosition !== undefined && eligibleSpaces.includes(choice.thirdWheelTargetPosition)
+        ? choice.thirdWheelTargetPosition
+        : eligibleSpaces[0]) ?? null;
 
     if (targetSpace !== null) {
       workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
@@ -858,6 +873,39 @@ function applyMainMoveModifiers(
   return Math.max(0, moveValue);
 }
 
+function applyBananaPassTraps(
+  game: GameState,
+  race: RaceState,
+  moverBefore: Entrant,
+  moverAfter: Entrant,
+  logs: AbilityLog[],
+): RaceState {
+  const passedSpaces = getPassedSpaces(moverBefore.position, moverAfter.position);
+  const movedOutFromSharedStart = moverAfter.position > moverBefore.position;
+  let workingRace = race;
+
+  for (const banana of race.entrants) {
+    if (
+      banana.id !== moverAfter.id &&
+      !banana.finished &&
+      !banana.eliminated &&
+      getEffectiveImplementationKey(game, race, banana) === "trip_passing_racer" &&
+      (passedSpaces.includes(banana.position) || (banana.position === moverBefore.position && movedOutFromSharedStart))
+    ) {
+      workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
+        ...current,
+        skippedTurns: current.skippedTurns + 1,
+      }));
+      logs.push({
+        type: "status_added",
+        message: `${describeEntrant(game, banana)} 在经过判定中绊倒了${describeEntrant(game, moverAfter)}。`,
+      });
+    }
+  }
+
+  return workingRace;
+}
+
 function buildResolution(options: Partial<MainMoveResolution> & Pick<MainMoveResolution, "dieRoll" | "finalMove" | "entrant" | "race" | "players" | "logs" | "turnStartPosition">): MainMoveResolution {
   return {
     usesLeaptoadMove: false,
@@ -945,7 +993,7 @@ function findAloneLast(race: RaceState): Entrant | null {
   return last.length === 1 ? last[0] : null;
 }
 
-function findSpaceWithExactOthers(race: RaceState, entrantId: string, count: number): number | null {
+function findSpacesWithExactOthers(race: RaceState, entrantId: string, count: number): number[] {
   const spaces = new Map<number, number>();
 
   for (const entrant of activeEntrantsOnly(race)) {
@@ -954,7 +1002,20 @@ function findSpaceWithExactOthers(race: RaceState, entrantId: string, count: num
     }
   }
 
-  return [...spaces.entries()].find(([, spaceCount]) => spaceCount === count)?.[0] ?? null;
+  return [...spaces.entries()]
+    .filter(([, spaceCount]) => spaceCount === count)
+    .map(([position]) => position)
+    .sort((first, second) => first - second);
+}
+
+function findEntrantById(race: RaceState, entrantId: string | undefined): Entrant | null {
+  return entrantId ? race.entrants.find((entrant) => entrant.id === entrantId) ?? null : null;
+}
+
+function hasPendingFollowReaction(race: RaceState, sourceEntrantId: string, targetEntrantId: string): boolean {
+  return race.pendingReactions.some(
+    (prompt) => prompt.sourceEntrantId === sourceEntrantId && prompt.targetEntrantId === targetEntrantId,
+  );
 }
 
 function countOthersAt(race: RaceState, entrantId: string, position: number): number {
