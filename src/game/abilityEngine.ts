@@ -1,6 +1,5 @@
 import { STANDARD_ATHLETE_BY_ID, STANDARD_ATHLETES } from "./athletes";
 import {
-  shouldAutoRerollDicemonger,
   shouldAutoRerollMagician,
   shouldAutoUseFlipFlop,
   shouldAutoUseRocketScientist,
@@ -280,18 +279,6 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
           message: `${racerName} 使用魔术师重掷 ${rolls.length - 1} 次：${rolls.join(" -> ")}，最终点数 ${dieRoll}。`,
         });
       }
-    }
-
-    const dicemonger = findOtherByKey(game, workingRace, workingEntrant, "grant_reroll_move_on_use");
-
-    if (dieRoll !== null && dicemonger && shouldAutoRerollDicemonger(dieRoll)) {
-      const firstRoll = dieRoll;
-      dieRoll = rng.rollDie(6);
-      workingRace = moveEntrantInRace(workingRace, dicemonger.id, 1);
-      logs.push({
-        type: "ability_trigger",
-        message: `${describeEntrant(game, dicemonger)} 发动骰商，让点数 ${firstRoll} 重掷为 ${dieRoll}，随后自己移动 1 格。`,
-      });
     }
 
     moveValue = dieRoll;
@@ -698,7 +685,7 @@ function applyBeforeMainMove(
     });
   }
 
-  if (key === "warp_racer_to_self_before_main" && (choice.useHypnotist ?? true)) {
+  if (key === "warp_racer_to_self_before_main" && choice.useHypnotist === true) {
     const target = findEntrantById(workingRace, choice.hypnotistTargetEntrantId) ?? findLeaderOther(workingRace, entrant);
 
     if (target && target.id !== entrant.id && !target.finished && !target.eliminated) {
@@ -713,7 +700,7 @@ function applyBeforeMainMove(
     }
   }
 
-  if (key === "warp_to_exactly_two_before_main" && (choice.useThirdWheel ?? true)) {
+  if (key === "warp_to_exactly_two_before_main" && choice.useThirdWheel === true) {
     const eligibleSpaces = findSpacesWithExactOthers(workingRace, entrant.id, 2);
     const targetSpace =
       (choice.thirdWheelTargetPosition !== undefined && eligibleSpaces.includes(choice.thirdWheelTargetPosition)

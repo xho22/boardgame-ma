@@ -266,6 +266,13 @@ describe("phase 8 abilities", () => {
   it("Dicemonger, Inchworm, and Lackey react to other racers' rolls", () => {
     let game = roll(createRace(["Alchemist", "Dicemonger"]), "player-1", [2, 6]);
 
+    expect(requireRace(game).pendingReactions).toHaveLength(1);
+    const rerollPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: rerollPrompt.playerId, reactionId: rerollPrompt.id, accepted: true },
+      scriptedRng([6]),
+    );
     expect(position(game, "player-1")).toBe(6);
     expect(position(game, "player-2")).toBe(1);
 
@@ -336,7 +343,7 @@ describe("phase 9 abilities", () => {
     game = roll(setPositions(createRace(["Hypnotist", "Baba Yaga"]), {
       "player-1": 0,
       "player-2": 6,
-    }), "player-1", [1]);
+    }), "player-1", [1], { useHypnotist: true });
     expect(position(game, "player-2")).toBe(0);
 
     game = roll(setPositions(createRace(["Hypnotist", "Baba Yaga", "Banana"]), {
@@ -400,7 +407,7 @@ describe("phase 9 abilities", () => {
       "player-1": 0,
       "player-2": 4,
       "player-3": 4,
-    }), "player-1", [1]);
+    }), "player-1", [1], { useThirdWheel: true });
     expect(position(game, "player-1")).toBe(5);
 
     game = roll(setPositions(createRace(["Third Wheel", "Baba Yaga", "Banana", "Alchemist", "Legs"]), {
@@ -471,7 +478,7 @@ describe("ability simulation", () => {
       const rng = createRng(`simulation-rolls-${index}`);
       let actions = 0;
 
-      while (game.phase !== "finalResults" && actions < 500) {
+      while (game.phase !== "finalResults" && actions < 1_000) {
         if (game.phase === "teamReveal") {
           game = reduceGameCommand(game, { type: "BEGIN_SELECTION" }, rng);
           continue;
@@ -529,7 +536,7 @@ describe("ability simulation", () => {
       }
 
       expect(game.phase, `simulation-${index} stopped at ${game.phase} after ${actions} actions`).toBe("finalResults");
-      expect(actions, `simulation-${index} used too many actions`).toBeLessThan(500);
+      expect(actions, `simulation-${index} used too many actions`).toBeLessThan(1_000);
     }
   });
 });

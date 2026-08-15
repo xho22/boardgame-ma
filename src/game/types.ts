@@ -128,6 +128,7 @@ export type RaceState = {
   round: number;
   previousFinalMoveValue: number | null;
   pendingReactions: ReactionPrompt[];
+  pendingDiceDecision?: PendingDiceDecision | null;
   pendingTurnState: PendingTurnState | null;
   status: "revealing" | "active" | "complete";
 };
@@ -186,6 +187,15 @@ export type MainMoveChoice = {
   magicianMaxRerolls?: 0 | 1 | 2;
   geniusGuess?: 1 | 2 | 3 | 4 | 5 | 6;
   forcedDieRoll?: 1 | 2 | 3 | 4 | 5 | 6;
+  /** Internal continuation marker for a DiceMonger reroll decision. */
+  skipDicemongerPrompt?: boolean;
+};
+
+export type PendingDiceDecision = {
+  playerId: string;
+  dieRoll: 1 | 2 | 3 | 4 | 5 | 6;
+  choice: MainMoveChoice;
+  dicemongerEntrantId: string;
 };
 
 export type PendingTurnState = {

@@ -539,7 +539,7 @@ AI：关闭
 - Hypnotist、Third Wheel：在 before main move 时提供是否使用能力的开关；启用后必须明确选择传送目标或目标格，不能由 UI 悄悄代选。
 - Magician、Rocket Scientist：严格规则时机是掷骰后决定是否重掷/加倍。当前本地 MVP 可先使用回合开始前的策略开关，但在线多人阶段应升级为 after-roll pending prompt。
 - Suckerfish：同格角色移动后必须弹出跟随确认；确认跟随后，这次移动同样进入经过、同格和后续跟随等结算，再继续本回合剩余流程。
-- Dicemonger 等别人回合的反应能力，未来在线同步时应通过 reaction prompt 明确确认；本地 MVP 可暂用自动策略。
+- Dicemonger：其他选手掷出 main move 后，必须先显示原始骰面，并由该选手选择保留或重投一次；仅在选择重投时，Dicemonger move 1。该确认流程同样适用于本地和未来在线对局。
 - Mastermind：揭示本场 racer 后、正式开赛前必须选择预测目标。目标是具体 racer，不是玩家；未选择时不能开始比赛。
 
 赛道表现：

@@ -1,4 +1,5 @@
 import { beginSelection, lockPlayerSelection, selectAthleteForRace, setMastermindPrediction } from "./selection";
+import { STANDARD_ATHLETE_BY_ID } from "./athletes";
 import { createInitialGameState } from "./setup";
 import { moveEntrantForward } from "./movement";
 import { applyRaceScoring, isGameComplete } from "./scoring";
@@ -152,6 +153,47 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     return advanceTurn(game, race);
   }
 
+  const dicemonger = findOtherDicemonger(race, entrant);
+  const usesDie = !choice?.useLegsFixedMove && !choice?.useFlipFlopSwap;
+
+  if (dicemonger && usesDie && !choice?.skipDicemongerPrompt) {
+    const dieRoll = (choice?.forcedDieRoll ?? rng.rollDie(6)) as 1 | 2 | 3 | 4 | 5 | 6;
+    const promptId = `dicemonger:${entrant.id}:${race.round}:${entrant.actionCount}`;
+
+    return {
+      ...game,
+      activeRace: {
+        ...race,
+        previousFinalMoveValue: dieRoll,
+        pendingDiceDecision: {
+          playerId,
+          dieRoll,
+          choice: choice ?? {},
+          dicemongerEntrantId: dicemonger.id,
+        },
+        pendingReactions: [
+          ...race.pendingReactions,
+          {
+            id: promptId,
+            playerId,
+            athleteId: entrant.athleteId,
+            promptType: "reroll",
+            sourceEntrantId: dicemonger.id,
+            targetEntrantId: entrant.id,
+            title: "骰子商人：是否重投？",
+            description: `${describeRaceEntrant(game, entrant)} 掷出了 ${dieRoll}。你可以保留这个点数，或重投一次；只有重投时${describeRaceEntrant(game, dicemonger)}才移动 1 格。`,
+          },
+        ],
+      },
+      log: [
+        ...game.log,
+        createLog(game, "dice_roll", `${describeRaceEntrant(game, entrant)} 掷出了 ${dieRoll}。`, 0),
+        createLog(game, "ability_trigger", `${describeRaceEntrant(game, dicemonger)} 提供一次可选重投。`, 1),
+      ],
+      revision: game.revision + 1,
+    };
+  }
+
   const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
   const moveResult = moveWithAbility(mainMove.race, mainMove.entrant, mainMove.finalMove, {
     leaptoad: mainMove.usesLeaptoadMove,
@@ -275,6 +317,10 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
     throw new Error(`Reaction ${reactionId} belongs to ${prompt.playerId}, not ${playerId}`);
   }
 
+  if (prompt.promptType === "reroll") {
+    return confirmDicemongerReroll(game, race, prompt, playerId, accepted, rng);
+  }
+
   let workingRace: RaceState = {
     ...race,
     pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== reactionId),
@@ -394,6 +440,69 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
   }
 
   return advanceTurn(nextGame, workingRace);
+}
+
+function confirmDicemongerReroll(
+  game: GameState,
+  race: RaceState,
+  prompt: { id: string },
+  playerId: string,
+  accepted: boolean,
+  rng: Rng,
+): GameState {
+  const decision = race.pendingDiceDecision;
+
+  if (!decision || decision.playerId !== playerId) {
+    throw new Error("Missing DiceMonger decision");
+  }
+
+  const finalRoll = (accepted ? rng.rollDie(6) : decision.dieRoll) as 1 | 2 | 3 | 4 | 5 | 6;
+  const dicemonger = race.entrants.find((entrant) => entrant.id === decision.dicemongerEntrantId);
+  let continuedRace: RaceState = {
+    ...race,
+    pendingDiceDecision: null,
+    pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
+  };
+
+  if (accepted && dicemonger) {
+    continuedRace = {
+      ...continuedRace,
+      entrants: continuedRace.entrants.map((entrant) =>
+        entrant.id === dicemonger.id
+          ? moveEntrantForward(entrant, 1, continuedRace.trackLength).entrant
+          : entrant,
+      ),
+    };
+  }
+
+  const decisionLog = accepted
+    ? `${describeRaceEntrant(game, race.entrants.find((entrant) => entrant.id === playerId) ?? race.entrants[0])} 选择重投：${decision.dieRoll} -> ${finalRoll}；${dicemonger ? describeRaceEntrant(game, dicemonger) : "骰子商人"}移动 1 格。`
+    : `${describeRaceEntrant(game, race.entrants.find((entrant) => entrant.id === playerId) ?? race.entrants[0])} 保留点数 ${decision.dieRoll}。`;
+  const gameAfterDecision: GameState = {
+    ...game,
+    activeRace: continuedRace,
+    log: [...game.log, createLog(game, "ability_trigger", decisionLog, 0)],
+    revision: game.revision + 1,
+  };
+
+  return rollForCurrentPlayer(gameAfterDecision, playerId, rng, {
+    ...decision.choice,
+    forcedDieRoll: finalRoll,
+    skipDicemongerPrompt: true,
+  });
+}
+
+function findOtherDicemonger(race: RaceState, entrant: Entrant): Entrant | null {
+  return race.entrants.find((candidate) => {
+    const athlete = STANDARD_ATHLETE_BY_ID.get(candidate.athleteId);
+
+    return (
+      candidate.id !== entrant.id &&
+      !candidate.finished &&
+      !candidate.eliminated &&
+      athlete?.implementationKey === "grant_reroll_move_on_use"
+    );
+  }) ?? null;
 }
 
 export function beginNextRace(game: GameState): GameState {
