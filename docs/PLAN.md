@@ -33,7 +33,7 @@
 | 9 | 第三批能力与完整 36 角色 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 36 个角色均有本地 MVP 行为；已补角色图鉴 |
 | 10 | 体验打磨 | 已完成 | 通过 | `npm run build`: 通过；相关测试 15 passed、1000 局模拟通过（2026-08-15）；既有 `npm run e2e`: 2 passed | 已补中文比赛日志、角色头像棋子、trip 倒置/自动恢复、Mastermind 预测 UI、Gunk 触发日志、Genius 猜点、Cheerleader/Legs/Flip Flop/Hypnotist/Third Wheel/Party Animal 等主移动前明确选择；骰子商人、炼金师、魔术师、火箭科学家均已改为骰后确认；Banana 覆盖同格起步与啦啦队长带动的经过判定；Suckerfish 跟随确认覆盖主移动及能力移动，并会继续结算后续移动触发；Duelist 已改为选择对手后的可选决斗，奖励移动可继续连锁决斗；Egg 三选一、Twin 历史冠军选择和双 racer 按玩家交错回合已完成；Copycat 已支持唯一领先者自动复制和并列领先选择。Copycat 与较真者等全局限制能力的冲突语义审计，以及全量主动技能交互审计，转为后续维护优化项。 |
 | 11 | 在线房间技术验证 | 已完成 | 通过 | `npm run test -- src/network/roomService.test.ts`: 3 passed；`npm run build`: 通过；`npm run typecheck:server`: 通过；`npm run e2e`: 3 passed（2026-08-15） | 已实现首页双模式入口、固定房间、WebSocket 广播、座位占用/离线/重连、服务端 revision 与命令权限校验。双浏览器验证了加入同一房间、创建共享局及服务端执行 `BEGIN_SELECTION` 后同步。完整在线选角与比赛交互留在阶段 12。 |
-| 12 | 在线完整游玩 | 进行中 | 部分通过 | `npm run test -- src/network/roomService.test.ts`: 4 passed；`npm run build`: 通过；`npm run typecheck:server`: 通过；在线 E2E（双浏览器选角并开赛）: 通过（2026-08-15） | 已将在线房间接入队伍、私密选角、Race Reveal、赛道、反应和赛后继续流程；服务端按玩家过滤选角状态并校验命令归属。待验收：两终端完整 2 人 4 场、比赛中断线重连、在线赛后新局流程。 |
+| 12 | 在线完整游玩 | 进行中 | 部分通过 | `npm run test -- src/network/roomService.test.ts`: 5 passed；`npm run build`: 通过；`npm run typecheck:server`: 通过；在线 E2E（双浏览器选角并开赛）: 通过（2026-08-15） | 已将在线房间接入队伍、私密选角、Race Reveal、赛道、反应和赛后继续流程；服务端按玩家过滤选角状态并校验命令归属。房主可重置房间游戏并保留座位。待验收：两终端完整 2 人 4 场、比赛中断线重连。 |
 
 更新规则：
 
@@ -618,7 +618,7 @@
 
 ## 16.13 阶段 12：在线完整游玩
 
-当前进度：进行中。已完成在线会话对现有游戏页面的接入；浏览器双端验证可从加入房间走到私密选角、公开揭示和开始比赛。完整四场验收、比赛中断线重连与赛后新局仍待完成。
+当前进度：进行中。已完成在线会话对现有游戏页面的接入；浏览器双端验证可从加入房间走到私密选角、公开揭示和开始比赛。房主可随时重置房间并保留座位。完整四场验收与比赛中断线重连仍待完成。
 
 目标：把本地完整游戏接入在线房间。
 

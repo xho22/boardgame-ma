@@ -121,6 +121,20 @@ export class RoomService {
     return updatedRoom;
   }
 
+  resetSharedGame(roomId: string, playerId: string): RoomState {
+    const room = this.requireRoom(roomId);
+    this.requireHost(room, playerId);
+    const updatedRoom: RoomState = {
+      ...room,
+      status: "waiting",
+      gameState: null,
+      updatedAt: Date.now(),
+    };
+
+    this.rooms.set(roomId, updatedRoom);
+    return updatedRoom;
+  }
+
   dispatchGameCommand(roomId: string, actorId: string, revision: number, command: GameCommand): RoomState {
     const room = this.requireRoom(roomId);
     const game = room.gameState;

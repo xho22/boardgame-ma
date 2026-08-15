@@ -85,4 +85,18 @@ describe("RoomService", () => {
       { type: "SELECT_ATHLETE", playerId: dad.playerId, athleteId: dadAthleteId },
     )).toThrow("不能替其他玩家执行操作");
   });
+
+  it("lets only the host reset a shared game while preserving seats", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    service.startSharedGame("family-a", dad.playerId);
+
+    expect(() => service.resetSharedGame("family-a", kid.playerId)).toThrow("只有房主");
+
+    const resetRoom = service.resetSharedGame("family-a", dad.playerId);
+    expect(resetRoom.status).toBe("waiting");
+    expect(resetRoom.gameState).toBeNull();
+    expect(resetRoom.playerSlots.filter((slot) => slot.isOccupied).map((slot) => slot.playerName)).toEqual(["Dad", "Kid"]);
+  });
 });

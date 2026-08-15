@@ -156,9 +156,17 @@ h1 {
   z-index: 10;
   top: 12px;
   right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #23675b;
   font-size: 13px;
   font-weight: 800;
+}
+
+.online-mode-banner .ghost-button {
+  min-height: 32px;
+  padding-inline: 8px;
 }
 
 .online-waiting-panel {

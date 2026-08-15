@@ -86,13 +86,25 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
     }
   }
 
+  function resetSharedGame() {
+    if (!window.confirm("重置会删除当前房间的比赛进度，所有人将回到房间大厅。继续吗？")) {
+      return;
+    }
+
+    try {
+      client.current.send({ type: "RESET_SHARED_GAME" });
+    } catch (resetError) {
+      setError(resetError instanceof Error ? resetError.message : "无法重置房间游戏。");
+    }
+  }
+
   const occupiedCount = room?.playerSlots.filter((slot) => slot.isOccupied).length ?? 0;
   const isHost = playerId !== null && room?.hostPlayerId === playerId;
   const canStart = Boolean(isHost && occupiedCount >= 2 && room?.status === "waiting");
   const game = room?.gameState;
 
   if (game && playerId) {
-    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} />;
+    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} />;
   }
 
   return (
@@ -189,9 +201,10 @@ type OnlineGameViewProps = {
   playerId: string;
   onBack: () => void;
   onCommand: (command: GameCommand) => void;
+  onReset: () => void;
 };
 
-function OnlineGameView({ room, playerId, onBack, onCommand }: OnlineGameViewProps) {
+function OnlineGameView({ room, playerId, onBack, onCommand, onReset }: OnlineGameViewProps) {
   const game = room.gameState!;
   const isHost = room.hostPlayerId === playerId;
   const canChangeAthlete = (athleteId: string) => game.players.some(
@@ -201,7 +214,10 @@ function OnlineGameView({ room, playerId, onBack, onCommand }: OnlineGameViewPro
 
   return (
     <>
-      <div className="online-mode-banner">{`在线房间: ${room.roomName}`}</div>
+      <div className="online-mode-banner">
+        <span>{`在线房间: ${room.roomName}`}</span>
+        {isHost ? <button className="ghost-button danger" type="button" onClick={onReset}>重置房间</button> : null}
+      </div>
       {content}
     </>
   );

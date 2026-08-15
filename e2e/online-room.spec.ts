@@ -51,6 +51,12 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
   await expect(dad.getByRole("heading", { name: "Track" })).toBeVisible();
   await expect(kid.getByRole("heading", { name: "Track" })).toBeVisible();
 
+  dad.once("dialog", (dialog) => dialog.accept());
+  await dad.getByRole("button", { name: "重置房间" }).click();
+  await expect(dad.getByRole("button", { name: "Start Shared Test Game" })).toBeVisible();
+  await expect(kid.getByRole("button", { name: "Start Shared Test Game" })).toBeVisible();
+  await expect(dad.getByText("座位 2 / 6")).toBeVisible();
+
   await dadContext.close();
   await kidContext.close();
 });
