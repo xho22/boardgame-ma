@@ -18,7 +18,7 @@
 npm run test
 npm run build
 npm run dev
-npm run lint
+npm run e2e
 ```
 
 阶段早期可能还没有全部命令。最低要求：
@@ -27,6 +27,7 @@ npm run lint
 - 规则引擎出现后必须能运行 `npm run test`。
 - UI 可用后必须能通过手动浏览器检查。
 - Playwright 引入后必须覆盖桌面、平板、手机三个视口。
+- 当前环境中 `npm run test` 偶发 Vitest worker 在用例完成后无法退出；执行测试时应与构建、e2e 分开运行，并检查是否遗留 Vitest 进程组。不得停止 `5173` 上的 Vite 开发服务器。
 
 ## 3. 阶段验收清单
 

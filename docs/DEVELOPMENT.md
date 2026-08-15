@@ -117,7 +117,7 @@ type RaceState = {
 };
 ```
 
-`turnOrder` 存储的是 entrant id，而不是 player id。每名玩家每场 1 名 racer 时，entrant id 与 player id 相同以兼容旧流程；每名玩家每场 2 名 racer 时，entrant id 使用类似 `player-1:racer-1`、`player-1:racer-2` 的格式。
+`turnOrder` 存储的是 entrant id，而不是 player id。每名玩家每场 1 名 racer 时，entrant id 与 player id 相同以兼容旧流程；每名玩家每场 2 名 racer 时，entrant id 使用类似 `player-1:racer-1`、`player-1:racer-2` 的格式。双 racer 模式按玩家交错排序，例如 `player-1:racer-1`、`player-2:racer-1`、`player-1:racer-2`、`player-2:racer-2`。
 
 ## 7.5 Entrant
 
@@ -204,8 +204,11 @@ finishGame()
 type GameCommand =
   | { type: "START_GAME"; payload: GameSettings }
   | { type: "ASSIGN_TEAMS" }
+  | { type: "BEGIN_SELECTION" }
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
   | { type: "SET_MASTERMIND_PREDICTION"; athleteId: string; predictedAthleteId: string }
+  | { type: "SET_BEFORE_RACE_COPY_CHOICE"; athleteId: string; copiedAthleteId: string }
+  | { type: "LOCK_SELECTION"; playerId: string }
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
@@ -214,7 +217,7 @@ type GameCommand =
   | { type: "FINISH_GAME" };
 ```
 
-兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。`choice` 用来记录本次主移动前后的玩家选择，例如 Legs 是否直接移动 5 格、Flip Flop 是否换位、Rocket Scientist 是否加倍。`SET_MASTERMIND_PREDICTION` 在 Race Reveal 阶段写入选择状态，`predictedAthleteId` 指向本场已揭示的具体 racer。
+兼容说明：`ROLL_DICE.playerId` 是历史字段名。本地 1 racer 模式下它等于玩家 id；2 racer 模式下它传入当前行动的 entrant id，例如 `player-1:racer-2`。服务端同步时应把它视为 `actorId`。`choice` 用来记录本次主移动前后的玩家选择，例如 Legs 是否直接移动 5 格、Flip Flop 是否换位、Rocket Scientist 是否加倍。`SET_MASTERMIND_PREDICTION` 与 `SET_BEFORE_RACE_COPY_CHOICE` 都在 Race Reveal 阶段写入选择状态；后者只接受 Egg 的三名候选，或 Twin 的历史冠军角色。
 
 命令处理函数必须是纯规则逻辑：
 
@@ -536,6 +539,8 @@ type SelectionState = {
   activePlayerId: string | null;
   selectionsByPlayerId: Record<string, string[]>;
   mastermindPredictionsByAthleteId: Record<string, string>;
+  eggCandidatesByAthleteId: Record<string, string[]>;
+  copiedAbilityAthleteIdByAthleteId: Record<string, string>;
   lockedPlayerIds: string[];
   revealed: boolean;
 };
@@ -626,8 +631,9 @@ type SelectionState = {
 - before main move：Legs、Flip Flop、Cheerleader、Hypnotist、Third Wheel 已有本地 UI 选择。
 - pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
-- after roll：Magician、Rocket Scientist 当前使用回合开始前策略选项；后续应升级为真正掷骰后暂停确认。
-- on other roll：Dicemonger、Inchworm、Lackey 当前仍是本地自动反应；在线多人阶段应通过 `pendingReactions` 或同类状态补确认流。
+- after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
+- on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。
+- before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
 
 trip UI 状态：
 
