@@ -54,7 +54,7 @@ type Player = {
 
 ## 7.6 RoomState
 
-第一版本地模式可以不真正使用房间，但数据层保留房间概念。未来在线模式只需要把本地 `GameState` 放进房间中同步。
+本地模式不创建房间，继续直接使用浏览器状态和 localStorage。阶段 11 的在线服务将权威 `GameState` 放进内存固定房间中同步；两种模式共享规则引擎，但彼此不依赖。
 
 ```ts
 type RoomState = {
@@ -74,6 +74,7 @@ type PlayerSlot = {
   playerName: string;
   color: string;
   isOccupied: boolean;
+  isConnected?: boolean;
   isAI: boolean;
 };
 ```

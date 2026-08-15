@@ -85,6 +85,7 @@ export type PlayerSlot = {
   playerName: string;
   color: string;
   isOccupied: boolean;
+  isConnected?: boolean;
   isAI: boolean;
 };
 

@@ -3,9 +3,10 @@ type HomeScreenProps = {
   onNewGame: () => void;
   onContinueGame: () => void;
   onOpenCatalog: () => void;
+  onOpenOnlineRoom: () => void;
 };
 
-export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame, onOpenCatalog }: HomeScreenProps) {
+export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame, onOpenCatalog, onOpenOnlineRoom }: HomeScreenProps) {
   return (
     <main className="app-shell home-layout">
       <section className="hero">
@@ -13,8 +14,9 @@ export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame, onOpenCata
         <h1>boardgame-ma</h1>
         <div className="action-row">
           <button className="primary-button" type="button" onClick={onNewGame}>
-            New Game
+            Local Game
           </button>
+          <button className="secondary-button" type="button" onClick={onOpenOnlineRoom}>Online Room</button>
           <button className="secondary-button" type="button" onClick={onContinueGame} disabled={!hasSavedGame}>
             Continue
           </button>

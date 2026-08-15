@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AthleteCatalogScreen } from "./components/AthleteCatalogScreen";
 import { HomeScreen } from "./components/HomeScreen";
+import { OnlineRoomScreen } from "./components/OnlineRoomScreen";
 import { FinalResultsScreen } from "./components/FinalResultsScreen";
 import { RaceRevealScreen } from "./components/RaceRevealScreen";
 import { RaceResultsScreen } from "./components/RaceResultsScreen";
@@ -13,6 +14,7 @@ import "./styles/globals.css";
 
 export function App() {
   const [showCatalog, setShowCatalog] = useState(false);
+  const [showOnlineRoom, setShowOnlineRoom] = useState(false);
   const {
     view,
     game,
@@ -37,6 +39,10 @@ export function App() {
 
   if (showCatalog) {
     return <AthleteCatalogScreen onBack={() => setShowCatalog(false)} />;
+  }
+
+  if (showOnlineRoom) {
+    return <OnlineRoomScreen onBack={() => setShowOnlineRoom(false)} />;
   }
 
   if (view === "setup") {
@@ -95,6 +101,7 @@ export function App() {
       onNewGame={openSetup}
       onContinueGame={continueGame}
       onOpenCatalog={() => setShowCatalog(true)}
+      onOpenOnlineRoom={() => setShowOnlineRoom(true)}
     />
   );
 }

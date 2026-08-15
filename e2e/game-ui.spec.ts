@@ -24,7 +24,7 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await expect(page.getByText("main move 掷出 1 或 2 时，可以改为移动 4 格。")).toBeVisible();
 
   await page.getByRole("button", { name: "Back" }).click();
-  await page.getByRole("button", { name: "New Game" }).click();
+  await page.getByRole("button", { name: "Local Game" }).click();
   await page.getByRole("button", { name: "Start Game" }).click();
 
   const firstTeamRacer = page.locator(".racer-card").first();
@@ -65,7 +65,7 @@ test("shows racer card images in catalog, selection, and current turn", async ({
 });
 
 test("supports choosing two racers per player in a small game", async ({ page }) => {
-  await page.getByRole("button", { name: "New Game" }).click();
+  await page.getByRole("button", { name: "Local Game" }).click();
   await page.getByRole("button", { name: "2" }).click();
   await expect(page.getByLabel("Game summary").getByText("8")).toBeVisible();
   await page.getByRole("button", { name: "Start Game" }).click();
