@@ -64,12 +64,13 @@ export function Track({ game, race }: TrackProps) {
 
                   return (
                     <span
-                      className={`track-piece moving-piece ${entrant.skippedTurns > 0 ? "tripped" : ""}`}
+                      className={`track-piece moving-piece ${entrant.skippedTurns > 0 ? "tripped" : ""} ${entrant.eliminated ? "eliminated" : ""}`}
                       key={entrant.id}
                       title={`${player?.name ?? entrant.playerId}: ${athlete?.displayName ?? entrant.athleteId}`}
                       style={{ borderColor: player?.color ?? "#1d6258" }}
                     >
                       {athlete ? <img src={athlete.imagePath} alt={athlete.displayName} /> : player?.name.slice(0, 1).toUpperCase() ?? "?"}
+                      {entrant.eliminated ? <span className="chomp-marker">CHOMP!</span> : null}
                     </span>
                   );
                 })}

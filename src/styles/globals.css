@@ -542,7 +542,7 @@ h1 {
   border: 2px solid #1d6258;
   background: #fff;
   color: #24211d;
-  overflow: hidden;
+  position: relative;
   font-size: 12px;
   font-weight: 900;
   box-shadow: 0 1px 3px rgb(36 33 29 / 18%);
@@ -552,6 +552,7 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: inherit;
 }
 
 .track-piece.tripped {
@@ -561,6 +562,24 @@ h1 {
 
 .track-piece.tripped img {
   transform: rotate(180deg);
+}
+
+.track-piece.eliminated {
+  animation: chomped-piece 1.4s ease-in forwards;
+  filter: saturate(0.45);
+}
+
+.chomp-marker {
+  position: absolute;
+  z-index: 1;
+  top: -16px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-8deg);
+  color: #b72025;
+  font-size: 10px;
+  font-weight: 900;
+  text-shadow: 0 1px 0 #fffdf8, 1px 0 0 #fffdf8, -1px 0 0 #fffdf8;
+  animation: chomp-marker 1.1s ease-out forwards;
 }
 
 .moving-piece {
@@ -729,6 +748,40 @@ h1 {
 
   100% {
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes chomped-piece {
+  0% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+
+  35% {
+    opacity: 1;
+    transform: scale(1.3) rotate(-10deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(0.15) rotate(18deg);
+  }
+}
+
+@keyframes chomp-marker {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) rotate(-8deg) scale(0.75);
+  }
+
+  25%, 70% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) rotate(-8deg) scale(1.05);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-6px) rotate(-8deg) scale(0.9);
   }
 }
 

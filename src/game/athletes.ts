@@ -277,7 +277,7 @@ const STANDARD_ATHLETE_DATA = [
     standardName: "Sisyphus",
     displayName: "西西弗斯",
     type: "scoring",
-    abilityText: "before race 获得 4 个 1 分筹码；main move 掷出 6 时，改为 warp 到起点并失去 1 分，然后仍继续自己的 main move。",
+    abilityText: "before race 获得 4 个 1 分筹码；main move 掷出 6 时，改为 warp 到起点并失去 1 分。",
     abilityHooks: ["beforeRace", "afterRoll"],
     implementationKey: "points_then_six_warp_start",
     tags: ["standard", "scoring", "warp"],

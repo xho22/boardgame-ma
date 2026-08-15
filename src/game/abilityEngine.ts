@@ -306,10 +306,11 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
 
     if (key === "points_then_six_warp_start" && dieRoll === 6) {
       nextEntrant = { ...nextEntrant, position: 0 };
+      moveValue = 0;
       players = addScore(players, nextEntrant.playerId, -1);
       logs.push({
         type: "ability_trigger",
-        message: `${racerName} 使用西西弗斯，掷出 6 后回到起点并先失去 1 分。`,
+        message: `${racerName} 使用西西弗斯，掷出 6 后改为回到起点并失去 1 分。`,
       });
     }
 

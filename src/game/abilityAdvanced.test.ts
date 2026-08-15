@@ -384,7 +384,7 @@ describe("phase 9 abilities", () => {
 
     game = roll(createRace(["Sisyphus", "Baba Yaga"]), "player-1", [6]);
     expect(game.players[0].score).toBe(3);
-    expect(position(game, "player-1")).toBe(6);
+    expect(position(game, "player-1")).toBe(0);
 
     game = roll(createRace(["Alchemist", "Baba Yaga", "Skipper"]), "player-1", [1]);
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-3");
