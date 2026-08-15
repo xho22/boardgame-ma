@@ -241,7 +241,9 @@ React UI -> Zustand store -> reduceGameCommand -> 更新本地状态
 React UI -> 发送 GameCommand -> 服务端校验并执行 -> 广播新 GameState
 ```
 
-这样第一版写出来的规则引擎可以直接复用。
+两种模式必须以同一份 `GameState`、`GameCommand` 与 `reduceGameCommand` 为规则核心。建议在 UI 和 store 之间定义轻量的游戏会话接口：本地会话直接派发命令，在线会话发送命令并等待服务端 `STATE_SYNC`；比赛页面只消费会话提供的状态与操作，不自行判断模式。这样本地角色测试与 Debug 流程不依赖服务端，也不会被在线功能回归影响。
+
+模式选择在首页完成。`local` 是默认模式，保留现有 localStorage 存档；`online` 进入固定房间页。在线服务未启动或连接失败时，只禁用在线入口内的操作，不阻断 `local` 模式。
 
 ## 8.3 随机数
 
@@ -498,6 +500,8 @@ const rooms = new Map<string, RoomState>();
 - 掷骰必须在服务端执行。
 - 每个命令带上客户端看到的 `revision`。
 - 如果 revision 过旧，服务端拒绝命令并返回最新状态。
+
+客户端在在线模式不可直接调用 reducer 或写入权威比赛状态；本地模式则继续直接调用同一 reducer。服务端、WebSocket、房间状态和连接身份只能放在 `server/`、`src/network/` 或在线会话实现中，禁止渗入 `src/game/` 的纯规则模块。
 
 命令格式：
 
