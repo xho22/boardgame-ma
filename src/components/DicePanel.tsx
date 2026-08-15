@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
+import type { AbilityImplementationKey } from "../game/abilityTypes";
 import type { Entrant, MainMoveChoice, Player, RaceState } from "../game/types";
 
 type DicePanelProps = {
@@ -7,10 +8,11 @@ type DicePanelProps = {
   race: RaceState;
   currentPlayer: Player;
   currentEntrant: Entrant;
+  effectiveAbilityKey: AbilityImplementationKey;
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
-export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRoll }: DicePanelProps) {
+export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effectiveAbilityKey, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
   const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(false);
@@ -88,7 +90,10 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
 
   const displayValue = isRolling ? rollingValue : (race.previousFinalMoveValue ?? "-");
   const currentAthlete = STANDARD_ATHLETE_BY_ID.get(currentEntrant.athleteId);
-  const abilityKey = currentEntrant.copiedAbilityKey ?? currentAthlete?.implementationKey;
+  const abilityKey = effectiveAbilityKey;
+  const copiedAthlete = currentAthlete?.implementationKey !== abilityKey
+    ? [...STANDARD_ATHLETE_BY_ID.values()].find((athlete) => athlete.implementationKey === abilityKey)
+    : null;
   const hasFlipFlopTarget =
     abilityKey === "warp_swap_instead_main_move" &&
     race.entrants.some(
@@ -130,6 +135,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
     useFlipFlopSwap: false,
     flipFlopTargetEntrantId: selectedTargetEntrantId || undefined,
     useCheerleader: abilityKey === "cheer_last_place_then_self" ? useBeforeMainAbility : undefined,
+    usePartyAnimal: abilityKey === "pull_all_then_bonus_per_guest" ? useBeforeMainAbility : undefined,
     useHypnotist: abilityKey === "warp_racer_to_self_before_main" ? useBeforeMainAbility : undefined,
     hypnotistTargetEntrantId: selectedTargetEntrantId || undefined,
     useThirdWheel: abilityKey === "warp_to_exactly_two_before_main" ? useBeforeMainAbility : undefined,
@@ -154,6 +160,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
           <>
             <h3>{`${currentAthlete.displayName} / ${currentAthlete.standardName}`}</h3>
             <p>{currentAthlete.abilityText}</p>
+            {copiedAthlete ? <p className="choice-hint">{`当前复制：${copiedAthlete.displayName} - ${copiedAthlete.abilityText}`}</p> : null}
           </>
         ) : null}
       </div>
@@ -182,6 +189,22 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
               </button>
             </div>
             {!uniqueLast ? <p className="choice-hint">没有唯一的最后一名，本回合不能使用支援。</p> : null}
+          </>
+        ) : abilityKey === "pull_all_then_bonus_per_guest" ? (
+          <>
+            <div className="ability-choice-actions" aria-label="派对动物能力选择">
+              <button className="secondary-button" type="button" onClick={() => startRollAnimation({ ...rollChoice, usePartyAnimal: false })} disabled={isRolling}>
+                {isRolling ? "掷骰中..." : "直接掷骰"}
+              </button>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={() => startRollAnimation({ ...rollChoice, usePartyAnimal: true })}
+                disabled={isRolling}
+              >
+                召集派对后掷骰
+              </button>
+            </div>
           </>
         ) : abilityKey === "predict_roll_extra_turn" ? (
           <>

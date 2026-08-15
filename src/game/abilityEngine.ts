@@ -698,7 +698,7 @@ function applyBeforeMainMove(
     }
   }
 
-  if (key === "pull_all_then_bonus_per_guest") {
+  if (key === "pull_all_then_bonus_per_guest" && choice.usePartyAnimal === true) {
     const party = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
 
     workingRace = {

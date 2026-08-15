@@ -430,14 +430,30 @@ describe("phase 9 abilities", () => {
       "player-1": 3,
       "player-2": 1,
       "player-3": 4,
-    }), "player-1", [1]);
+    }), "player-1", [1], { usePartyAnimal: true });
     expect(position(game, "player-1")).toBe(5);
+
+    game = roll(setPositions(createRace(["Party Animal", "Baba Yaga", "Banana"]), {
+      "player-1": 3,
+      "player-2": 1,
+      "player-3": 4,
+    }), "player-1", [1], { usePartyAnimal: false });
+    expect(position(game, "player-1")).toBe(4);
+    expect(position(game, "player-2")).toBe(1);
+    expect(position(game, "player-3")).toBe(4);
 
     game = roll(setPositions(createRace(["Party Animal", "Baba Yaga"]), {
       "player-1": 3,
       "player-2": 3,
     }), "player-1", [1]);
     expect(position(game, "player-2")).toBe(3);
+
+    game = roll(setPositions(createRace(["Copycat", "Party Animal"]), {
+      "player-1": 0,
+      "player-2": 4,
+    }), "player-1", [1], { usePartyAnimal: true });
+    expect(position(game, "player-2")).toBe(3);
+    expect(messages(game).some((message) => message.includes("模仿猫") && message.includes("派对动物"))).toBe(true);
 
     game = createRace(["Sisyphus", "Baba Yaga"]);
     expect(game.players[0].score).toBe(4);

@@ -1,6 +1,7 @@
 import { DicePanel } from "./DicePanel";
 import { GameLog } from "./GameLog";
 import { Track } from "./Track";
+import { getEffectiveImplementationKey } from "../game/abilityEngine";
 import type { GameState, MainMoveChoice } from "../game/types";
 
 type RaceScreenProps = {
@@ -88,6 +89,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
             race={race}
             currentPlayer={currentPlayer}
             currentEntrant={currentEntrant}
+            effectiveAbilityKey={getEffectiveImplementationKey(game, race, currentEntrant)}
             onRoll={onRoll}
           />
         )}

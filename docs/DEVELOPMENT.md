@@ -629,6 +629,7 @@ type SelectionState = {
 当前主动能力交互状态：
 
 - before main move：Legs、Flip Flop、Cheerleader、Hypnotist、Third Wheel 已有本地 UI 选择。
+- before main move：Party Animal 已改为主动选择；Copycat 会将唯一领先者的有效能力传入同一套操作面板与规则结算，赛前复制能力除外。
 - pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。

@@ -55,7 +55,14 @@ const race: RaceState = {
 describe("DicePanel", () => {
   it("shows both Legs choices before the main move", () => {
     const markup = renderToStaticMarkup(
-      <DicePanel debugMode={false} race={race} currentPlayer={player} currentEntrant={entrant} onRoll={() => undefined} />,
+      <DicePanel
+        debugMode={false}
+        race={race}
+        currentPlayer={player}
+        currentEntrant={entrant}
+        effectiveAbilityKey="main_move_fixed_five_optional"
+        onRoll={() => undefined}
+      />,
     );
 
     expect(markup).toContain("掷骰移动");
@@ -69,6 +76,7 @@ describe("DicePanel", () => {
         race={race}
         currentPlayer={player}
         currentEntrant={{ ...entrant, skippedTurns: 1 }}
+        effectiveAbilityKey="main_move_fixed_five_optional"
         onRoll={() => undefined}
       />,
     );
@@ -80,9 +88,32 @@ describe("DicePanel", () => {
 
   it("shows forced die controls in debug mode", () => {
     const markup = renderToStaticMarkup(
-      <DicePanel debugMode race={race} currentPlayer={player} currentEntrant={entrant} onRoll={() => undefined} />,
+      <DicePanel
+        debugMode
+        race={race}
+        currentPlayer={player}
+        currentEntrant={entrant}
+        effectiveAbilityKey="main_move_fixed_five_optional"
+        onRoll={() => undefined}
+      />,
     );
 
     expect(markup).toContain("本次骰点");
+  });
+
+  it("shows the copied Party Animal choice when given an effective copied ability", () => {
+    const markup = renderToStaticMarkup(
+      <DicePanel
+        debugMode={false}
+        race={race}
+        currentPlayer={player}
+        currentEntrant={entrant}
+        effectiveAbilityKey="pull_all_then_bonus_per_guest"
+        onRoll={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("当前复制：派对动物");
+    expect(markup).toContain("召集派对后掷骰");
   });
 });

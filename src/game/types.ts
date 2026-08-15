@@ -179,6 +179,7 @@ export type MainMoveChoice = {
   useFlipFlopSwap?: boolean;
   flipFlopTargetEntrantId?: string;
   useCheerleader?: boolean;
+  usePartyAnimal?: boolean;
   useHypnotist?: boolean;
   hypnotistTargetEntrantId?: string;
   useThirdWheel?: boolean;

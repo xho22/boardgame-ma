@@ -5,7 +5,6 @@ import {
   setBeforeRaceCopyChoice,
   setMastermindPrediction,
 } from "./selection";
-import { STANDARD_ATHLETE_BY_ID } from "./athletes";
 import { createInitialGameState } from "./setup";
 import { moveEntrantForward } from "./movement";
 import { applyRaceScoring, isGameComplete } from "./scoring";
@@ -203,7 +202,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     return finishResolvedMove(game, entrant, mainMove, rng);
   }
 
-  const dicemonger = findOtherDicemonger(race, entrant);
+  const dicemonger = findOtherDicemonger(game, race, entrant);
   const usesDie = !choice?.useLegsFixedMove && !choice?.useFlipFlopSwap;
 
   if (dicemonger && usesDie && !choice?.skipDicemongerPrompt) {
@@ -654,8 +653,7 @@ function createPostRollPrompt(
   dieRoll: 1 | 2 | 3 | 4 | 5 | 6,
   choice: MainMoveChoice,
 ): { decision: NonNullable<RaceState["pendingDiceDecision"]>; prompt: RaceState["pendingReactions"][number] } | null {
-  const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
-  const key = entrant.copiedAbilityKey ?? athlete?.implementationKey;
+  const key = getEffectiveImplementationKey(game, race, entrant);
   const actor = describeRaceEntrant(game, entrant);
   const base = { playerId, dieRoll, choice };
 
@@ -704,15 +702,13 @@ function createPostRollPrompt(
   return null;
 }
 
-function findOtherDicemonger(race: RaceState, entrant: Entrant): Entrant | null {
+function findOtherDicemonger(game: GameState, race: RaceState, entrant: Entrant): Entrant | null {
   return race.entrants.find((candidate) => {
-    const athlete = STANDARD_ATHLETE_BY_ID.get(candidate.athleteId);
-
     return (
       candidate.id !== entrant.id &&
       !candidate.finished &&
       !candidate.eliminated &&
-      athlete?.implementationKey === "grant_reroll_move_on_use"
+      getEffectiveImplementationKey(game, race, candidate) === "grant_reroll_move_on_use"
     );
   }) ?? null;
 }
