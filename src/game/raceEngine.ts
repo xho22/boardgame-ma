@@ -178,16 +178,6 @@ function createPlayerInterleavedTurnOrder(game: GameState, entrants: Entrant[]):
 export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng, choice?: MainMoveChoice): GameState {
   let race = requireActiveRace(game);
 
-  if (race.entrants.some((entrant) => entrant.temporaryEffects.some((effect) => effect.id === "duel-resolution-lock"))) {
-    race = {
-      ...race,
-      entrants: race.entrants.map((entrant) => ({
-        ...entrant,
-        temporaryEffects: entrant.temporaryEffects.filter((effect) => effect.id !== "duel-resolution-lock"),
-      })),
-    };
-  }
-
   const copycatRace = queueCopycatSelectionReactions(game, race);
   if (copycatRace.pendingReactions.length > race.pendingReactions.length) {
     return {
@@ -595,6 +585,7 @@ function confirmDuel(
     pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
   };
   const logs: GameLogEntry[] = [];
+  let nextPlayers = game.players;
   const duelist = prompt.sourceEntrantId ? workingRace.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId) : null;
 
   if (!duelist) {
@@ -612,20 +603,7 @@ function confirmDuel(
     const duelistRoll = rng.rollDie(6);
     const opponentRoll = rng.rollDie(6);
     const winner = duelistRoll >= opponentRoll ? duelist : opponent;
-    workingRace = {
-      ...workingRace,
-      entrants: workingRace.entrants.map((entrant) =>
-        entrant.id === duelist.id
-          ? {
-              ...entrant,
-              temporaryEffects: [
-                ...entrant.temporaryEffects.filter((effect) => effect.id !== "duel-resolution-lock"),
-                { id: "duel-resolution-lock", type: "reactionLock", expiresAt: "endOfTurn" },
-              ],
-            }
-          : entrant,
-      ),
-    };
+    const rewardMove = moveEntrantForward(winner, 2, workingRace.trackLength);
     workingRace = moveEntrantInRace(game, workingRace, winner.id, 2);
     logs.push(
       createLog(
@@ -635,9 +613,24 @@ function confirmDuel(
         0,
       ),
     );
+    const winnerAfter = workingRace.entrants.find((entrant) => entrant.id === winner.id);
+    if (winnerAfter) {
+      const afterMove = resolveAfterMove({
+        game: { ...game, activeRace: workingRace },
+        race: workingRace,
+        players: nextPlayers,
+        moverBefore: winner,
+        moverAfter: winnerAfter,
+        path: rewardMove.path,
+        abilityTriggered: true,
+      });
+      workingRace = afterMove.race;
+      nextPlayers = afterMove.players;
+      logs.push(...afterMove.logs.map((log, index) => createLog(game, log.type, log.message, index + 1)));
+    }
   }
 
-  return finalizeReaction(game, race, workingRace, game.players, logs, rng);
+  return finalizeReaction(game, race, workingRace, nextPlayers, logs, rng);
 }
 
 function confirmCopycatChoice(

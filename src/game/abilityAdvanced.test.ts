@@ -565,7 +565,7 @@ describe("phase 9 abilities", () => {
     expect(messages(game).some((message) => message.includes("双方掷出 1 比 5"))).toBe(true);
   });
 
-  it("does not trigger another duel from the winner's two-step reward", () => {
+  it("triggers another duel when the winner's two-step reward shares a new space", () => {
     let game = roll(setPositions(createRace(["Duelist", "Alchemist", "Baba Yaga"]), {
       "player-1": 0,
       "player-2": 3,
@@ -579,7 +579,8 @@ describe("phase 9 abilities", () => {
     );
 
     expect(position(game, "player-1")).toBe(5);
-    expect(requireRace(game).pendingReactions.some((prompt) => prompt.promptType === "duel")).toBe(false);
+    const chainedDuelPrompt = requireRace(game).pendingReactions.find((prompt) => prompt.promptType === "duel");
+    expect(chainedDuelPrompt?.playerId).toBe("player-1");
   });
 
   it("Copycat asks its player to choose a tied leader and uses the selected ability", () => {

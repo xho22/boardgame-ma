@@ -638,7 +638,7 @@ type SelectionState = {
 - before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
 - sharing optional reaction：Duelist 在同格时通过 `pendingReactions` 请求确认，并由客户端提交所选的 `targetEntrantId`；结算只移动决斗获胜者 2 格，平局归 Duelist。
 - Copycat 在 entrant 上保存并列领先时的 `copiedLeaderEntrantId` 与领先集合签名；领先集合改变时，规则引擎通过 `pendingReactions` 的 `copy` 提示请求选择。若提示出现在模仿猫自己的回合开始前，确认后恢复该回合；若由其他选手移动引起，则在该反应链中结算。
-- Duelist 发起决斗后获得本回合内的 `duel-resolution-lock`，避免其决斗奖励移动在同格后重复排入决斗提示；下一次主移动开始时清除该锁。
+- Duelist 的决斗奖励属于正常 `move`：若胜者前进 2 格后与选手同格，仍会继续进入同格反应并可再次发起决斗。
 
 trip UI 状态：
 

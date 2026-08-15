@@ -478,7 +478,6 @@ export function resolveAfterMove({
       (entrant) =>
         !entrant.finished &&
         !entrant.eliminated &&
-        !entrant.temporaryEffects.some((effect) => effect.id === "duel-resolution-lock") &&
         entrant.position === moverAfter.position &&
         getEffectiveImplementationKey(game, workingRace, entrant) === "duel_on_shared_space",
     );
