@@ -1,6 +1,5 @@
 import { STANDARD_ATHLETE_BY_ID, STANDARD_ATHLETES } from "./athletes";
 import {
-  shouldAutoRerollMagician,
   shouldAutoUseFlipFlop,
   shouldAutoUseRocketScientist,
 } from "./abilityImplementations";
@@ -262,28 +261,9 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
       });
     }
 
-    if (key === "reroll_main_move_up_to_two") {
-      const rolls = [dieRoll];
-
-      const maxRerolls = choice.magicianMaxRerolls ?? 2;
-
-      while (rolls.length - 1 < maxRerolls && shouldAutoRerollMagician(rolls[rolls.length - 1], rolls.length - 1)) {
-        rolls.push(rng.rollDie(6));
-      }
-
-      dieRoll = rolls[rolls.length - 1];
-
-      if (rolls.length > 1) {
-        logs.push({
-          type: "ability_trigger",
-          message: `${racerName} 使用魔术师重掷 ${rolls.length - 1} 次：${rolls.join(" -> ")}，最终点数 ${dieRoll}。`,
-        });
-      }
-    }
-
     moveValue = dieRoll;
 
-    if (key === "main_roll_low_becomes_four" && dieRoll <= 2) {
+    if (key === "main_roll_low_becomes_four" && dieRoll <= 2 && choice.useAlchemistFour === true) {
       moveValue = 4;
       logs.push({
         type: "ability_trigger",
@@ -301,7 +281,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
       });
     }
 
-    if (key === "optional_double_roll_then_trip" && (choice.useRocketScientistDouble ?? true) && shouldAutoUseRocketScientist(moveValue)) {
+    if (key === "optional_double_roll_then_trip" && choice.useRocketScientistDouble === true && shouldAutoUseRocketScientist(moveValue)) {
       moveValue *= 2;
       nextEntrant = {
         ...nextEntrant,

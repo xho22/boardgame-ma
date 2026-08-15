@@ -16,8 +16,6 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
   const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(false);
   const [selectedTargetEntrantId, setSelectedTargetEntrantId] = useState("");
   const [selectedThirdWheelPosition, setSelectedThirdWheelPosition] = useState<number | "">("");
-  const [useRocketDouble, setUseRocketDouble] = useState(true);
-  const [magicianMaxRerolls, setMagicianMaxRerolls] = useState<0 | 1 | 2>(2);
   const [geniusGuess, setGeniusGuess] = useState<"" | 1 | 2 | 3 | 4 | 5 | 6>("");
   const [forcedDieRoll, setForcedDieRoll] = useState<1 | 2 | 3 | 4 | 5 | 6>(6);
   const intervalRef = useRef<number | null>(null);
@@ -43,8 +41,6 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
     setUseBeforeMainAbility(false);
     setSelectedTargetEntrantId("");
     setSelectedThirdWheelPosition("");
-    setUseRocketDouble(true);
-    setMagicianMaxRerolls(2);
     setGeniusGuess("");
     setForcedDieRoll(6);
   }, [currentEntrant.id, currentPlayer.id, race.previousFinalMoveValue]);
@@ -138,8 +134,6 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
     hypnotistTargetEntrantId: selectedTargetEntrantId || undefined,
     useThirdWheel: abilityKey === "warp_to_exactly_two_before_main" ? useBeforeMainAbility : undefined,
     thirdWheelTargetPosition: selectedThirdWheelPosition === "" ? undefined : selectedThirdWheelPosition,
-    useRocketScientistDouble: abilityKey === "optional_double_roll_then_trip" ? useRocketDouble : undefined,
-    magicianMaxRerolls: abilityKey === "reroll_main_move_up_to_two" ? magicianMaxRerolls : undefined,
     geniusGuess: abilityKey === "predict_roll_extra_turn" && geniusGuess !== "" ? geniusGuess : undefined,
     forcedDieRoll: debugMode ? forcedDieRoll : undefined,
   };
@@ -324,31 +318,6 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, onRo
                   {thirdWheelSpaces.map((position) => (
                     <option key={position} value={position}>{`${position} 格`}</option>
                   ))}
-                </select>
-              </label>
-            ) : null}
-
-            {abilityKey === "optional_double_roll_then_trip" ? (
-              <label className="ability-toggle">
-                <input
-                  type="checkbox"
-                  checked={useRocketDouble}
-                  onChange={(event) => setUseRocketDouble(event.target.checked)}
-                />
-                掷骰后使用火箭加倍
-              </label>
-            ) : null}
-
-            {abilityKey === "reroll_main_move_up_to_two" ? (
-              <label className="ability-select">
-                <span>低点自动重掷次数</span>
-                <select
-                  value={magicianMaxRerolls}
-                  onChange={(event) => setMagicianMaxRerolls(Number(event.target.value) as 0 | 1 | 2)}
-                >
-                  <option value={0}>0</option>
-                  <option value={1}>1</option>
-                  <option value={2}>2</option>
                 </select>
               </label>
             ) : null}

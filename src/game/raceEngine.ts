@@ -166,6 +166,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
         ...race,
         previousFinalMoveValue: dieRoll,
         pendingDiceDecision: {
+          kind: "dicemonger",
           playerId,
           dieRoll,
           choice: choice ?? {},
@@ -192,6 +193,27 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
       ],
       revision: game.revision + 1,
     };
+  }
+
+  if (usesDie && !choice?.skipAfterRollPrompt) {
+    const dieRoll = (choice?.forcedDieRoll ?? rng.rollDie(6)) as 1 | 2 | 3 | 4 | 5 | 6;
+    const postRollPrompt = createPostRollPrompt(game, race, entrant, playerId, dieRoll, choice ?? {});
+
+    if (postRollPrompt) {
+      return {
+        ...game,
+        activeRace: {
+          ...race,
+          previousFinalMoveValue: dieRoll,
+          pendingDiceDecision: postRollPrompt.decision,
+          pendingReactions: [...race.pendingReactions, postRollPrompt.prompt],
+        },
+        log: [...game.log, createLog(game, "dice_roll", `${describeRaceEntrant(game, entrant)} 掷出了 ${dieRoll}。`, 0)],
+        revision: game.revision + 1,
+      };
+    }
+
+    choice = { ...choice, forcedDieRoll: dieRoll };
   }
 
   const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
@@ -319,6 +341,10 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
 
   if (prompt.promptType === "reroll") {
     return confirmDicemongerReroll(game, race, prompt, playerId, accepted, rng);
+  }
+
+  if (prompt.promptType === "optionalPower" && race.pendingDiceDecision?.kind) {
+    return confirmAfterRollDecision(game, race, prompt, playerId, accepted, rng);
   }
 
   let workingRace: RaceState = {
@@ -452,7 +478,7 @@ function confirmDicemongerReroll(
 ): GameState {
   const decision = race.pendingDiceDecision;
 
-  if (!decision || decision.playerId !== playerId) {
+  if (!decision || decision.kind !== "dicemonger" || decision.playerId !== playerId) {
     throw new Error("Missing DiceMonger decision");
   }
 
@@ -490,6 +516,122 @@ function confirmDicemongerReroll(
     forcedDieRoll: finalRoll,
     skipDicemongerPrompt: true,
   });
+}
+
+function confirmAfterRollDecision(
+  game: GameState,
+  race: RaceState,
+  prompt: { id: string },
+  playerId: string,
+  accepted: boolean,
+  rng: Rng,
+): GameState {
+  const decision = race.pendingDiceDecision;
+
+  if (!decision || decision.playerId !== playerId) {
+    throw new Error("Missing after-roll decision");
+  }
+
+  const continuedRace: RaceState = {
+    ...race,
+    pendingDiceDecision: null,
+    pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
+  };
+  const actor = race.entrants.find((entrant) => entrant.id === playerId) ?? race.entrants[0];
+  let choice: MainMoveChoice = { ...decision.choice, forcedDieRoll: decision.dieRoll, skipDicemongerPrompt: true };
+  let message: string;
+
+  if (decision.kind === "alchemist") {
+    choice = { ...choice, useAlchemistFour: accepted, skipAfterRollPrompt: true };
+    message = accepted
+      ? `${describeRaceEntrant(game, actor)} 选择将点数 ${decision.dieRoll} 改为移动 4 格。`
+      : `${describeRaceEntrant(game, actor)} 保留点数 ${decision.dieRoll}。`;
+  } else if (decision.kind === "rocketScientist") {
+    choice = { ...choice, useRocketScientistDouble: accepted, skipAfterRollPrompt: true };
+    message = accepted
+      ? `${describeRaceEntrant(game, actor)} 选择将点数 ${decision.dieRoll} 加倍，并会在移动后绊倒。`
+      : `${describeRaceEntrant(game, actor)} 放弃火箭加倍，保留点数 ${decision.dieRoll}。`;
+  } else {
+    if (!accepted) {
+      choice = { ...choice, skipAfterRollPrompt: true };
+      message = `${describeRaceEntrant(game, actor)} 保留魔术师点数 ${decision.dieRoll}。`;
+    } else {
+      const nextRoll = rng.rollDie(6) as 1 | 2 | 3 | 4 | 5 | 6;
+      choice = {
+        ...choice,
+        forcedDieRoll: nextRoll,
+        magicianRerollsUsed: ((decision.rerollsUsed ?? 0) + 1) as 1 | 2,
+      };
+      message = `${describeRaceEntrant(game, actor)} 使用魔术师重投：${decision.dieRoll} -> ${nextRoll}。`;
+    }
+  }
+
+  const gameAfterDecision: GameState = {
+    ...game,
+    activeRace: continuedRace,
+    log: [...game.log, createLog(game, "ability_trigger", message, 0)],
+    revision: game.revision + 1,
+  };
+
+  return rollForCurrentPlayer(gameAfterDecision, playerId, rng, choice);
+}
+
+function createPostRollPrompt(
+  game: GameState,
+  race: RaceState,
+  entrant: Entrant,
+  playerId: string,
+  dieRoll: 1 | 2 | 3 | 4 | 5 | 6,
+  choice: MainMoveChoice,
+): { decision: NonNullable<RaceState["pendingDiceDecision"]>; prompt: RaceState["pendingReactions"][number] } | null {
+  const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+  const key = entrant.copiedAbilityKey ?? athlete?.implementationKey;
+  const actor = describeRaceEntrant(game, entrant);
+  const base = { playerId, dieRoll, choice };
+
+  if (key === "main_roll_low_becomes_four" && dieRoll <= 2) {
+    return {
+      decision: { ...base, kind: "alchemist" },
+      prompt: {
+        id: `alchemist:${entrant.id}:${race.round}:${entrant.actionCount}`,
+        playerId,
+        athleteId: entrant.athleteId,
+        promptType: "optionalPower",
+        title: "炼金师：是否改为移动 4 格？",
+        description: `${actor} 掷出了 ${dieRoll}。可以保留点数，或使用炼金师改为移动 4 格。`,
+      },
+    };
+  }
+
+  if (key === "reroll_main_move_up_to_two" && (choice.magicianRerollsUsed ?? 0) < 2) {
+    return {
+      decision: { ...base, kind: "magician", rerollsUsed: choice.magicianRerollsUsed ?? 0 },
+      prompt: {
+        id: `magician:${entrant.id}:${race.round}:${entrant.actionCount}:${choice.magicianRerollsUsed ?? 0}`,
+        playerId,
+        athleteId: entrant.athleteId,
+        promptType: "optionalPower",
+        title: "魔术师：是否重投？",
+        description: `${actor} 掷出了 ${dieRoll}。可重投，最多还能重投 ${2 - (choice.magicianRerollsUsed ?? 0)} 次；必须使用最后一次结果。`,
+      },
+    };
+  }
+
+  if (key === "optional_double_roll_then_trip" && dieRoll > 0) {
+    return {
+      decision: { ...base, kind: "rocketScientist" },
+      prompt: {
+        id: `rocket:${entrant.id}:${race.round}:${entrant.actionCount}`,
+        playerId,
+        athleteId: entrant.athleteId,
+        promptType: "optionalPower",
+        title: "火箭科学家：是否加倍？",
+        description: `${actor} 掷出了 ${dieRoll}。可改为移动 ${dieRoll * 2} 格，但下回合会绊倒。`,
+      },
+    };
+  }
+
+  return null;
 }
 
 function findOtherDicemonger(race: RaceState, entrant: Entrant): Entrant | null {

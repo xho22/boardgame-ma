@@ -31,7 +31,7 @@
 | 7 | 第一批能力实现 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 32 tests passed | 已实现 7 个第一批 main move 能力、能力日志和 trip 跳过效果 |
 | 8 | 复杂移动与第二批能力 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 已实现 passing、sharing、on-roll、on-power、trip、二次移动冲线同步和死锁保护 |
 | 9 | 第三批能力与完整 36 角色 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 36 个角色均有本地 MVP 行为；已补角色图鉴 |
-| 10 | 体验打磨 | 进行中 | 部分通过 | `npm run build`: 通过；`npm run test -- --run`: 57 tests passed；`npm run e2e`: 2 passed | 已补中文比赛日志、角色头像棋子、trip 倒置/自动恢复、Mastermind 预测 UI、Gunk 触发日志、Genius 猜点、Cheerleader/Legs/Flip Flop/Hypnotist/Third Wheel 等主移动前明确选择；Banana 覆盖同格起步与啦啦队长带动的经过判定；Suckerfish 跟随确认会继续结算后续移动触发。after-roll 和别人回合反应确认仍待拆分状态机 |
+| 10 | 体验打磨 | 进行中 | 部分通过 | `npm run build`: 通过；`npm run test -- --run`: 57 tests passed；`npm run e2e`: 2 passed | 已补中文比赛日志、角色头像棋子、trip 倒置/自动恢复、Mastermind 预测 UI、Gunk 触发日志、Genius 猜点、Cheerleader/Legs/Flip Flop/Hypnotist/Third Wheel 等主移动前明确选择；骰子商人、炼金师、魔术师、火箭科学家均已改为骰后确认；Banana 覆盖同格起步与啦啦队长带动的经过判定；Suckerfish 跟随确认会继续结算后续移动触发。Egg、Copycat、Duelist 的选择型流程仍待实现 |
 | 11 | 在线房间技术验证 | 未开始 | 未验收 | - | - |
 | 12 | 在线完整游玩 | 未开始 | 未验收 | - | - |
 

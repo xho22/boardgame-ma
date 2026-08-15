@@ -21,6 +21,15 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
   const currentPlayer = game.players.find((player) => player.id === currentEntrant?.playerId);
   const pendingReaction = race.pendingReactions[0];
   const reactionPlayer = game.players.find((player) => player.id === pendingReaction?.playerId);
+  const reactionActions = pendingReaction?.title?.startsWith("炼金师")
+    ? { decline: "保留点数", accept: "改为移动 4 格" }
+    : pendingReaction?.title?.startsWith("魔术师")
+      ? { decline: "保留点数", accept: "重投" }
+      : pendingReaction?.title?.startsWith("火箭科学家")
+        ? { decline: "保留点数", accept: "加倍并绊倒" }
+        : pendingReaction?.promptType === "reroll"
+          ? { decline: "保留点数", accept: "重投" }
+          : { decline: "放弃", accept: "使用能力" };
 
   if (!currentPlayer || !currentEntrant) {
     return null;
@@ -61,14 +70,14 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, false)}
                 >
-                  放弃
+                  {reactionActions.decline}
                 </button>
                 <button
                   className="primary-button"
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, true)}
                 >
-                  使用能力
+                  {reactionActions.accept}
                 </button>
               </div>
             </div>

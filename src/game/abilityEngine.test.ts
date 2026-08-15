@@ -57,7 +57,21 @@ function createRace(firstAthlete: string, secondAthlete: string, trackLength = 3
 }
 
 function roll(game: GameState, playerId: string, rolls: number[], choice?: MainMoveChoice): GameState {
-  return reduceGameCommand(game, { type: "ROLL_DICE", playerId, choice }, scriptedRng(rolls));
+  const rng = scriptedRng(rolls);
+  let nextGame = reduceGameCommand(game, { type: "ROLL_DICE", playerId, choice }, rng);
+
+  while (nextGame.activeRace?.pendingDiceDecision) {
+    const prompt = nextGame.activeRace.pendingReactions[0];
+    const decision = nextGame.activeRace.pendingDiceDecision;
+    const accepted = decision.kind === "rocketScientist" ? (choice?.useRocketScientistDouble ?? true) : true;
+    nextGame = reduceGameCommand(
+      nextGame,
+      { type: "CONFIRM_REACTION", playerId: prompt.playerId, reactionId: prompt.id, accepted },
+      rng,
+    );
+  }
+
+  return nextGame;
 }
 
 function entrantPosition(game: GameState, playerId: string): number {
@@ -148,7 +162,7 @@ describe("phase 7 abilities", () => {
     const game = roll(createRace("Magician", "Baba Yaga"), "player-1", [2, 3, 6]);
 
     expect(entrantPosition(game, "player-1")).toBe(6);
-    expect(latestMessages(game).some((message) => message.includes("2 -> 3 -> 6"))).toBe(true);
+    expect(latestMessages(game).filter((message) => message.includes("魔术师重投")).length).toBe(2);
   });
 
   it("Rocket Scientist doubles the main move and trips until the next main move", () => {

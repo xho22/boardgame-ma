@@ -84,7 +84,21 @@ function createRace(
 }
 
 function roll(game: GameState, playerId: string, rolls: number[], choice?: MainMoveChoice): GameState {
-  return reduceGameCommand(game, { type: "ROLL_DICE", playerId, choice }, scriptedRng(rolls));
+  const rng = scriptedRng(rolls);
+  let nextGame = reduceGameCommand(game, { type: "ROLL_DICE", playerId, choice }, rng);
+
+  while (nextGame.activeRace?.pendingDiceDecision?.kind !== "dicemonger" && nextGame.activeRace?.pendingDiceDecision) {
+    const prompt = nextGame.activeRace.pendingReactions[0];
+    const decision = nextGame.activeRace.pendingDiceDecision;
+    const accepted = decision.kind === "rocketScientist" ? (choice?.useRocketScientistDouble ?? true) : true;
+    nextGame = reduceGameCommand(
+      nextGame,
+      { type: "CONFIRM_REACTION", playerId: prompt.playerId, reactionId: prompt.id, accepted },
+      rng,
+    );
+  }
+
+  return nextGame;
 }
 
 function setPositions(game: GameState, positions: Record<string, number>, currentPlayerId = "player-1"): GameState {

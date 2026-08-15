@@ -184,18 +184,22 @@ export type MainMoveChoice = {
   useThirdWheel?: boolean;
   thirdWheelTargetPosition?: number;
   useRocketScientistDouble?: boolean;
-  magicianMaxRerolls?: 0 | 1 | 2;
+  useAlchemistFour?: boolean;
+  magicianRerollsUsed?: 0 | 1 | 2;
   geniusGuess?: 1 | 2 | 3 | 4 | 5 | 6;
   forcedDieRoll?: 1 | 2 | 3 | 4 | 5 | 6;
   /** Internal continuation marker for a DiceMonger reroll decision. */
   skipDicemongerPrompt?: boolean;
+  skipAfterRollPrompt?: boolean;
 };
 
 export type PendingDiceDecision = {
+  kind: "dicemonger" | "alchemist" | "magician" | "rocketScientist";
   playerId: string;
   dieRoll: 1 | 2 | 3 | 4 | 5 | 6;
   choice: MainMoveChoice;
-  dicemongerEntrantId: string;
+  dicemongerEntrantId?: string;
+  rerollsUsed?: 0 | 1 | 2;
 };
 
 export type PendingTurnState = {
