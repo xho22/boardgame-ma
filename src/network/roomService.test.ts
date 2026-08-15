@@ -27,8 +27,11 @@ describe("RoomService", () => {
     const dad = service.join("family-a", "Dad");
     service.join("family-a", "Kid");
 
-    const started = service.startSharedGame("family-a", dad.playerId);
+    const started = service.startSharedGame("family-a", dad.playerId, { racersPerPlayerPerRace: 2, debugMode: true });
     expect(started.gameState?.phase).toBe("teamReveal");
+    expect(started.gameState?.settings.racersPerPlayerPerRace).toBe(2);
+    expect(started.gameState?.settings.debugMode).toBe(true);
+    expect(started.gameState?.players.every((player) => player.athleteIds.length === 8)).toBe(true);
 
     const selected = service.dispatchGameCommand(
       "family-a",

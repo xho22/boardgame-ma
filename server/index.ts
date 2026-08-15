@@ -53,7 +53,7 @@ server.on("connection", (socket) => {
       }
 
       if (message.type === "START_SHARED_GAME") {
-        rooms.startSharedGame(client.roomId, client.playerId);
+        rooms.startSharedGame(client.roomId, client.playerId, message.options);
       } else if (message.type === "RESET_SHARED_GAME") {
         rooms.resetSharedGame(client.roomId, client.playerId);
       } else if (message.type === "GAME_COMMAND") {

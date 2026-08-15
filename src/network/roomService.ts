@@ -2,6 +2,7 @@ import { reduceGameCommand } from "../game/raceEngine";
 import { createRng } from "../game/rng";
 import { createInitialGameState } from "../game/setup";
 import type { GameCommand, GameState, PlayerSlot, RoomState } from "../game/types";
+import type { StartSharedGameOptions } from "./protocol";
 
 const ROOM_CAPACITY = 6;
 
@@ -86,7 +87,7 @@ export class RoomService {
     return updatedRoom;
   }
 
-  startSharedGame(roomId: string, playerId: string): RoomState {
+  startSharedGame(roomId: string, playerId: string, options: StartSharedGameOptions = {}): RoomState {
     const room = this.requireRoom(roomId);
     this.requireHost(room, playerId);
     const occupiedSlots = room.playerSlots.filter((slot) => slot.isOccupied);
@@ -99,6 +100,8 @@ export class RoomService {
       settings: {
         playerCount: occupiedSlots.length,
         playerNames: occupiedSlots.map((slot) => slot.playerName),
+        racersPerPlayerPerRace: options.racersPerPlayerPerRace,
+        debugMode: options.debugMode,
       },
     });
     const gameState: GameState = {

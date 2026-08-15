@@ -197,6 +197,13 @@ h1 {
   padding-block: 20px;
 }
 
+.online-game-settings {
+  display: grid;
+  gap: 16px;
+  border-block: 1px solid #ddd5ca;
+  padding-block: 20px;
+}
+
 .room-status-row {
   display: flex;
   align-items: center;

@@ -8,7 +8,7 @@ import { TeamRevealScreen } from "./TeamRevealScreen";
 import { getActiveSelectionPlayer } from "../game/selection";
 import type { GameCommand, GameState, MainMoveChoice, RoomState } from "../game/types";
 import { RoomClient } from "../network/roomClient";
-import type { ServerMessage } from "../network/protocol";
+import type { ServerMessage, StartSharedGameOptions } from "../network/protocol";
 
 type OnlineRoomScreenProps = {
   onBack: () => void;
@@ -33,6 +33,8 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [status, setStatus] = useState("尚未连接");
   const [error, setError] = useState<string | null>(null);
+  const [racersPerPlayerPerRace, setRacersPerPlayerPerRace] = useState<1 | 2>(1);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => () => client.current.close(), []);
 
@@ -103,6 +105,12 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   const canStart = Boolean(isHost && occupiedCount >= 2 && room?.status === "waiting");
   const game = room?.gameState;
 
+  useEffect(() => {
+    if (occupiedCount > 3) {
+      setRacersPerPlayerPerRace(1);
+    }
+  }, [occupiedCount]);
+
   if (game && playerId) {
     return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} />;
   }
@@ -151,14 +159,38 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
             </div>
 
             {room.status === "waiting" ? (
-              <button
-                className="primary-button"
-                type="button"
-                disabled={!canStart}
-                onClick={() => client.current.send({ type: "START_SHARED_GAME" })}
-              >
-                Start Shared Test Game
-              </button>
+              <section className="online-game-settings" aria-label="Online game settings">
+                <div className="room-status-row">
+                  <strong>游戏设定</strong>
+                  <span>{`${occupiedCount} 名玩家`}</span>
+                </div>
+                {isHost ? (
+                  <>
+                    <div className="control-band">
+                      <label htmlFor="online-racers-per-player">Racers Per Player</label>
+                      <div className="segmented-control" id="online-racers-per-player">
+                        <button className={racersPerPlayerPerRace === 1 ? "selected" : ""} type="button" onClick={() => setRacersPerPlayerPerRace(1)}>1</button>
+                        <button className={racersPerPlayerPerRace === 2 ? "selected" : ""} type="button" disabled={occupiedCount > 3} onClick={() => setRacersPerPlayerPerRace(2)}>2</button>
+                      </div>
+                    </div>
+                    <label className="toggle-row" htmlFor="online-debug-mode">
+                      <span>Debug Mode</span>
+                      <input checked={debugMode} id="online-debug-mode" type="checkbox" onChange={(event) => setDebugMode(event.target.checked)} />
+                    </label>
+                    <button
+                      className="primary-button"
+                      type="button"
+                      disabled={!canStart}
+                      onClick={() => client.current.send({
+                        type: "START_SHARED_GAME",
+                        options: { racersPerPlayerPerRace, debugMode } satisfies StartSharedGameOptions,
+                      })}
+                    >
+                      Start Shared Game
+                    </button>
+                  </>
+                ) : <p className="choice-hint">等待房主设置每人 racer 数量和 Debug 模式。</p>}
+              </section>
             ) : null}
 
             {game ? (
