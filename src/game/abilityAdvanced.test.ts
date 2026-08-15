@@ -313,6 +313,27 @@ describe("phase 8 abilities", () => {
     expect(position(game, "player-3")).toBe(3);
   });
 
+  it("Suckerfish can react to ability-driven movement", () => {
+    let game = roll(createRace(["Legs", "Suckerfish"]), "player-1", [1], { useLegsFixedMove: true });
+    expect(requireRace(game).pendingReactions[0]?.title).toBe("吸盘鱼跟随");
+
+    game = roll(setPositions(createRace(["Romantic", "Suckerfish", "Alchemist", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 0,
+      "player-3": 0,
+      "player-4": 3,
+    }, "player-3"), "player-3", [3]);
+    expect(requireRace(game).pendingReactions.some((prompt) => prompt.sourceEntrantId === "player-2" && prompt.targetEntrantId === "player-1")).toBe(true);
+
+    game = roll(setPositions(createRace(["Centaur", "Scoocher", "Suckerfish", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 0,
+      "player-3": 0,
+      "player-4": 2,
+    }), "player-1", [3]);
+    expect(requireRace(game).pendingReactions.some((prompt) => prompt.sourceEntrantId === "player-3" && prompt.targetEntrantId === "player-2")).toBe(true);
+  });
+
   it("Dicemonger, Inchworm, and Lackey react to other racers' rolls", () => {
     let game = roll(createRace(["Alchemist", "Dicemonger"]), "player-1", [2, 6]);
 
@@ -325,6 +346,19 @@ describe("phase 8 abilities", () => {
     );
     expect(position(game, "player-1")).toBe(6);
     expect(position(game, "player-2")).toBe(1);
+
+    game = roll(setPositions(createRace(["Alchemist", "Dicemonger", "Suckerfish"]), {
+      "player-1": 0,
+      "player-2": 0,
+      "player-3": 0,
+    }), "player-1", [2]);
+    const followableRerollPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: followableRerollPrompt.playerId, reactionId: followableRerollPrompt.id, accepted: true },
+      scriptedRng([6]),
+    );
+    expect(requireRace(game).pendingReactions[0]?.title).toBe("吸盘鱼跟随");
 
     game = roll(createRace(["Alchemist", "Inchworm"]), "player-1", [1]);
     expect(position(game, "player-1")).toBe(0);

@@ -397,30 +397,9 @@ export function resolveAfterMove({
       didAnyAbilityTrigger = true;
     }
 
-    if (
-      key === "follow_same_space_mover" &&
-      entrant.position === moverBefore.position &&
-      path.length > 0 &&
-      !hasPendingFollowReaction(workingRace, entrant.id, moverAfter.id)
-    ) {
-      workingRace = {
-        ...workingRace,
-        pendingReactions: [
-          ...workingRace.pendingReactions,
-          {
-            id: `follow:${entrant.id}:${moverAfter.id}:${workingRace.round}:${workingRace.finishers.length}`,
-            playerId: entrant.playerId,
-            athleteId: entrant.athleteId,
-            promptType: "optionalPower",
-            sourceEntrantId: entrant.id,
-            targetEntrantId: moverAfter.id,
-            title: "吸盘鱼跟随",
-            description: `${describeEntrant(game, entrant)} 可以跟随${describeEntrant(game, moverAfter)}移动到 ${moverAfter.position}。`,
-          },
-        ],
-      };
-    }
   }
+
+  workingRace = queueSuckerfishFollowReactions(game, workingRace, moverBefore, moverAfter, path);
 
   if (moverKey === "move_passed_racer_back_two") {
     for (const entrant of workingRace.entrants) {
@@ -432,6 +411,7 @@ export function resolveAfterMove({
       ) {
         const moved = moveEntrantBackward(entrant, 2).entrant;
         workingRace = replaceEntrant(workingRace, moved);
+        workingRace = queueSuckerfishFollowReactions(game, workingRace, entrant, moved, [moved.position]);
       logs.push({
         type: "movement",
         message: `${describeEntrant(game, moverAfter)} 经过${describeEntrant(game, entrant)}，将其推回到 ${moved.position}。`,
@@ -527,7 +507,7 @@ export function resolveAfterMove({
         ...current,
         skippedTurns: current.skippedTurns + 1,
       }));
-      workingRace = moveEntrantInRace(workingRace, winner.id, 2);
+      workingRace = moveEntrantInRace(game, workingRace, winner.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, duelist)} 发起自动决斗，对阵${describeEntrant(game, opponent)}；双方掷出 ${duelistRoll} 比 ${opponentRoll}，${describeEntrant(game, winner)}获胜并前进 2 格，${describeEntrant(game, loser)}被绊倒。`,
@@ -543,7 +523,7 @@ export function resolveAfterMove({
       !romantic.eliminated &&
       countOthersAt(workingRace, moverAfter.id, moverAfter.position) === 1
     ) {
-      workingRace = moveEntrantInRace(workingRace, romantic.id, 2);
+      workingRace = moveEntrantInRace(game, workingRace, romantic.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, romantic)} 看到一对选手同格，移动 2 格。`,
@@ -558,7 +538,7 @@ export function resolveAfterMove({
       heckler.id !== moverAfter.id &&
       Math.abs(moverAfter.position - moverBefore.position) <= 1
     ) {
-      workingRace = moveEntrantInRace(workingRace, heckler.id, 2);
+      workingRace = moveEntrantInRace(game, workingRace, heckler.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, heckler)} 嘲讽短移动回合，移动 2 格。`,
@@ -575,7 +555,7 @@ export function resolveAfterMove({
         !scoocher.finished &&
         !scoocher.eliminated
       ) {
-        workingRace = moveEntrantInRace(workingRace, scoocher.id, 1);
+        workingRace = moveEntrantInRace(game, workingRace, scoocher.id, 1);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
@@ -642,10 +622,10 @@ function applyBeforeMainMove(
 
     if (last && last.id !== entrant.id) {
       const lastBefore = last;
-      workingRace = moveEntrantInRace(workingRace, last.id, 2);
+      workingRace = moveEntrantInRace(game, workingRace, last.id, 2);
       const lastAfter = workingRace.entrants.find((candidate) => candidate.id === last.id) ?? last;
       const cheerleaderBefore = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
-      workingRace = moveEntrantInRace(workingRace, entrant.id, 1);
+      workingRace = moveEntrantInRace(game, workingRace, entrant.id, 1);
       const cheerleaderAfter = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
       workingRace = applyBananaPassTraps(game, workingRace, lastBefore, lastAfter, logs);
       workingRace = applyBananaPassTraps(game, workingRace, cheerleaderBefore, cheerleaderAfter, logs);
@@ -701,24 +681,14 @@ function applyBeforeMainMove(
   if (key === "pull_all_then_bonus_per_guest" && choice.usePartyAnimal === true) {
     const party = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
 
-    workingRace = {
-      ...workingRace,
-      entrants: workingRace.entrants.map((candidate) => {
-        if (candidate.id === entrant.id || candidate.finished || candidate.eliminated) {
-          return candidate;
-        }
+    for (const candidate of [...workingRace.entrants]) {
+      if (candidate.id === entrant.id || candidate.finished || candidate.eliminated || candidate.position === party.position) {
+        continue;
+      }
 
-        return {
-          ...candidate,
-          position:
-            candidate.position < party.position
-              ? candidate.position + 1
-              : candidate.position > party.position
-                ? Math.max(0, candidate.position - 1)
-                : candidate.position,
-        };
-      }),
-    };
+      const targetPosition = candidate.position < party.position ? candidate.position + 1 : Math.max(0, candidate.position - 1);
+      workingRace = moveEntrantToPositionInRace(game, workingRace, candidate.id, targetPosition);
+    }
     logs.push({
       type: "ability_trigger",
       message: `${name} 使用派对动物，让其他所有选手朝自己移动 1 格。`,
@@ -743,7 +713,7 @@ function applyRollReactions(
     const inchworm = findOtherByKey(game, workingRace, entrant, "skip_others_one_roll_move_self");
 
     if (inchworm) {
-      workingRace = moveEntrantInRace(workingRace, inchworm.id, 1);
+      workingRace = moveEntrantInRace(game, workingRace, inchworm.id, 1);
       skipMover = true;
       logs.push({
         type: "ability_trigger",
@@ -766,7 +736,7 @@ function applyRollReactions(
     const lackey = findOtherByKey(game, workingRace, entrant, "move_two_before_other_six");
 
     if (lackey) {
-      workingRace = moveEntrantInRace(workingRace, lackey.id, 2);
+      workingRace = moveEntrantInRace(game, workingRace, lackey.id, 2);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, lackey)} 看到点数 6，在${describeEntrant(game, entrant)}移动前先移动 2 格。`,
@@ -1010,8 +980,63 @@ function replaceEntrant(race: RaceState, entrant: Entrant): RaceState {
   return updateEntrant(race, entrant.id, () => entrant);
 }
 
-function moveEntrantInRace(race: RaceState, entrantId: string, spaces: number): RaceState {
-  return updateEntrant(race, entrantId, (entrant) => moveEntrantForward(entrant, spaces, race.trackLength).entrant);
+export function moveEntrantInRace(game: GameState, race: RaceState, entrantId: string, spaces: number): RaceState {
+  const entrant = findEntrantById(race, entrantId);
+  if (!entrant) {
+    return race;
+  }
+
+  const moved = moveEntrantForward(entrant, spaces, race.trackLength);
+  return queueSuckerfishFollowReactions(game, replaceEntrant(race, moved.entrant), entrant, moved.entrant, moved.path);
+}
+
+function moveEntrantToPositionInRace(game: GameState, race: RaceState, entrantId: string, position: number): RaceState {
+  const entrant = findEntrantById(race, entrantId);
+  if (!entrant || entrant.position === position) {
+    return race;
+  }
+
+  const moved = { ...entrant, position };
+  return queueSuckerfishFollowReactions(game, replaceEntrant(race, moved), entrant, moved, [position]);
+}
+
+function queueSuckerfishFollowReactions(
+  game: GameState,
+  race: RaceState,
+  moverBefore: Entrant,
+  moverAfter: Entrant,
+  path: number[],
+): RaceState {
+  if (path.length === 0) {
+    return race;
+  }
+
+  const pendingReactions = [...race.pendingReactions];
+  for (const entrant of race.entrants) {
+    if (
+      entrant.id === moverAfter.id ||
+      entrant.finished ||
+      entrant.eliminated ||
+      entrant.position !== moverBefore.position ||
+      getEffectiveImplementationKey(game, race, entrant) !== "follow_same_space_mover" ||
+      hasPendingFollowReaction(race, entrant.id, moverAfter.id)
+    ) {
+      continue;
+    }
+
+    pendingReactions.push({
+      id: `follow:${entrant.id}:${moverAfter.id}:${race.round}:${race.finishers.length}:${pendingReactions.length}`,
+      playerId: entrant.playerId,
+      athleteId: entrant.athleteId,
+      promptType: "optionalPower",
+      sourceEntrantId: entrant.id,
+      targetEntrantId: moverAfter.id,
+      title: "吸盘鱼跟随",
+      description: `${describeEntrant(game, entrant)} 可以跟随${describeEntrant(game, moverAfter)}移动到 ${moverAfter.position}。`,
+    });
+  }
+
+  return pendingReactions.length === race.pendingReactions.length ? race : { ...race, pendingReactions };
 }
 
 function swapEntrants(race: RaceState, firstEntrantId: string, secondEntrantId: string): RaceState {

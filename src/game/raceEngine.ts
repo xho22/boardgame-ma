@@ -11,6 +11,7 @@ import { applyRaceScoring, isGameComplete } from "./scoring";
 import {
   applyBeforeRaceAbilities,
   getEffectiveImplementationKey,
+  moveEntrantInRace,
   resolveAfterMove,
   resolveMainMove,
 } from "./abilityEngine";
@@ -526,6 +527,14 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
     return completeRace(nextGame);
   }
 
+  if (continuation?.resumeDiceRoll) {
+    return rollForCurrentPlayer(nextGame, continuation.resumeDiceRoll.playerId, rng, {
+      ...continuation.resumeDiceRoll.choice,
+      forcedDieRoll: continuation.resumeDiceRoll.dieRoll,
+      skipDicemongerPrompt: true,
+    });
+  }
+
   if (continuation?.extraTurnPlayerId) {
     return setNextTurn(nextGame, workingRace, continuation.extraTurnPlayerId);
   }
@@ -560,14 +569,7 @@ function confirmDicemongerReroll(
   };
 
   if (accepted && dicemonger) {
-    continuedRace = {
-      ...continuedRace,
-      entrants: continuedRace.entrants.map((entrant) =>
-        entrant.id === dicemonger.id
-          ? moveEntrantForward(entrant, 1, continuedRace.trackLength).entrant
-          : entrant,
-      ),
-    };
+    continuedRace = moveEntrantInRace(game, continuedRace, dicemonger.id, 1);
   }
 
   const decisionLog = accepted
@@ -580,11 +582,27 @@ function confirmDicemongerReroll(
     revision: game.revision + 1,
   };
 
-  return rollForCurrentPlayer(gameAfterDecision, playerId, rng, {
+  const rerollChoice: MainMoveChoice = {
     ...decision.choice,
     forcedDieRoll: finalRoll,
     skipDicemongerPrompt: true,
-  });
+  };
+
+  if (continuedRace.pendingReactions.length > 0) {
+    return {
+      ...gameAfterDecision,
+      activeRace: {
+        ...continuedRace,
+        pendingTurnState: {
+          extraTurnPlayerId: null,
+          nextTurnPlayerId: null,
+          resumeDiceRoll: { playerId, dieRoll: finalRoll, choice: decision.choice },
+        },
+      },
+    };
+  }
+
+  return rollForCurrentPlayer(gameAfterDecision, playerId, rng, rerollChoice);
 }
 
 function confirmAfterRollDecision(

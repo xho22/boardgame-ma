@@ -206,6 +206,11 @@ export type PendingDiceDecision = {
 export type PendingTurnState = {
   extraTurnPlayerId: string | null;
   nextTurnPlayerId: string | null;
+  resumeDiceRoll?: {
+    playerId: string;
+    dieRoll: 1 | 2 | 3 | 4 | 5 | 6;
+    choice: MainMoveChoice;
+  };
 };
 
 export type RaceSummary = {

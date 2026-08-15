@@ -632,6 +632,7 @@ type SelectionState = {
 - before main move：Party Animal 已改为主动选择；Copycat 会将唯一领先者的有效能力传入同一套操作面板与规则结算，赛前复制能力除外。
 - pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
+- 所有能力定义为 `move` 的额外位移统一通过 `moveEntrantInRace` 进入吸盘鱼反应队列；骰子商人重投造成的移动会先完成吸盘鱼确认，再恢复原角色的重投结算。warp、换位和推挤不走此路径。
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
 - on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。
 - before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
