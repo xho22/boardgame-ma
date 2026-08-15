@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { beginSelection, lockPlayerSelection, selectAthleteForRace, setMastermindPrediction } from "./selection";
+import {
+  beginSelection,
+  lockPlayerSelection,
+  selectAthleteForRace,
+  setMastermindPrediction,
+} from "./selection";
 import { createInitialGameState } from "./setup";
+import type { Rng } from "./rng";
+import { STANDARD_ATHLETES } from "./athletes";
+
+const orderedRng: Rng = {
+  nextFloat: () => 0,
+  nextInt: () => 0,
+  rollDie: () => 1,
+  shuffle: (items) => [...items],
+};
 
 function createSelectionGame() {
   const game = createInitialGameState({
@@ -10,6 +24,14 @@ function createSelectionGame() {
   });
 
   return beginSelection(game);
+}
+
+function athleteId(standardName: string): string {
+  const athlete = STANDARD_ATHLETES.find((candidate) => candidate.standardName === standardName);
+  if (!athlete) {
+    throw new Error(`Missing athlete: ${standardName}`);
+  }
+  return athlete.id;
 }
 
 describe("selection flow", () => {
@@ -33,7 +55,7 @@ describe("selection flow", () => {
     const secondAthlete = game.players[1].athleteIds[0];
 
     game = selectAthleteForRace(game, "player-1", firstAthlete);
-    game = lockPlayerSelection(game, "player-1");
+    game = lockPlayerSelection(game, "player-1", orderedRng);
 
     expect(game.phase).toBe("selecting");
     expect(game.selectionState?.activePlayerId).toBe("player-2");
@@ -41,7 +63,7 @@ describe("selection flow", () => {
     expect(game.selectionState?.revealed).toBe(false);
 
     game = selectAthleteForRace(game, "player-2", secondAthlete);
-    game = lockPlayerSelection(game, "player-2");
+    game = lockPlayerSelection(game, "player-2", orderedRng);
 
     expect(game.phase).toBe("raceReveal");
     expect(game.selectionState?.activePlayerId).toBeNull();
@@ -59,12 +81,35 @@ describe("selection flow", () => {
     const secondAthlete = game.players[1].athleteIds[0];
 
     game = selectAthleteForRace(game, "player-1", firstAthlete);
-    game = lockPlayerSelection(game, "player-1");
+    game = lockPlayerSelection(game, "player-1", orderedRng);
     game = selectAthleteForRace(game, "player-2", secondAthlete);
-    game = lockPlayerSelection(game, "player-2");
+    game = lockPlayerSelection(game, "player-2", orderedRng);
     game = setMastermindPrediction(game, firstAthlete, secondAthlete);
 
     expect(game.selectionState?.mastermindPredictionsByAthleteId[firstAthlete]).toBe(secondAthlete);
+  });
+
+  it("draws Egg's three candidates from racers not in the race", () => {
+    const eggId = athleteId("Egg");
+    const bananaId = athleteId("Banana");
+    const selectionGame = createSelectionGame();
+    let game = {
+      ...selectionGame,
+      players: selectionGame.players.map((player, index) => ({
+        ...player,
+        athleteIds: index === 0 ? [eggId] : [bananaId],
+      })),
+    };
+
+    game = selectAthleteForRace(game, "player-1", eggId);
+    game = lockPlayerSelection(game, "player-1", orderedRng);
+    game = selectAthleteForRace(game, "player-2", bananaId);
+    game = lockPlayerSelection(game, "player-2", orderedRng);
+
+    const candidates = game.selectionState?.eggCandidatesByAthleteId[eggId] ?? [];
+    expect(candidates).toHaveLength(3);
+    expect(candidates).not.toContain(eggId);
+    expect(candidates).not.toContain(bananaId);
   });
 
   it("requires two selected racers when the game is configured for two racers per player", () => {
@@ -78,10 +123,10 @@ describe("selection flow", () => {
     const [firstAthlete, secondAthlete] = game.players[0].athleteIds;
 
     game = selectAthleteForRace(game, "player-1", firstAthlete);
-    expect(() => lockPlayerSelection(game, "player-1")).toThrow("must select 2 racer");
+    expect(() => lockPlayerSelection(game, "player-1", orderedRng)).toThrow("must select 2 racer");
 
     game = selectAthleteForRace(game, "player-1", secondAthlete);
-    game = lockPlayerSelection(game, "player-1");
+    game = lockPlayerSelection(game, "player-1", orderedRng);
 
     expect(game.selectionState?.selectionsByPlayerId["player-1"]).toEqual([firstAthlete, secondAthlete]);
   });
@@ -102,6 +147,6 @@ describe("selection flow", () => {
   it("requires a selected racer before locking", () => {
     const game = createSelectionGame();
 
-    expect(() => lockPlayerSelection(game, "player-1")).toThrow("must select");
+    expect(() => lockPlayerSelection(game, "player-1", orderedRng)).toThrow("must select");
   });
 });

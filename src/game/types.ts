@@ -219,6 +219,8 @@ export type SelectionState = {
   activePlayerId: string | null;
   selectionsByPlayerId: Record<string, string[]>;
   mastermindPredictionsByAthleteId: Record<string, string>;
+  eggCandidatesByAthleteId: Record<string, string[]>;
+  copiedAbilityAthleteIdByAthleteId: Record<string, string>;
   lockedPlayerIds: string[];
   revealed: boolean;
 };
@@ -250,6 +252,7 @@ export type GameCommand =
   | { type: "BEGIN_SELECTION" }
   | { type: "SELECT_ATHLETE"; playerId: string; athleteId: string }
   | { type: "SET_MASTERMIND_PREDICTION"; athleteId: string; predictedAthleteId: string }
+  | { type: "SET_BEFORE_RACE_COPY_CHOICE"; athleteId: string; copiedAthleteId: string }
   | { type: "LOCK_SELECTION"; playerId: string }
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }

@@ -79,8 +79,43 @@ function createRace(
   }
 
   game = setDefaultMastermindPredictions(game, rng, mastermindPredictionName);
+  game = setDefaultBeforeRaceCopyChoices(game, rng);
 
   return reduceGameCommand(game, { type: "REVEAL_RACE" }, rng);
+}
+
+function setDefaultBeforeRaceCopyChoices(game: GameState, rng: Rng): GameState {
+  const selection = game.selectionState;
+  if (!selection) {
+    return game;
+  }
+
+  const previousWinnerAthleteIds = [...new Set(
+    game.races
+      .slice(0, game.raceIndex)
+      .flatMap((race) => race.finishers)
+      .filter((finisher) => finisher.rank === 1)
+      .map((finisher) => finisher.athleteId),
+  )];
+
+  for (const athleteId of Object.values(selection.selectionsByPlayerId).flat()) {
+    const athlete = STANDARD_ATHLETES.find((candidate) => candidate.id === athleteId);
+    const candidates = athlete?.implementationKey === "draft_temp_power_before_race"
+      ? selection.eggCandidatesByAthleteId[athleteId] ?? []
+      : athlete?.implementationKey === "copy_previous_winner_before_race"
+        ? previousWinnerAthleteIds
+        : [];
+
+    if (candidates[0]) {
+      game = reduceGameCommand(
+        game,
+        { type: "SET_BEFORE_RACE_COPY_CHOICE", athleteId, copiedAthleteId: candidates[0] },
+        rng,
+      );
+    }
+  }
+
+  return game;
 }
 
 function roll(game: GameState, playerId: string, rolls: number[], choice?: MainMoveChoice): GameState {
@@ -411,6 +446,11 @@ describe("phase 9 abilities", () => {
     expect(game.players[0].score).toBe(3);
     expect(position(game, "player-1")).toBe(0);
 
+    game = createRace(["Sisyphus", "Baba Yaga"]);
+    game = { ...game, players: game.players.map((player, index) => index === 0 ? { ...player, score: 0 } : player) };
+    game = roll(game, "player-1", [6]);
+    expect(game.players[0].score).toBe(0);
+
     game = roll(createRace(["Alchemist", "Baba Yaga", "Skipper"]), "player-1", [1]);
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-3");
 
@@ -519,6 +559,7 @@ describe("ability simulation", () => {
             game = reduceGameCommand(game, { type: "LOCK_SELECTION", playerId: player.id }, rng);
           }
           game = setDefaultMastermindPredictions(game, rng);
+          game = setDefaultBeforeRaceCopyChoices(game, rng);
           game = reduceGameCommand(game, { type: "REVEAL_RACE" }, rng);
           continue;
         }

@@ -40,7 +40,40 @@ function createReadyRaceGame(trackLength = 6, racersPerPlayerPerRace: 1 | 2 = 1)
     game = reduceGameCommand(game, { type: "LOCK_SELECTION", playerId: player.id }, sixRng);
   }
 
-  return reduceGameCommand(game, { type: "REVEAL_RACE" }, sixRng);
+  return reduceGameCommand(selectDefaultCopyChoices(game), { type: "REVEAL_RACE" }, sixRng);
+}
+
+function selectDefaultCopyChoices(game: GameState): GameState {
+  const selection = game.selectionState;
+  if (!selection) {
+    return game;
+  }
+
+  const previousWinnerAthleteIds = [...new Set(
+    game.races
+      .slice(0, game.raceIndex)
+      .flatMap((race) => race.finishers)
+      .filter((finisher) => finisher.rank === 1)
+      .map((finisher) => finisher.athleteId),
+  )];
+  const choices = { ...selection.copiedAbilityAthleteIdByAthleteId };
+
+  for (const [athleteId, candidates] of Object.entries(selection.eggCandidatesByAthleteId)) {
+    if (candidates[0]) {
+      choices[athleteId] = candidates[0];
+    }
+  }
+
+  for (const athleteId of Object.values(selection.selectionsByPlayerId).flat()) {
+    if (previousWinnerAthleteIds[0] && !choices[athleteId]) {
+      choices[athleteId] = previousWinnerAthleteIds[0];
+    }
+  }
+
+  return {
+    ...game,
+    selectionState: { ...selection, copiedAbilityAthleteIdByAthleteId: choices },
+  };
 }
 
 function finishActiveRace(game: GameState): GameState {
@@ -80,8 +113,8 @@ describe("race engine", () => {
     expect(game.activeRace?.entrants).toHaveLength(4);
     expect(game.activeRace?.turnOrder).toEqual([
       "player-1:racer-1",
-      "player-1:racer-2",
       "player-2:racer-1",
+      "player-1:racer-2",
       "player-2:racer-2",
     ]);
     expect(game.players[0].usedAthleteIds).toHaveLength(2);
@@ -149,7 +182,7 @@ describe("race engine", () => {
         game = reduceGameCommand(game, { type: "LOCK_SELECTION", playerId: player.id }, sixRng);
       }
 
-      game = reduceGameCommand(game, { type: "REVEAL_RACE" }, sixRng);
+      game = reduceGameCommand(selectDefaultCopyChoices(game), { type: "REVEAL_RACE" }, sixRng);
     }
 
     expect(game.phase).toBe("finalResults");

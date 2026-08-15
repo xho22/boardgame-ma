@@ -22,6 +22,7 @@ type GameStore = {
   selectAthlete: (playerId: string, athleteId: string) => void;
   lockSelection: (playerId: string) => void;
   setMastermindPrediction: (athleteId: string, predictedAthleteId: string) => void;
+  setBeforeRaceCopyChoice: (athleteId: string, copiedAthleteId: string) => void;
   revealRace: () => void;
   rollDice: (playerId: string, choice?: MainMoveChoice) => void;
   confirmReaction: (playerId: string, reactionId: string, accepted: boolean) => void;
@@ -144,6 +145,20 @@ export const useGameStore = create<GameStore>((set) => ({
       const game = reduceGameCommand(
         state.game,
         { type: "SET_MASTERMIND_PREDICTION", athleteId, predictedAthleteId },
+        rngForGame(state.game),
+      );
+      saveGame(game);
+      return { game, hasSavedGame: true };
+    }),
+  setBeforeRaceCopyChoice: (athleteId, copiedAthleteId) =>
+    set((state) => {
+      if (!state.game) {
+        return state;
+      }
+
+      const game = reduceGameCommand(
+        state.game,
+        { type: "SET_BEFORE_RACE_COPY_CHOICE", athleteId, copiedAthleteId },
         rngForGame(state.game),
       );
       saveGame(game);

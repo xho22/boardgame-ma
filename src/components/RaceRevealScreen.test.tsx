@@ -63,6 +63,8 @@ const game = {
       "player-2": [babaYaga.id],
     },
     mastermindPredictionsByAthleteId: {},
+    eggCandidatesByAthleteId: {},
+    copiedAbilityAthleteIdByAthleteId: {},
     lockedPlayerIds: ["player-1", "player-2"],
     revealed: true,
   },
@@ -74,7 +76,12 @@ const game = {
 describe("RaceRevealScreen", () => {
   it("requires Mastermind to predict a revealed racer before starting", () => {
     const markup = renderToStaticMarkup(
-      <RaceRevealScreen game={game} onPredictionChange={() => undefined} onStartRace={() => undefined} />,
+      <RaceRevealScreen
+        game={game}
+        onPredictionChange={() => undefined}
+        onCopyChoiceChange={() => undefined}
+        onStartRace={() => undefined}
+      />,
     );
 
     expect(markup).toContain("幕后大师预测");

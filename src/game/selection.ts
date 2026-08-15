@@ -1,3 +1,5 @@
+import { STANDARD_ATHLETES, STANDARD_ATHLETE_BY_ID } from "./athletes";
+import type { Rng } from "./rng";
 import type { GameState, SelectionState } from "./types";
 
 export function beginSelection(game: GameState): GameState {
@@ -6,6 +8,8 @@ export function beginSelection(game: GameState): GameState {
     activePlayerId: game.players[0]?.id ?? null,
     selectionsByPlayerId: Object.fromEntries(game.players.map((player) => [player.id, []])),
     mastermindPredictionsByAthleteId: {},
+    eggCandidatesByAthleteId: {},
+    copiedAbilityAthleteIdByAthleteId: {},
     lockedPlayerIds: [],
     revealed: false,
   };
@@ -90,7 +94,43 @@ export function setMastermindPrediction(game: GameState, athleteId: string, pred
   };
 }
 
-export function lockPlayerSelection(game: GameState, playerId: string): GameState {
+export function setBeforeRaceCopyChoice(game: GameState, athleteId: string, copiedAthleteId: string): GameState {
+  const selectionState = requireSelectionState(game);
+  const selectedAthleteIds = Object.values(selectionState.selectionsByPlayerId).flat();
+
+  if (!selectionState.revealed || !selectedAthleteIds.includes(athleteId)) {
+    throw new Error("Copy choices can only be set for revealed racers");
+  }
+
+  const athlete = STANDARD_ATHLETE_BY_ID.get(athleteId);
+  if (!athlete) {
+    throw new Error(`Unknown athlete: ${athleteId}`);
+  }
+
+  const allowedAthleteIds = athlete.implementationKey === "draft_temp_power_before_race"
+    ? selectionState.eggCandidatesByAthleteId[athleteId] ?? []
+    : athlete.implementationKey === "copy_previous_winner_before_race"
+      ? previousWinnerAthleteIds(game)
+      : [];
+
+  if (!allowedAthleteIds.includes(copiedAthleteId)) {
+    throw new Error(`${copiedAthleteId} cannot be copied by ${athlete.displayName}`);
+  }
+
+  return {
+    ...game,
+    selectionState: {
+      ...selectionState,
+      copiedAbilityAthleteIdByAthleteId: {
+        ...selectionState.copiedAbilityAthleteIdByAthleteId,
+        [athleteId]: copiedAthleteId,
+      },
+    },
+    revision: game.revision + 1,
+  };
+}
+
+export function lockPlayerSelection(game: GameState, playerId: string, rng: Rng): GameState {
   const selectionState = requireSelectionState(game);
   const playerIndex = game.players.findIndex((player) => player.id === playerId);
 
@@ -111,6 +151,26 @@ export function lockPlayerSelection(game: GameState, playerId: string): GameStat
     : [...selectionState.lockedPlayerIds, playerId];
   const nextPlayer = game.players.find((player) => !lockedPlayerIds.includes(player.id));
   const allLocked = lockedPlayerIds.length === game.players.length;
+  const allSelectedAthleteIds = Object.values(selectionState.selectionsByPlayerId).flat();
+  const eggCandidatesByAthleteId = allLocked
+    ? Object.fromEntries(
+        allSelectedAthleteIds
+          .filter(
+            (athleteId) => STANDARD_ATHLETE_BY_ID.get(athleteId)?.implementationKey === "draft_temp_power_before_race",
+          )
+          .map((eggAthleteId) => [
+            eggAthleteId,
+            rng
+              .shuffle(
+                STANDARD_ATHLETES.filter(
+                  (athlete) => athlete.id !== eggAthleteId && !allSelectedAthleteIds.includes(athlete.id),
+                ),
+              )
+              .slice(0, 3)
+              .map((athlete) => athlete.id),
+          ]),
+      )
+    : selectionState.eggCandidatesByAthleteId;
 
   return {
     ...game,
@@ -120,9 +180,20 @@ export function lockPlayerSelection(game: GameState, playerId: string): GameStat
       activePlayerId: nextPlayer?.id ?? null,
       lockedPlayerIds,
       revealed: allLocked,
+      eggCandidatesByAthleteId,
     },
     revision: game.revision + 1,
   };
+}
+
+function previousWinnerAthleteIds(game: GameState): string[] {
+  return [...new Set(
+    game.races
+      .slice(0, game.raceIndex)
+      .flatMap((race) => race.finishers)
+      .filter((finisher) => finisher.rank === 1)
+      .map((finisher) => finisher.athleteId),
+  )];
 }
 
 export function getActiveSelectionPlayer(game: GameState) {

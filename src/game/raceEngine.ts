@@ -1,4 +1,10 @@
-import { beginSelection, lockPlayerSelection, selectAthleteForRace, setMastermindPrediction } from "./selection";
+import {
+  beginSelection,
+  lockPlayerSelection,
+  selectAthleteForRace,
+  setBeforeRaceCopyChoice,
+  setMastermindPrediction,
+} from "./selection";
 import { STANDARD_ATHLETE_BY_ID } from "./athletes";
 import { createInitialGameState } from "./setup";
 import { moveEntrantForward } from "./movement";
@@ -24,8 +30,10 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
       return selectAthleteForRace(game, command.playerId, command.athleteId);
     case "SET_MASTERMIND_PREDICTION":
       return setMastermindPrediction(game, command.athleteId, command.predictedAthleteId);
+    case "SET_BEFORE_RACE_COPY_CHOICE":
+      return setBeforeRaceCopyChoice(game, command.athleteId, command.copiedAthleteId);
     case "LOCK_SELECTION":
-      return lockPlayerSelection(game, command.playerId);
+      return lockPlayerSelection(game, command.playerId, rng);
     case "REVEAL_RACE":
       return beginRaceFromSelection(game);
     case "ROLL_DICE":
@@ -81,6 +89,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
     }));
   });
   const mastermindPredictionsByAthleteId = selectionState.mastermindPredictionsByAthleteId ?? {};
+  const copiedAbilityAthleteIdByAthleteId = selectionState.copiedAbilityAthleteIdByAthleteId ?? {};
   const missingMastermindPrediction = baseEntrants.find((entrant) => {
     const athlete = game.athletes.find((candidate) => candidate.id === entrant.athleteId);
 
@@ -91,14 +100,40 @@ export function beginRaceFromSelection(game: GameState): GameState {
     throw new Error("Mastermind must predict a racer before the race starts");
   }
 
-  const prepared = applyBeforeRaceAbilities({ game, entrants: baseEntrants, mastermindPredictionsByAthleteId });
+  const missingCopyChoice = baseEntrants.find((entrant) => {
+    const athlete = game.athletes.find((candidate) => candidate.id === entrant.athleteId);
+
+    if (athlete?.implementationKey === "draft_temp_power_before_race") {
+      return !copiedAbilityAthleteIdByAthleteId[entrant.athleteId];
+    }
+
+    if (athlete?.implementationKey === "copy_previous_winner_before_race") {
+      const hasPreviousWinner = game.races
+        .slice(0, game.raceIndex)
+        .some((race) => race.finishers.some((finisher) => finisher.rank === 1));
+      return hasPreviousWinner && !copiedAbilityAthleteIdByAthleteId[entrant.athleteId];
+    }
+
+    return false;
+  });
+
+  if (missingCopyChoice) {
+    throw new Error("All required before-race copy choices must be made before the race starts");
+  }
+
+  const prepared = applyBeforeRaceAbilities({
+    game,
+    entrants: baseEntrants,
+    mastermindPredictionsByAthleteId,
+    copiedAbilityAthleteIdByAthleteId,
+  });
   const activeRace: RaceState = {
     id: `race-${raceSummary.raceNumber}`,
     raceNumber: raceSummary.raceNumber,
     trackLength: game.settings.trackLength,
     firstPlacePoints: raceSummary.firstPlacePoints,
     secondPlacePoints: raceSummary.secondPlacePoints,
-    turnOrder: baseEntrants.map((entrant) => entrant.id),
+    turnOrder: createPlayerInterleavedTurnOrder(game, baseEntrants),
     currentTurnIndex: 0,
     entrants: prepared.entrants,
     finishers: [],
@@ -128,6 +163,15 @@ export function beginRaceFromSelection(game: GameState): GameState {
     ],
     revision: game.revision + 1,
   };
+}
+
+function createPlayerInterleavedTurnOrder(game: GameState, entrants: Entrant[]): string[] {
+  const entrantsByPlayerId = new Map(game.players.map((player) => [player.id, entrants.filter((entrant) => entrant.playerId === player.id)]));
+  const racersPerPlayer = Math.max(...[...entrantsByPlayerId.values()].map((playerEntrants) => playerEntrants.length));
+
+  return Array.from({ length: racersPerPlayer }, (_, racerIndex) =>
+    game.players.map((player) => entrantsByPlayerId.get(player.id)?.[racerIndex]?.id).filter((entrantId): entrantId is string => Boolean(entrantId)),
+  ).flat();
 }
 
 export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng, choice?: MainMoveChoice): GameState {

@@ -28,6 +28,7 @@ export function App() {
     selectAthlete,
     lockSelection,
     setMastermindPrediction,
+    setBeforeRaceCopyChoice,
     revealRace,
     rollDice,
     confirmReaction,
@@ -66,7 +67,14 @@ export function App() {
   }
 
   if (view === "raceReveal" && game) {
-    return <RaceRevealScreen game={game} onPredictionChange={setMastermindPrediction} onStartRace={revealRace} />;
+    return (
+      <RaceRevealScreen
+        game={game}
+        onPredictionChange={setMastermindPrediction}
+        onCopyChoiceChange={setBeforeRaceCopyChoice}
+        onStartRace={revealRace}
+      />
+    );
   }
 
   if (view === "racing" && game) {

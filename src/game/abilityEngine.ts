@@ -1,4 +1,4 @@
-import { STANDARD_ATHLETE_BY_ID, STANDARD_ATHLETES } from "./athletes";
+import { STANDARD_ATHLETE_BY_ID } from "./athletes";
 import {
   shouldAutoUseFlipFlop,
   shouldAutoUseRocketScientist,
@@ -45,6 +45,7 @@ type ApplyBeforeRaceOptions = {
   game: GameState;
   entrants: Entrant[];
   mastermindPredictionsByAthleteId?: Record<string, string>;
+  copiedAbilityAthleteIdByAthleteId?: Record<string, string>;
 };
 
 type ResolveAfterMoveOptions = {
@@ -58,7 +59,12 @@ type ResolveAfterMoveOptions = {
   abilityTriggered: boolean;
 };
 
-export function applyBeforeRaceAbilities({ game, entrants, mastermindPredictionsByAthleteId = {} }: ApplyBeforeRaceOptions): {
+export function applyBeforeRaceAbilities({
+  game,
+  entrants,
+  mastermindPredictionsByAthleteId = {},
+  copiedAbilityAthleteIdByAthleteId = {},
+}: ApplyBeforeRaceOptions): {
   entrants: Entrant[];
   players: Player[];
   logs: AbilityLog[];
@@ -66,37 +72,30 @@ export function applyBeforeRaceAbilities({ game, entrants, mastermindPredictions
   const logs: AbilityLog[] = [];
   let nextEntrants = entrants;
   let players = game.players;
-  const raceAthleteIds = new Set(entrants.map((entrant) => entrant.athleteId));
 
   nextEntrants = nextEntrants.map((entrant) => {
     const key = getBaseImplementationKey(entrant);
     const name = describeEntrant(game, entrant);
 
     if (key === "draft_temp_power_before_race") {
-      const copied = STANDARD_ATHLETES.find(
-        (athlete) => athlete.id !== entrant.athleteId && !raceAthleteIds.has(athlete.id),
-      );
+      const copied = STANDARD_ATHLETE_BY_ID.get(copiedAbilityAthleteIdByAthleteId[entrant.athleteId]);
 
       if (copied) {
         logs.push({
           type: "ability_trigger",
-          message: `${name} 使用蛋，在本场复制了${copied.displayName}的能力。`,
+          message: `${name} 使用鸡蛋，在本场复制了${copied.displayName}的能力。`,
         });
         return { ...entrant, copiedAbilityKey: copied.implementationKey };
       }
     }
 
     if (key === "copy_previous_winner_before_race") {
-      const previousWinner = game.races
-        .slice(0, game.raceIndex)
-        .flatMap((race) => race.finishers)
-        .find((finisher) => finisher.rank === 1);
-      const copied = previousWinner ? STANDARD_ATHLETE_BY_ID.get(previousWinner.athleteId) : null;
+      const copied = STANDARD_ATHLETE_BY_ID.get(copiedAbilityAthleteIdByAthleteId[entrant.athleteId]);
 
       if (copied) {
         logs.push({
           type: "ability_trigger",
-          message: `${name} 使用双子，复制了上一场冠军${copied.displayName}的能力。`,
+          message: `${name} 使用双胞胎，复制了此前冠军${copied.displayName}的能力。`,
         });
         return { ...entrant, copiedAbilityKey: copied.implementationKey };
       }
