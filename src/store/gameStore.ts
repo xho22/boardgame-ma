@@ -25,7 +25,7 @@ type GameStore = {
   setBeforeRaceCopyChoice: (athleteId: string, copiedAthleteId: string) => void;
   revealRace: () => void;
   rollDice: (playerId: string, choice?: MainMoveChoice) => void;
-  confirmReaction: (playerId: string, reactionId: string, accepted: boolean) => void;
+  confirmReaction: (playerId: string, reactionId: string, accepted: boolean, targetEntrantId?: string) => void;
   beginNextRace: () => void;
 };
 
@@ -184,7 +184,7 @@ export const useGameStore = create<GameStore>((set) => ({
       saveGame(game);
       return { game, hasSavedGame: true, view: viewFromGame(game) };
     }),
-  confirmReaction: (playerId, reactionId, accepted) =>
+  confirmReaction: (playerId, reactionId, accepted, targetEntrantId) =>
     set((state) => {
       if (!state.game) {
         return state;
@@ -192,7 +192,7 @@ export const useGameStore = create<GameStore>((set) => ({
 
       const game = reduceGameCommand(
         state.game,
-        { type: "CONFIRM_REACTION", playerId, reactionId, accepted },
+        { type: "CONFIRM_REACTION", playerId, reactionId, accepted, targetEntrantId },
         rngForGame(state.game),
       );
       saveGame(game);

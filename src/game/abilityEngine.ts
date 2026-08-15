@@ -55,7 +55,6 @@ type ResolveAfterMoveOptions = {
   moverBefore: Entrant;
   moverAfter: Entrant;
   path: number[];
-  rng: Rng;
   abilityTriggered: boolean;
 };
 
@@ -340,7 +339,6 @@ export function resolveAfterMove({
   moverBefore,
   moverAfter,
   path,
-  rng,
   abilityTriggered,
 }: ResolveAfterMoveOptions): AfterMoveResolution {
   const logs: AbilityLog[] = [];
@@ -475,44 +473,41 @@ export function resolveAfterMove({
     }
   }
 
-  const duelists =
-    path.length > 0
-      ? workingRace.entrants.filter(
-          (entrant) =>
-            !entrant.finished &&
-            !entrant.eliminated &&
-            entrant.position === moverAfter.position &&
-            getEffectiveImplementationKey(game, workingRace, entrant) === "duel_on_shared_space",
-        )
-      : [];
-
-  if (duelists.length > 0) {
-    const duelist = duelists[0];
-    const opponent = workingRace.entrants.find(
+  if (path.length > 0) {
+    const duelists = workingRace.entrants.filter(
       (entrant) =>
-        entrant.id !== duelist.id &&
         !entrant.finished &&
         !entrant.eliminated &&
-        entrant.position === duelist.position,
+        entrant.position === moverAfter.position &&
+        getEffectiveImplementationKey(game, workingRace, entrant) === "duel_on_shared_space",
     );
 
-    if (opponent) {
-      const duelistRoll = rng.rollDie(6);
-      const opponentRoll = rng.rollDie(6);
-      const duelistWins = duelistRoll >= opponentRoll;
-      const winner = duelistWins ? duelist : opponent;
-      const loser = duelistWins ? opponent : duelist;
+    for (const duelist of duelists) {
+      const opponents = workingRace.entrants.filter(
+        (entrant) =>
+          entrant.id !== duelist.id &&
+          !entrant.finished &&
+          !entrant.eliminated &&
+          entrant.position === duelist.position,
+      );
 
-      workingRace = updateEntrant(workingRace, loser.id, (current) => ({
-        ...current,
-        skippedTurns: current.skippedTurns + 1,
-      }));
-      workingRace = moveEntrantInRace(game, workingRace, winner.id, 2);
-      logs.push({
-        type: "ability_trigger",
-        message: `${describeEntrant(game, duelist)} 发起自动决斗，对阵${describeEntrant(game, opponent)}；双方掷出 ${duelistRoll} 比 ${opponentRoll}，${describeEntrant(game, winner)}获胜并前进 2 格，${describeEntrant(game, loser)}被绊倒。`,
-      });
-      didAnyAbilityTrigger = true;
+      if (opponents.length > 0 && !hasPendingDuelReaction(workingRace, duelist.id)) {
+        workingRace = {
+          ...workingRace,
+          pendingReactions: [
+            ...workingRace.pendingReactions,
+            {
+              id: `duel:${duelist.id}:${workingRace.round}:${workingRace.finishers.length}`,
+              playerId: duelist.playerId,
+              athleteId: duelist.athleteId,
+              promptType: "duel",
+              sourceEntrantId: duelist.id,
+              title: "决斗家：是否呼喊决斗？",
+              description: `${describeEntrant(game, duelist)} 可从同格的选手中选择 1 名决斗。双方掷骰，高点者移动 2 格；平局由决斗家获胜。`,
+            },
+          ],
+        };
+      }
     }
   }
 
@@ -952,6 +947,12 @@ function findEntrantById(race: RaceState, entrantId: string | undefined): Entran
 function hasPendingFollowReaction(race: RaceState, sourceEntrantId: string, targetEntrantId: string): boolean {
   return race.pendingReactions.some(
     (prompt) => prompt.sourceEntrantId === sourceEntrantId && prompt.targetEntrantId === targetEntrantId,
+  );
+}
+
+function hasPendingDuelReaction(race: RaceState, duelistEntrantId: string): boolean {
+  return race.pendingReactions.some(
+    (prompt) => prompt.promptType === "duel" && prompt.sourceEntrantId === duelistEntrantId,
   );
 }
 

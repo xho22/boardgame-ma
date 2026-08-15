@@ -39,7 +39,7 @@ export function reduceGameCommand(game: GameState, command: GameCommand, rng: Rn
     case "ROLL_DICE":
       return rollForCurrentPlayer(game, command.playerId, rng, command.choice);
     case "CONFIRM_REACTION":
-      return confirmReaction(game, command.playerId, command.reactionId, command.accepted, rng);
+      return confirmReaction(game, command.playerId, command.reactionId, command.accepted, rng, command.targetEntrantId);
     case "BEGIN_NEXT_RACE":
       return beginNextRace(game);
     case "FINISH_GAME":
@@ -200,7 +200,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
   // A tripped racer recovers without rolling, so no after-roll powers may interrupt that turn.
   if (entrant.skippedTurns > 0) {
     const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
-    return finishResolvedMove(game, entrant, mainMove, rng);
+    return finishResolvedMove(game, entrant, mainMove);
   }
 
   const dicemonger = findOtherDicemonger(game, race, entrant);
@@ -267,14 +267,13 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
   }
 
   const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
-  return finishResolvedMove(game, entrant, mainMove, rng);
+  return finishResolvedMove(game, entrant, mainMove);
 }
 
 function finishResolvedMove(
   game: GameState,
   entrant: Entrant,
   mainMove: ReturnType<typeof resolveMainMove>,
-  rng: Rng,
 ): GameState {
   const moveResult = moveWithAbility(mainMove.race, mainMove.entrant, mainMove.finalMove, {
     leaptoad: mainMove.usesLeaptoadMove,
@@ -319,7 +318,6 @@ function finishResolvedMove(
     moverBefore,
     moverAfter: moveResult.entrant,
     path: moveResult.path,
-    rng,
     abilityTriggered: mainMove.logs.some((log) => log.type === "ability_trigger"),
   });
   const raceAfterSecondaryFinishes = syncFinishers(afterMove.race);
@@ -397,7 +395,14 @@ function finishResolvedMove(
   return advanceTurn(gameWithMove, raceAfterSecondaryFinishes.race);
 }
 
-function confirmReaction(game: GameState, playerId: string, reactionId: string, accepted: boolean, rng: Rng): GameState {
+function confirmReaction(
+  game: GameState,
+  playerId: string,
+  reactionId: string,
+  accepted: boolean,
+  rng: Rng,
+  targetEntrantId?: string,
+): GameState {
   const race = requireActiveRace(game);
   const prompt = race.pendingReactions.find((candidate) => candidate.id === reactionId);
 
@@ -411,6 +416,10 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
 
   if (prompt.promptType === "reroll") {
     return confirmDicemongerReroll(game, race, prompt, playerId, accepted, rng);
+  }
+
+  if (prompt.promptType === "duel") {
+    return confirmDuel(game, race, prompt, accepted, targetEntrantId, rng);
   }
 
   if (prompt.promptType === "optionalPower" && race.pendingDiceDecision?.kind) {
@@ -479,7 +488,6 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
           moverBefore: reactorBefore,
           moverAfter: reactorAfter,
           path: followPath,
-          rng,
           abilityTriggered: true,
         });
         workingRace = afterFollow.race;
@@ -544,6 +552,99 @@ function confirmReaction(game: GameState, playerId: string, reactionId: string, 
   }
 
   return advanceTurn(nextGame, workingRace);
+}
+
+function confirmDuel(
+  game: GameState,
+  race: RaceState,
+  prompt: { id: string; sourceEntrantId?: string },
+  accepted: boolean,
+  targetEntrantId: string | undefined,
+  rng: Rng,
+): GameState {
+  let workingRace: RaceState = {
+    ...race,
+    pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
+  };
+  const logs: GameLogEntry[] = [];
+  const duelist = prompt.sourceEntrantId ? workingRace.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId) : null;
+
+  if (!duelist) {
+    throw new Error("Missing Duelist for duel reaction");
+  }
+
+  if (!accepted) {
+    logs.push(createLog(game, "ability_trigger", `${describeRaceEntrant(game, duelist)} 放弃发起决斗。`, 0));
+  } else {
+    const opponent = targetEntrantId ? workingRace.entrants.find((entrant) => entrant.id === targetEntrantId) : null;
+    if (!opponent || opponent.id === duelist.id || opponent.finished || opponent.eliminated || opponent.position !== duelist.position) {
+      throw new Error("Duelist must choose another active racer sharing its space");
+    }
+
+    const duelistRoll = rng.rollDie(6);
+    const opponentRoll = rng.rollDie(6);
+    const winner = duelistRoll >= opponentRoll ? duelist : opponent;
+    workingRace = moveEntrantInRace(game, workingRace, winner.id, 2);
+    logs.push(
+      createLog(
+        game,
+        "ability_trigger",
+        `${describeRaceEntrant(game, duelist)} 向${describeRaceEntrant(game, opponent)}发起决斗；双方掷出 ${duelistRoll} 比 ${opponentRoll}，${describeRaceEntrant(game, winner)}获胜并前进 2 格。`,
+        0,
+      ),
+    );
+  }
+
+  return finalizeReaction(game, race, workingRace, game.players, logs, rng);
+}
+
+function finalizeReaction(
+  game: GameState,
+  originalRace: RaceState,
+  race: RaceState,
+  players: GameState["players"],
+  logs: GameLogEntry[],
+  rng: Rng,
+): GameState {
+  const synced = syncFinishers(race);
+  const workingRace = synced.race;
+  const nextGame: GameState = {
+    ...game,
+    players,
+    activeRace: workingRace,
+    log: [...game.log, ...logs, ...synced.logs.map((log, index) => createLog(game, log.type, log.message, logs.length + index))],
+    revision: game.revision + 1,
+  };
+
+  if (workingRace.pendingReactions.length > 0) {
+    return nextGame;
+  }
+
+  const continuation = originalRace.pendingTurnState;
+  const clearedRace = { ...workingRace, pendingTurnState: null };
+  const continuedGame = { ...nextGame, activeRace: clearedRace };
+
+  if (shouldCompleteRace(continuedGame, clearedRace)) {
+    return completeRace(continuedGame);
+  }
+
+  if (continuation?.resumeDiceRoll) {
+    return rollForCurrentPlayer(continuedGame, continuation.resumeDiceRoll.playerId, rng, {
+      ...continuation.resumeDiceRoll.choice,
+      forcedDieRoll: continuation.resumeDiceRoll.dieRoll,
+      skipDicemongerPrompt: true,
+    });
+  }
+
+  if (continuation?.extraTurnPlayerId) {
+    return setNextTurn(continuedGame, clearedRace, continuation.extraTurnPlayerId);
+  }
+
+  if (continuation?.nextTurnPlayerId) {
+    return setNextTurn(continuedGame, clearedRace, continuation.nextTurnPlayerId);
+  }
+
+  return advanceTurn(continuedGame, clearedRace);
 }
 
 function confirmDicemongerReroll(

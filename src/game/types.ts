@@ -263,6 +263,6 @@ export type GameCommand =
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
-  | { type: "CONFIRM_REACTION"; playerId: string; reactionId: string; accepted: boolean }
+  | { type: "CONFIRM_REACTION"; playerId: string; reactionId: string; accepted: boolean; targetEntrantId?: string }
   | { type: "BEGIN_NEXT_RACE" }
   | { type: "FINISH_GAME" };

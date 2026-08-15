@@ -88,10 +88,10 @@ const STANDARD_ATHLETE_DATA = [
     standardName: "Duelist",
     displayName: "决斗家",
     type: "reaction",
-    abilityText: "任意选手与 Duelist sharing a space 时可发起决斗；双方掷骰，高者 move 2，低者 trip；Duelist 平局胜。",
+    abilityText: "任意选手与 Duelist 同格时，可以选择一名同格选手决斗；双方掷骰，高者移动 2 格；Duelist 平局胜。",
     abilityHooks: ["onSharedStop"],
     implementationKey: "duel_on_shared_space",
-    tags: ["standard", "sharing", "duel", "trip"],
+    tags: ["standard", "sharing", "duel", "optional"],
   },
   {
     standardName: "Egg",

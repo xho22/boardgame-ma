@@ -212,7 +212,7 @@ type GameCommand =
   | { type: "REVEAL_RACE" }
   | { type: "ROLL_DICE"; playerId: string; choice?: MainMoveChoice }
   | { type: "USE_ABILITY"; playerId: string; payload: unknown }
-  | { type: "CONFIRM_REACTION"; playerId: string; reactionId: string; accepted: boolean }
+  | { type: "CONFIRM_REACTION"; playerId: string; reactionId: string; accepted: boolean; targetEntrantId?: string }
   | { type: "BEGIN_NEXT_RACE" }
   | { type: "FINISH_GAME" };
 ```
@@ -636,6 +636,7 @@ type SelectionState = {
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
 - on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。
 - before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
+- sharing optional reaction：Duelist 在同格时通过 `pendingReactions` 请求确认，并由客户端提交所选的 `targetEntrantId`；结算只移动决斗获胜者 2 格，平局归 Duelist。
 
 trip UI 状态：
 

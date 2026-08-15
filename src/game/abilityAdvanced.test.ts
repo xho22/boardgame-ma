@@ -532,43 +532,69 @@ describe("phase 9 abilities", () => {
     expect(position(game, "player-1")).toBe(4);
   });
 
-  it("Duelist triggers whether it moves in or gets moved into, and logs both rolls", () => {
+  it("Duelist prompts for confirmation and only the winner moves", () => {
     let game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
       "player-1": 0,
       "player-2": 3,
-    }), "player-1", [3, 6, 2]);
+    }), "player-1", [3]);
+    const duelPrompt = requireRace(game).pendingReactions[0];
+    expect(duelPrompt?.promptType).toBe("duel");
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: duelPrompt.id, accepted: true, targetEntrantId: "player-2" },
+      scriptedRng([6, 2]),
+    );
 
     expect(position(game, "player-1")).toBe(5);
-    expect(entrant(game, "player-2").skippedTurns).toBe(1);
+    expect(entrant(game, "player-2").skippedTurns).toBe(0);
     expect(messages(game).some((message) => message.includes("双方掷出 6 比 2"))).toBe(true);
 
     game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
       "player-1": 3,
       "player-2": 0,
-    }, "player-2"), "player-2", [3, 1, 5]);
+    }, "player-2"), "player-2", [3]);
+    const movedIntoDuelPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: movedIntoDuelPrompt.id, accepted: true, targetEntrantId: "player-2" },
+      scriptedRng([1, 5]),
+    );
 
     expect(position(game, "player-2")).toBe(5);
-    expect(entrant(game, "player-1").skippedTurns).toBe(1);
+    expect(entrant(game, "player-1").skippedTurns).toBe(0);
     expect(messages(game).some((message) => message.includes("双方掷出 1 比 5"))).toBe(true);
   });
 
-  it("Duelist wins ties but can also lose duels", () => {
+  it("Duelist wins ties and can choose among multiple opponents", () => {
     let game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
       "player-1": 0,
       "player-2": 2,
-    }), "player-1", [2, 4, 4]);
+    }), "player-1", [2]);
+    const tieDuelPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: tieDuelPrompt.id, accepted: true, targetEntrantId: "player-2" },
+      scriptedRng([4, 4]),
+    );
 
     expect(position(game, "player-1")).toBe(4);
-    expect(entrant(game, "player-2").skippedTurns).toBe(1);
+    expect(entrant(game, "player-2").skippedTurns).toBe(0);
 
-    game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
+    game = roll(setPositions(createRace(["Duelist", "Alchemist", "Baba Yaga"]), {
       "player-1": 0,
       "player-2": 2,
-    }), "player-1", [2, 1, 6]);
+      "player-3": 2,
+    }), "player-1", [2]);
+    const multiDuelPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: multiDuelPrompt.id, accepted: true, targetEntrantId: "player-3" },
+      scriptedRng([1, 6]),
+    );
 
     expect(position(game, "player-1")).toBe(2);
-    expect(entrant(game, "player-1").skippedTurns).toBe(1);
-    expect(position(game, "player-2")).toBe(4);
+    expect(position(game, "player-2")).toBe(2);
+    expect(position(game, "player-3")).toBe(4);
   });
 });
 
@@ -619,13 +645,26 @@ describe("ability simulation", () => {
 
           if (race.pendingReactions.length > 0) {
             const prompt = race.pendingReactions[0];
+            const duelist = prompt.promptType === "duel" && prompt.sourceEntrantId
+              ? race.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId)
+              : null;
+            const targetEntrantId = duelist
+              ? race.entrants.find(
+                  (entrant) =>
+                    entrant.id !== duelist.id &&
+                    !entrant.finished &&
+                    !entrant.eliminated &&
+                    entrant.position === duelist.position,
+                )?.id
+              : undefined;
             game = reduceGameCommand(
               game,
               {
                 type: "CONFIRM_REACTION",
                 playerId: prompt.playerId,
                 reactionId: prompt.id,
-                accepted: true,
+                accepted: prompt.promptType === "duel" ? Boolean(targetEntrantId) : true,
+                targetEntrantId,
               },
               rng,
             );

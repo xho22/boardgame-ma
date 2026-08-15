@@ -372,7 +372,7 @@ afterRace          比赛结束时
 | 7 | Coach | 教练 | 同格增益 | 和 Coach 同格的所有选手 main move +1，包括 Coach 自己 | `same_space_main_move_plus_one` |
 | 8 | Copycat | 模仿猫 | 复制能力 | 持续拥有当前 lead 选手的能力；多人并列 lead 时选择一个；不复制 before race 能力；冲突时原能力优先 | `copy_lead_racer_power` |
 | 9 | Dicemonger | 骰子商人 | 公共重掷 | 任意选手每回合可重掷 main move 一次；其他选手使用该重掷时，Dicemonger move 1 | `grant_reroll_move_on_use` |
-| 10 | Duelist | 决斗家 | 同格决斗 | 任意选手与 Duelist sharing a space 时可发起决斗；双方掷骰，高者 move 2，低者 trip；Duelist 平局胜 | `duel_on_shared_space` |
+| 10 | Duelist | 决斗家 | 同格决斗 | 任意选手与 Duelist 同格时，可以选择一名同格选手决斗；双方掷骰，高者 move 2；Duelist 平局胜 | `duel_on_shared_space` |
 | 11 | Egg | 鸡蛋 | 替身能力 | before race 抽 3 名新选手并选择 1 名，使用 Egg 棋子参赛但获得所选角色能力，包括 before race 能力 | `draft_temp_power_before_race` |
 | 12 | Flip Flop | 人字拖 | 换位 warp | main move 可以不掷骰，改为与任意选手交换位置；这是 warp，不算 move，双方同时换位 | `warp_swap_instead_main_move` |
 | 13 | Genius | 天才 | 预测骰点 | main move 前预测本次会掷出的点数；若猜中，完成当前回合后再获得一个回合 | `predict_roll_extra_turn` |
@@ -553,6 +553,7 @@ AI：关闭
 - Dicemonger：其他选手掷出 main move 后，必须先显示原始骰面，并由该选手选择保留或重投一次；仅在选择重投时，Dicemonger move 1。该确认流程同样适用于本地和未来在线对局。
 - Mastermind：揭示本场 racer 后、正式开赛前必须选择预测目标。目标是具体 racer，不是玩家；未选择时不能开始比赛。
 - Copycat：有唯一其他领先者时，当前行动区按被复制的有效能力显示对应操作与说明；不复制 Egg、Twin 等赛前复制能力。
+- Duelist：有选手与其同格时，由决斗家选择是否发起决斗；同格超过 2 人时必须选择一名对手。双方掷骰后仅高点者移动 2 格，败者不绊倒；平局由决斗家获胜。
 - Egg：揭示阵容后展示随机的 3 名未参赛候选角色；当前玩家必须选择 1 名作为本场复制能力。
 - Twin：从第二场起，揭示阵容后展示此前各场第一名的角色；当前玩家必须选择 1 名作为本场复制能力。
 
