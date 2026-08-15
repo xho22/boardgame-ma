@@ -138,6 +138,9 @@ export type Entrant = {
   playerId: string;
   athleteId: string;
   copiedAbilityKey?: AbilityImplementationKey;
+  copiedLeaderEntrantId?: string;
+  copyLeadSignature?: string;
+  copyLeadDeclinedSignature?: string;
   predictedWinnerEntrantId?: string;
   position: number;
   finished: boolean;
@@ -167,7 +170,7 @@ export type ReactionPrompt = {
   id: string;
   playerId: string;
   athleteId: string;
-  promptType: "optionalPower" | "reroll" | "duel";
+  promptType: "optionalPower" | "reroll" | "duel" | "copy";
   sourceEntrantId?: string;
   targetEntrantId?: string;
   title?: string;
@@ -206,6 +209,7 @@ export type PendingDiceDecision = {
 export type PendingTurnState = {
   extraTurnPlayerId: string | null;
   nextTurnPlayerId: string | null;
+  resumeCurrentTurn?: boolean;
   resumeDiceRoll?: {
     playerId: string;
     dieRoll: 1 | 2 | 3 | 4 | 5 | 6;

@@ -12,6 +12,7 @@ import {
   applyBeforeRaceAbilities,
   getEffectiveImplementationKey,
   moveEntrantInRace,
+  queueCopycatSelectionReactions,
   resolveAfterMove,
   resolveMainMove,
 } from "./abilityEngine";
@@ -175,7 +176,30 @@ function createPlayerInterleavedTurnOrder(game: GameState, entrants: Entrant[]):
 }
 
 export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng, choice?: MainMoveChoice): GameState {
-  const race = requireActiveRace(game);
+  let race = requireActiveRace(game);
+
+  if (race.entrants.some((entrant) => entrant.temporaryEffects.some((effect) => effect.id === "duel-resolution-lock"))) {
+    race = {
+      ...race,
+      entrants: race.entrants.map((entrant) => ({
+        ...entrant,
+        temporaryEffects: entrant.temporaryEffects.filter((effect) => effect.id !== "duel-resolution-lock"),
+      })),
+    };
+  }
+
+  const copycatRace = queueCopycatSelectionReactions(game, race);
+  if (copycatRace.pendingReactions.length > race.pendingReactions.length) {
+    return {
+      ...game,
+      activeRace: {
+        ...copycatRace,
+        pendingTurnState: { extraTurnPlayerId: null, nextTurnPlayerId: null, resumeCurrentTurn: true },
+      },
+      revision: game.revision + 1,
+    };
+  }
+  race = copycatRace;
 
   if (race.status !== "active") {
     throw new Error("Race is not active");
@@ -422,6 +446,10 @@ function confirmReaction(
     return confirmDuel(game, race, prompt, accepted, targetEntrantId, rng);
   }
 
+  if (prompt.promptType === "copy") {
+    return confirmCopycatChoice(game, race, prompt, accepted, targetEntrantId, rng);
+  }
+
   if (prompt.promptType === "optionalPower" && race.pendingDiceDecision?.kind) {
     return confirmAfterRollDecision(game, race, prompt, playerId, accepted, rng);
   }
@@ -584,6 +612,20 @@ function confirmDuel(
     const duelistRoll = rng.rollDie(6);
     const opponentRoll = rng.rollDie(6);
     const winner = duelistRoll >= opponentRoll ? duelist : opponent;
+    workingRace = {
+      ...workingRace,
+      entrants: workingRace.entrants.map((entrant) =>
+        entrant.id === duelist.id
+          ? {
+              ...entrant,
+              temporaryEffects: [
+                ...entrant.temporaryEffects.filter((effect) => effect.id !== "duel-resolution-lock"),
+                { id: "duel-resolution-lock", type: "reactionLock", expiresAt: "endOfTurn" },
+              ],
+            }
+          : entrant,
+      ),
+    };
     workingRace = moveEntrantInRace(game, workingRace, winner.id, 2);
     logs.push(
       createLog(
@@ -596,6 +638,51 @@ function confirmDuel(
   }
 
   return finalizeReaction(game, race, workingRace, game.players, logs, rng);
+}
+
+function confirmCopycatChoice(
+  game: GameState,
+  race: RaceState,
+  prompt: { id: string; sourceEntrantId?: string },
+  accepted: boolean,
+  targetEntrantId: string | undefined,
+  rng: Rng,
+): GameState {
+  const copycat = prompt.sourceEntrantId ? race.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId) : null;
+  if (!copycat) {
+    throw new Error("Missing Copycat for copy reaction");
+  }
+
+  const leaders = race.entrants
+    .filter((entrant) => entrant.id !== copycat.id && !entrant.finished && !entrant.eliminated);
+  const leadPosition = Math.max(...leaders.map((entrant) => entrant.position));
+  const eligibleLeaders = leaders.filter((entrant) => entrant.position === leadPosition);
+  const signature = eligibleLeaders.map((entrant) => entrant.id).sort().join(":");
+  const selectedLeader = targetEntrantId ? eligibleLeaders.find((entrant) => entrant.id === targetEntrantId) : null;
+
+  if (accepted && !selectedLeader) {
+    throw new Error("Copycat must choose a current leading racer");
+  }
+
+  const workingRace: RaceState = {
+    ...race,
+    pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
+    entrants: race.entrants.map((entrant) =>
+      entrant.id === copycat.id
+        ? {
+            ...entrant,
+            copyLeadSignature: signature,
+            copiedLeaderEntrantId: selectedLeader?.id,
+            copyLeadDeclinedSignature: accepted ? undefined : signature,
+          }
+        : entrant,
+    ),
+  };
+  const message = accepted
+    ? `${describeRaceEntrant(game, copycat)} 选择复制${describeRaceEntrant(game, selectedLeader!)}的能力。`
+    : `${describeRaceEntrant(game, copycat)} 暂不复制本次并列领先者的能力。`;
+
+  return finalizeReaction(game, race, workingRace, game.players, [createLog(game, "ability_trigger", message, 0)], rng);
 }
 
 function finalizeReaction(
@@ -634,6 +721,10 @@ function finalizeReaction(
       forcedDieRoll: continuation.resumeDiceRoll.dieRoll,
       skipDicemongerPrompt: true,
     });
+  }
+
+  if (continuation?.resumeCurrentTurn) {
+    return continuedGame;
   }
 
   if (continuation?.extraTurnPlayerId) {

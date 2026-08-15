@@ -565,6 +565,58 @@ describe("phase 9 abilities", () => {
     expect(messages(game).some((message) => message.includes("双方掷出 1 比 5"))).toBe(true);
   });
 
+  it("does not trigger another duel from the winner's two-step reward", () => {
+    let game = roll(setPositions(createRace(["Duelist", "Alchemist", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 3,
+      "player-3": 5,
+    }), "player-1", [3]);
+    const duelPrompt = requireRace(game).pendingReactions[0];
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: duelPrompt.id, accepted: true, targetEntrantId: "player-2" },
+      scriptedRng([6, 2]),
+    );
+
+    expect(position(game, "player-1")).toBe(5);
+    expect(requireRace(game).pendingReactions.some((prompt) => prompt.promptType === "duel")).toBe(false);
+  });
+
+  it("Copycat asks its player to choose a tied leader and uses the selected ability", () => {
+    let game = setPositions(createRace(["Copycat", "Party Animal", "Legs"]), {
+      "player-1": 0,
+      "player-2": 4,
+      "player-3": 4,
+    });
+    game = reduceGameCommand(game, { type: "ROLL_DICE", playerId: "player-1" }, scriptedRng([1]));
+    const copyPrompt = requireRace(game).pendingReactions[0];
+    expect(copyPrompt?.promptType).toBe("copy");
+    game = reduceGameCommand(
+      game,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: copyPrompt.id, accepted: true, targetEntrantId: "player-2" },
+      scriptedRng([1]),
+    );
+    expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-1");
+
+    game = roll(game, "player-1", [1], { usePartyAnimal: true });
+    expect(position(game, "player-2")).toBe(3);
+    expect(position(game, "player-3")).toBe(3);
+  });
+
+  it("asks the Copycat player to choose when another racer creates a tied lead", () => {
+    const game = reduceGameCommand(
+      setPositions(createRace(["Copycat", "Party Animal", "Legs"]), {
+        "player-1": 0,
+        "player-2": 4,
+        "player-3": 4,
+      }, "player-2"),
+      { type: "ROLL_DICE", playerId: "player-2" },
+      scriptedRng([1]),
+    );
+
+    expect(requireRace(game).pendingReactions[0]).toMatchObject({ promptType: "copy", playerId: "player-1" });
+  });
+
   it("Duelist wins ties and can choose among multiple opponents", () => {
     let game = roll(setPositions(createRace(["Duelist", "Alchemist"]), {
       "player-1": 0,
@@ -610,6 +662,20 @@ describe("ability simulation", () => {
         seed: `simulation-${index}`,
         now: 1_000,
       });
+      const copycatId = athleteId("Copycat");
+      game = {
+        ...game,
+        players: game.players.map((player) => {
+          const replacementId = STANDARD_ATHLETES.find(
+            (athlete) => athlete.id !== copycatId && !player.athleteIds.includes(athlete.id),
+          )?.id;
+
+          return {
+            ...player,
+            athleteIds: player.athleteIds.map((id) => id === copycatId ? (replacementId ?? id) : id),
+          };
+        }),
+      };
       const rng = createRng(`simulation-rolls-${index}`);
       let actions = 0;
 
@@ -645,16 +711,18 @@ describe("ability simulation", () => {
 
           if (race.pendingReactions.length > 0) {
             const prompt = race.pendingReactions[0];
-            const duelist = prompt.promptType === "duel" && prompt.sourceEntrantId
+            const reactingEntrant = (prompt.promptType === "duel" || prompt.promptType === "copy") && prompt.sourceEntrantId
               ? race.entrants.find((entrant) => entrant.id === prompt.sourceEntrantId)
               : null;
-            const targetEntrantId = duelist
+            const targetEntrantId = reactingEntrant
               ? race.entrants.find(
                   (entrant) =>
-                    entrant.id !== duelist.id &&
+                    entrant.id !== reactingEntrant.id &&
                     !entrant.finished &&
                     !entrant.eliminated &&
-                    entrant.position === duelist.position,
+                    (prompt.promptType === "duel"
+                      ? entrant.position === reactingEntrant.position
+                      : entrant.position === Math.max(...race.entrants.filter((candidate) => candidate.id !== reactingEntrant.id && !candidate.finished && !candidate.eliminated).map((candidate) => candidate.position))),
                 )?.id
               : undefined;
             game = reduceGameCommand(
@@ -663,7 +731,7 @@ describe("ability simulation", () => {
                 type: "CONFIRM_REACTION",
                 playerId: prompt.playerId,
                 reactionId: prompt.id,
-                accepted: prompt.promptType === "duel" ? Boolean(targetEntrantId) : true,
+                accepted: prompt.promptType === "duel" || prompt.promptType === "copy" ? Boolean(targetEntrantId) : true,
                 targetEntrantId,
               },
               rng,

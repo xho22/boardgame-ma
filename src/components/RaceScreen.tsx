@@ -14,6 +14,10 @@ type RaceScreenProps = {
 export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps) {
   const [duelTargetEntrantId, setDuelTargetEntrantId] = useState("");
   const race = game.activeRace;
+  const pendingReaction = race?.pendingReactions[0];
+  useEffect(() => {
+    setDuelTargetEntrantId("");
+  }, [pendingReaction?.id]);
 
   if (!race) {
     return null;
@@ -22,22 +26,26 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
   const currentEntrantId = race.turnOrder[race.currentTurnIndex];
   const currentEntrant = race.entrants.find((entrant) => entrant.id === currentEntrantId);
   const currentPlayer = game.players.find((player) => player.id === currentEntrant?.playerId);
-  const pendingReaction = race.pendingReactions[0];
-  useEffect(() => {
-    setDuelTargetEntrantId("");
-  }, [pendingReaction?.id]);
   const reactionPlayer = game.players.find((player) => player.id === pendingReaction?.playerId);
-  const duelist = pendingReaction?.sourceEntrantId
+  const reactingEntrant = pendingReaction?.sourceEntrantId
     ? race.entrants.find((entrant) => entrant.id === pendingReaction.sourceEntrantId)
     : null;
-  const duelTargets = pendingReaction?.promptType === "duel" && duelist
+  const reactionTargets = pendingReaction?.promptType === "duel" && reactingEntrant
     ? race.entrants.filter(
         (entrant) =>
-          entrant.id !== duelist.id &&
+          entrant.id !== reactingEntrant.id &&
           !entrant.finished &&
           !entrant.eliminated &&
-          entrant.position === duelist.position,
+          entrant.position === reactingEntrant.position,
       )
+    : pendingReaction?.promptType === "copy" && reactingEntrant
+      ? race.entrants.filter(
+          (entrant) =>
+            entrant.id !== reactingEntrant.id &&
+            !entrant.finished &&
+            !entrant.eliminated &&
+            entrant.position === Math.max(...race.entrants.filter((candidate) => candidate.id !== reactingEntrant.id && !candidate.finished && !candidate.eliminated).map((candidate) => candidate.position)),
+        )
     : [];
   const reactionActions = pendingReaction?.title?.startsWith("炼金师")
     ? { decline: "保留点数", accept: "改为移动 4 格" }
@@ -47,6 +55,8 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
         ? { decline: "保留点数", accept: "加倍并绊倒" }
         : pendingReaction?.promptType === "reroll"
           ? { decline: "保留点数", accept: "重投" }
+          : pendingReaction?.promptType === "copy"
+            ? { decline: "暂不复制", accept: "复制所选能力" }
           : { decline: "放弃", accept: "使用能力" };
 
   if (!currentPlayer || !currentEntrant) {
@@ -82,12 +92,12 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
               <p>{pendingReaction.description ?? "请决定是否使用这个能力。"}</p>
             </div>
             <div className="ability-choice-panel">
-              {pendingReaction.promptType === "duel" ? (
+              {pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy" ? (
                 <label className="ability-select">
-                  <span>决斗对手</span>
+                  <span>{pendingReaction.promptType === "duel" ? "决斗对手" : "领先者"}</span>
                   <select value={duelTargetEntrantId} onChange={(event) => setDuelTargetEntrantId(event.target.value)}>
-                    <option value="">请选择同格选手</option>
-                    {duelTargets.map((entrant) => {
+                    <option value="">{pendingReaction.promptType === "duel" ? "请选择同格选手" : "请选择领先者"}</option>
+                    {reactionTargets.map((entrant) => {
                       const player = game.players.find((candidate) => candidate.id === entrant.playerId);
                       const athlete = game.athletes.find((candidate) => candidate.id === entrant.athleteId);
                       return <option key={entrant.id} value={entrant.id}>{`${player?.name ?? entrant.playerId}的${athlete?.displayName ?? entrant.athleteId}`}</option>;
@@ -107,7 +117,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
                   className="primary-button"
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, true, duelTargetEntrantId || undefined)}
-                  disabled={pendingReaction.promptType === "duel" && !duelTargetEntrantId}
+                  disabled={(pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy") && !duelTargetEntrantId}
                 >
                   {reactionActions.accept}
                 </button>

@@ -478,6 +478,7 @@ export function resolveAfterMove({
       (entrant) =>
         !entrant.finished &&
         !entrant.eliminated &&
+        !entrant.temporaryEffects.some((effect) => effect.id === "duel-resolution-lock") &&
         entrant.position === moverAfter.position &&
         getEffectiveImplementationKey(game, workingRace, entrant) === "duel_on_shared_space",
     );
@@ -584,7 +585,10 @@ export function getEffectiveImplementationKey(
     return baseKey;
   }
 
-  const leader = findUniqueLeader(race, entrant);
+  const leaders = findOtherLeaders(race, entrant);
+  const leader = leaders.length === 1
+    ? leaders[0]
+    : leaders.find((candidate) => candidate.id === entrant.copiedLeaderEntrantId);
 
   if (!leader) {
     return baseKey;
@@ -690,6 +694,7 @@ function applyBeforeMainMove(
     });
   }
 
+  workingRace = queueCopycatSelectionReactions(game, workingRace);
   return { race: workingRace, players: nextPlayers, logs };
 }
 
@@ -903,12 +908,13 @@ function isAloneInLead(race: RaceState, entrant: Entrant): boolean {
   return entrant.position === leadPosition && leaders.length === 1;
 }
 
-function findUniqueLeader(race: RaceState, except: Entrant): Entrant | null {
+function findOtherLeaders(race: RaceState, except: Entrant): Entrant[] {
   const activeEntrants = activeEntrantsOnly(race).filter((candidate) => candidate.id !== except.id);
+  if (activeEntrants.length === 0) {
+    return [];
+  }
   const leadPosition = Math.max(...activeEntrants.map((candidate) => candidate.position));
-  const leaders = activeEntrants.filter((candidate) => candidate.position === leadPosition);
-
-  return leaders.length === 1 ? leaders[0] : null;
+  return activeEntrants.filter((candidate) => candidate.position === leadPosition);
 }
 
 function findLeaderOther(race: RaceState, entrant: Entrant): Entrant | null {
@@ -954,6 +960,53 @@ function hasPendingDuelReaction(race: RaceState, duelistEntrantId: string): bool
   return race.pendingReactions.some(
     (prompt) => prompt.promptType === "duel" && prompt.sourceEntrantId === duelistEntrantId,
   );
+}
+
+export function queueCopycatSelectionReactions(game: GameState, race: RaceState): RaceState {
+  let entrants = race.entrants;
+  let pendingReactions = race.pendingReactions;
+
+  for (const copycat of race.entrants) {
+    if (getBaseImplementationKey(copycat) !== "copy_lead_racer_power" || copycat.finished || copycat.eliminated) {
+      continue;
+    }
+
+    const leaders = findOtherLeaders({ ...race, entrants }, copycat);
+    const signature = leaders.map((entrant) => entrant.id).sort().join(":");
+    const current = entrants.find((entrant) => entrant.id === copycat.id) ?? copycat;
+    const leadChanged = current.copyLeadSignature !== signature;
+
+    if (leadChanged) {
+      entrants = entrants.map((entrant) =>
+        entrant.id === copycat.id
+          ? { ...entrant, copyLeadSignature: signature, copiedLeaderEntrantId: leaders.length === 1 ? leaders[0]?.id : undefined, copyLeadDeclinedSignature: undefined }
+          : entrant,
+      );
+    }
+
+    const updatedCopycat = entrants.find((entrant) => entrant.id === copycat.id) ?? copycat;
+    if (
+      leaders.length > 1 &&
+      !updatedCopycat.copiedLeaderEntrantId &&
+      updatedCopycat.copyLeadDeclinedSignature !== signature &&
+      !pendingReactions.some((prompt) => prompt.promptType === "copy" && prompt.sourceEntrantId === copycat.id)
+    ) {
+      pendingReactions = [
+        ...pendingReactions,
+        {
+          id: `copycat:${copycat.id}:${signature}:${race.round}`,
+          playerId: copycat.playerId,
+          athleteId: copycat.athleteId,
+          promptType: "copy",
+          sourceEntrantId: copycat.id,
+          title: "模仿猫：选择领先者能力",
+          description: `${describeEntrant(game, copycat)} 面对并列第一，请选择本次要复制的领先者能力。`,
+        },
+      ];
+    }
+  }
+
+  return entrants === race.entrants && pendingReactions === race.pendingReactions ? race : { ...race, entrants, pendingReactions };
 }
 
 function countOthersAt(race: RaceState, entrantId: string, position: number): number {
