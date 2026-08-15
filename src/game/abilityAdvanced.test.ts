@@ -205,6 +205,7 @@ describe("phase 8 abilities", () => {
       "player-2": 4,
     }), "player-1", [1]);
     expect(game.players[0].score).toBe(1);
+    expect(messages(game).some((message) => message.includes("独自在最后一名时获得 1 分"))).toBe(true);
 
     game = roll(setPositions(createRace(["Baba Yaga", "Heckler"]), {
       "player-1": 0,
@@ -403,7 +404,10 @@ describe("phase 9 abilities", () => {
     }), "player-1", [1]);
     expect(position(game, "player-2")).toBe(3);
 
-    game = roll(createRace(["Sisyphus", "Baba Yaga"]), "player-1", [6]);
+    game = createRace(["Sisyphus", "Baba Yaga"]);
+    expect(game.players[0].score).toBe(4);
+    expect(messages(game).some((message) => message.includes("赛前获得 4 分"))).toBe(true);
+    game = roll(game, "player-1", [6]);
     expect(game.players[0].score).toBe(3);
     expect(position(game, "player-1")).toBe(0);
 

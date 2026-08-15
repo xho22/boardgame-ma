@@ -153,6 +153,12 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     return advanceTurn(game, race);
   }
 
+  // A tripped racer recovers without rolling, so no after-roll powers may interrupt that turn.
+  if (entrant.skippedTurns > 0) {
+    const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
+    return finishResolvedMove(game, entrant, mainMove, rng);
+  }
+
   const dicemonger = findOtherDicemonger(race, entrant);
   const usesDie = !choice?.useLegsFixedMove && !choice?.useFlipFlopSwap;
 
@@ -217,6 +223,15 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
   }
 
   const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
+  return finishResolvedMove(game, entrant, mainMove, rng);
+}
+
+function finishResolvedMove(
+  game: GameState,
+  entrant: Entrant,
+  mainMove: ReturnType<typeof resolveMainMove>,
+  rng: Rng,
+): GameState {
   const moveResult = moveWithAbility(mainMove.race, mainMove.entrant, mainMove.finalMove, {
     leaptoad: mainMove.usesLeaptoadMove,
     preventOverFinish: mainMove.preventsOverFinish,
@@ -571,7 +586,7 @@ function confirmAfterRollDecision(
       choice = {
         ...choice,
         forcedDieRoll: nextRoll,
-        magicianRerollsUsed: ((decision.rerollsUsed ?? 0) + 1) as 1 | 2,
+        magicianRerollsUsed: 1,
       };
       message = `${describeRaceEntrant(game, actor)} 使用魔术师重投：${decision.dieRoll} -> ${nextRoll}。`;
     }
@@ -614,7 +629,7 @@ function createPostRollPrompt(
     };
   }
 
-  if (key === "reroll_main_move_up_to_two" && (choice.magicianRerollsUsed ?? 0) < 2) {
+  if (key === "reroll_main_move_up_to_two" && (choice.magicianRerollsUsed ?? 0) < 1) {
     return {
       decision: { ...base, kind: "magician", rerollsUsed: choice.magicianRerollsUsed ?? 0 },
       prompt: {
@@ -623,7 +638,7 @@ function createPostRollPrompt(
         athleteId: entrant.athleteId,
         promptType: "optionalPower",
         title: "魔术师：是否重投？",
-        description: `${actor} 掷出了 ${dieRoll}。可重投，最多还能重投 ${2 - (choice.magicianRerollsUsed ?? 0)} 次；必须使用最后一次结果。`,
+        description: `${actor} 掷出了 ${dieRoll}。可重投 1 次；必须使用最后一次结果。`,
       },
     };
   }

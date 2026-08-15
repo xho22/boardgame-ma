@@ -158,11 +158,11 @@ describe("phase 7 abilities", () => {
     expect(latestMessages(game).some((message) => message.includes("掷出了 2"))).toBe(true);
   });
 
-  it("Magician rerolls low main move rolls up to two times and uses the final roll", () => {
-    const game = roll(createRace("Magician", "Baba Yaga"), "player-1", [2, 3, 6]);
+  it("Magician rerolls a main move once and uses the final roll", () => {
+    const game = roll(createRace("Magician", "Baba Yaga"), "player-1", [2, 6]);
 
     expect(entrantPosition(game, "player-1")).toBe(6);
-    expect(latestMessages(game).filter((message) => message.includes("魔术师重投")).length).toBe(2);
+    expect(latestMessages(game).filter((message) => message.includes("魔术师重投")).length).toBe(1);
   });
 
   it("Rocket Scientist doubles the main move and trips until the next main move", () => {
@@ -185,6 +185,17 @@ describe("phase 7 abilities", () => {
     });
 
     expect(entrantPosition(game, "player-1")).toBe(3);
+    expect(game.activeRace?.entrants.find((entrant) => entrant.playerId === "player-1")?.skippedTurns).toBe(0);
+  });
+
+  it("does not show an after-roll prompt while a Rocket Scientist is recovering from a trip", () => {
+    let game = roll(createRace("Rocket Scientist", "Baba Yaga"), "player-1", [3]);
+    game = roll(game, "player-2", [1]);
+    const rng = scriptedRng([6]);
+    game = reduceGameCommand(game, { type: "ROLL_DICE", playerId: "player-1" }, rng);
+
+    expect(game.activeRace?.pendingDiceDecision).toBeFalsy();
+    expect(game.activeRace?.pendingReactions).toHaveLength(0);
     expect(game.activeRace?.entrants.find((entrant) => entrant.playerId === "player-1")?.skippedTurns).toBe(0);
   });
 

@@ -376,7 +376,7 @@ afterRace          比赛结束时
 | 21 | Leaptoad | 跳跳蛙 | 跳格 | 移动时跳过有其他选手的格子，不把那些格子计入步数 | `skip_occupied_spaces_while_moving` |
 | 22 | Legs | 长腿 | 固定主移动 | main move 可以不掷骰，改为 move 5；这仍算 main move | `main_move_fixed_five_optional` |
 | 23 | Lovable Loser | 可爱输家 | 落后得分 | main move 前，若自己独自在 last place，获得 1 个 1 分筹码 | `gain_point_if_alone_last_before_main` |
-| 24 | Magician | 魔术师 | 多次重掷 | main move 最多可重掷两次，必须使用最后一次结果 | `reroll_main_move_up_to_two` |
+| 24 | Magician | 魔术师 | 重掷 | main move 最多可重掷一次，必须使用最后一次结果 | `reroll_main_move_up_to_two` |
 | 25 | Mastermind | 幕后大师 | 预测冠军 | 开赛前在揭示页面选择预测本场冠军 racer；若该 racer 成为第 1 名，比赛立即结束，Mastermind 自动成为第 2 名；若预测自己且成真，可同时得第 1 和第 2 | `predict_winner_finish_second` |
 | 26 | M.O.U.T.H. | 大嘴 | 吞噬淘汰 | 停在正好有 1 名其他选手的格子时，将该选手移出本场比赛 | `eliminate_single_shared_racer` |
 | 27 | Party Animal | 派对动物 | 聚集增益 | main move 前，所有选手各 move 1 朝向 Party Animal；之后其格子上每有 1 名其他选手，main move +1 | `pull_all_then_bonus_per_guest` |
@@ -537,7 +537,7 @@ AI：关闭
 - Cheerleader：在主移动前提供明确操作，选择“先支援最后一名再掷骰”时，先让最后一名移动 2 格，再让自己移动 1 格，然后正常掷骰。
 - Genius：在掷骰前提供 `1-6` 的预测选择；若不预测，则视为放弃该能力。
 - Hypnotist、Third Wheel：在 before main move 时提供是否使用能力的开关；启用后必须明确选择传送目标或目标格，不能由 UI 悄悄代选。
-- Alchemist、Magician、Rocket Scientist：均在骰面出现后暂停并由当前玩家决定。炼金师可在 1/2 时改为移动 4；魔术师每次可选择保留或重投，最多重投两次且必须使用最后一次结果；火箭科学家可保留点数或加倍并绊倒。
+- Alchemist、Magician、Rocket Scientist：均在骰面出现后暂停并由当前玩家决定。炼金师可在 1/2 时改为移动 4；魔术师可选择保留或重投一次，必须使用最后一次结果；火箭科学家可保留点数或加倍并绊倒。
 - Suckerfish：同格角色移动后必须弹出跟随确认；确认跟随后，这次移动同样进入经过、同格和后续跟随等结算，再继续本回合剩余流程。
 - Dicemonger：其他选手掷出 main move 后，必须先显示原始骰面，并由该选手选择保留或重投一次；仅在选择重投时，Dicemonger move 1。该确认流程同样适用于本地和未来在线对局。
 - Mastermind：揭示本场 racer 后、正式开赛前必须选择预测目标。目标是具体 racer，不是玩家；未选择时不能开始比赛。

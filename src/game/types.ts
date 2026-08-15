@@ -185,7 +185,7 @@ export type MainMoveChoice = {
   thirdWheelTargetPosition?: number;
   useRocketScientistDouble?: boolean;
   useAlchemistFour?: boolean;
-  magicianRerollsUsed?: 0 | 1 | 2;
+  magicianRerollsUsed?: 0 | 1;
   geniusGuess?: 1 | 2 | 3 | 4 | 5 | 6;
   forcedDieRoll?: 1 | 2 | 3 | 4 | 5 | 6;
   /** Internal continuation marker for a DiceMonger reroll decision. */
@@ -199,7 +199,7 @@ export type PendingDiceDecision = {
   dieRoll: 1 | 2 | 3 | 4 | 5 | 6;
   choice: MainMoveChoice;
   dicemongerEntrantId?: string;
-  rerollsUsed?: 0 | 1 | 2;
+  rerollsUsed?: 0 | 1;
 };
 
 export type PendingTurnState = {
