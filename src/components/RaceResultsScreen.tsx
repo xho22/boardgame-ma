@@ -4,9 +4,10 @@ import type { GameState } from "../game/types";
 type RaceResultsScreenProps = {
   game: GameState;
   onContinue: () => void;
+  canContinue?: boolean;
 };
 
-export function RaceResultsScreen({ game, onContinue }: RaceResultsScreenProps) {
+export function RaceResultsScreen({ game, onContinue, canContinue = true }: RaceResultsScreenProps) {
   const race = game.activeRace;
   const isFinalRace = game.raceIndex >= game.settings.racesCount - 1;
 
@@ -42,7 +43,7 @@ export function RaceResultsScreen({ game, onContinue }: RaceResultsScreenProps) 
       </section>
 
       <footer className="bottom-actions">
-        <button className="primary-button" type="button" onClick={onContinue}>
+        <button className="primary-button" type="button" onClick={onContinue} disabled={!canContinue}>
           {isFinalRace ? "Final Results" : "Next Race"}
         </button>
       </footer>

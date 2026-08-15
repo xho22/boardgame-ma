@@ -25,14 +25,12 @@ function send(socket: WebSocket, message: ServerMessage): void {
 }
 
 function broadcast(roomId: string): void {
-  const room = rooms.getRoom(roomId);
-  if (!room) {
-    return;
-  }
-
   for (const [socket, client] of clients) {
     if (client.roomId === roomId) {
-      send(socket, { type: "STATE_SYNC", room, playerId: client.playerId });
+      const room = rooms.getRoomForPlayer(roomId, client.playerId);
+      if (room) {
+        send(socket, { type: "STATE_SYNC", room, playerId: client.playerId });
+      }
     }
   }
 }

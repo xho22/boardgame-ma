@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import type { RoomState } from "../game/types";
+import { FinalResultsScreen } from "./FinalResultsScreen";
+import { RaceRevealScreen } from "./RaceRevealScreen";
+import { RaceResultsScreen } from "./RaceResultsScreen";
+import { RaceScreen } from "./RaceScreen";
+import { SelectionScreen } from "./SelectionScreen";
+import { TeamRevealScreen } from "./TeamRevealScreen";
+import { getActiveSelectionPlayer } from "../game/selection";
+import type { GameCommand, GameState, MainMoveChoice, RoomState } from "../game/types";
 import { RoomClient } from "../network/roomClient";
 import type { ServerMessage } from "../network/protocol";
 
@@ -67,10 +74,26 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
     }, handleMessage, () => setStatus("连接已关闭"));
   }
 
+  function sendCommand(command: GameCommand) {
+    if (!room?.gameState) {
+      return;
+    }
+
+    try {
+      client.current.send({ type: "GAME_COMMAND", revision: room.gameState.revision, command });
+    } catch (commandError) {
+      setError(commandError instanceof Error ? commandError.message : "无法发送在线操作。");
+    }
+  }
+
   const occupiedCount = room?.playerSlots.filter((slot) => slot.isOccupied).length ?? 0;
   const isHost = playerId !== null && room?.hostPlayerId === playerId;
   const canStart = Boolean(isHost && occupiedCount >= 2 && room?.status === "waiting");
   const game = room?.gameState;
+
+  if (game && playerId) {
+    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} />;
+  }
 
   return (
     <main className="app-shell screen-layout online-room-layout">
@@ -156,6 +179,115 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
 
         {error ? <p className="room-error" role="alert">{error}</p> : null}
         <p className="room-connection-note">{status}</p>
+      </section>
+    </main>
+  );
+}
+
+type OnlineGameViewProps = {
+  room: RoomState;
+  playerId: string;
+  onBack: () => void;
+  onCommand: (command: GameCommand) => void;
+};
+
+function OnlineGameView({ room, playerId, onBack, onCommand }: OnlineGameViewProps) {
+  const game = room.gameState!;
+  const isHost = room.hostPlayerId === playerId;
+  const canChangeAthlete = (athleteId: string) => game.players.some(
+    (player) => player.id === playerId && game.selectionState?.selectionsByPlayerId[player.id]?.includes(athleteId),
+  );
+  const content = renderOnlineGameScreen(game, playerId, isHost, onBack, onCommand, canChangeAthlete);
+
+  return (
+    <>
+      <div className="online-mode-banner">{`在线房间: ${room.roomName}`}</div>
+      {content}
+    </>
+  );
+}
+
+function renderOnlineGameScreen(
+  game: GameState,
+  playerId: string,
+  isHost: boolean,
+  onBack: () => void,
+  onCommand: (command: GameCommand) => void,
+  canChangeAthlete: (athleteId: string) => boolean,
+) {
+  if (game.phase === "teamReveal") {
+    return (
+      <TeamRevealScreen
+        game={game}
+        onNewGame={onBack}
+        onClearGame={onBack}
+        onRandomizeTeams={() => undefined}
+        onBeginSelection={() => onCommand({ type: "BEGIN_SELECTION" })}
+        canBeginSelection={isHost}
+        canRandomizeTeams={false}
+      />
+    );
+  }
+
+  if (game.phase === "selecting") {
+    const activePlayer = getActiveSelectionPlayer(game);
+    if (!activePlayer || activePlayer.id !== playerId) {
+      return <OnlineWaitingScreen playerName={activePlayer?.name ?? "其他玩家"} />;
+    }
+    return (
+      <SelectionScreen
+        game={game}
+        onBack={onBack}
+        onSelectAthlete={(ownerId, athleteId) => onCommand({ type: "SELECT_ATHLETE", playerId: ownerId, athleteId })}
+        onLockSelection={(ownerId) => onCommand({ type: "LOCK_SELECTION", playerId: ownerId })}
+      />
+    );
+  }
+
+  if (game.phase === "raceReveal") {
+    return (
+      <RaceRevealScreen
+        game={game}
+        onPredictionChange={(athleteId, predictedAthleteId) => onCommand({ type: "SET_MASTERMIND_PREDICTION", athleteId, predictedAthleteId })}
+        onCopyChoiceChange={(athleteId, copiedAthleteId) => onCommand({ type: "SET_BEFORE_RACE_COPY_CHOICE", athleteId, copiedAthleteId })}
+        onStartRace={() => onCommand({ type: "REVEAL_RACE" })}
+        canChangeAthlete={canChangeAthlete}
+        canStartRace={isHost}
+      />
+    );
+  }
+
+  if (game.phase === "racing") {
+    return (
+      <RaceScreen
+        game={game}
+        canActAsPlayer={(ownerId) => ownerId === playerId}
+        onRoll={(entrantId, choice?: MainMoveChoice) => onCommand({ type: "ROLL_DICE", playerId: entrantId, choice })}
+        onConfirmReaction={(ownerId, reactionId, accepted, targetEntrantId) => onCommand({
+          type: "CONFIRM_REACTION",
+          playerId: ownerId,
+          reactionId,
+          accepted,
+          targetEntrantId,
+        })}
+      />
+    );
+  }
+
+  if (game.phase === "raceResults") {
+    return <RaceResultsScreen game={game} onContinue={() => onCommand({ type: "BEGIN_NEXT_RACE" })} canContinue={isHost} />;
+  }
+
+  return <FinalResultsScreen game={game} onNewGame={onBack} />;
+}
+
+function OnlineWaitingScreen({ playerName }: { playerName: string }) {
+  return (
+    <main className="app-shell screen-layout">
+      <section className="online-waiting-panel">
+        <p className="eyebrow">Online room</p>
+        <h1>{`等待 ${playerName} 选择 racer`}</h1>
+        <p className="helper-text">对方的选角仅显示在其终端；完成锁定后会自动同步到这里。</p>
       </section>
     </main>
   );

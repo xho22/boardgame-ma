@@ -38,6 +38,10 @@ describe("RoomService", () => {
     );
     expect(selected.gameState?.phase).toBe("selecting");
     expect(selected.gameState?.revision).toBeGreaterThan(started.gameState!.revision);
+
+    const kidView = service.getRoomForPlayer("family-a", "player-2");
+    expect(kidView?.gameState?.players.find((player) => player.id === dad.playerId)?.athleteIds).toEqual([]);
+    expect(kidView?.gameState?.selectionState?.selectionsByPlayerId[dad.playerId]).toEqual([]);
   });
 
   it("rejects non-host setup commands and stale revisions", () => {
@@ -59,5 +63,26 @@ describe("RoomService", () => {
       0,
       { type: "BEGIN_SELECTION" },
     )).toThrow("房间状态已更新");
+  });
+
+  it("rejects choosing another player's racer", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    const started = service.startSharedGame("family-a", dad.playerId);
+    const selecting = service.dispatchGameCommand(
+      "family-a",
+      dad.playerId,
+      started.gameState!.revision,
+      { type: "BEGIN_SELECTION" },
+    );
+    const dadAthleteId = selecting.gameState!.players.find((player) => player.id === dad.playerId)!.athleteIds[0];
+
+    expect(() => service.dispatchGameCommand(
+      "family-a",
+      kid.playerId,
+      selecting.gameState!.revision,
+      { type: "SELECT_ATHLETE", playerId: dad.playerId, athleteId: dadAthleteId },
+    )).toThrow("不能替其他玩家执行操作");
   });
 });

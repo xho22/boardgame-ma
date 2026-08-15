@@ -9,9 +9,10 @@ type RaceScreenProps = {
   game: GameState;
   onConfirmReaction: (playerId: string, reactionId: string, accepted: boolean, targetEntrantId?: string) => void;
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
+  canActAsPlayer?: (playerId: string) => boolean;
 };
 
-export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps) {
+export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = () => true }: RaceScreenProps) {
   const [duelTargetEntrantId, setDuelTargetEntrantId] = useState("");
   const race = game.activeRace;
   const pendingReaction = race?.pendingReactions[0];
@@ -110,6 +111,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
                   className="secondary-button"
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, false)}
+                  disabled={!canActAsPlayer(pendingReaction.playerId)}
                 >
                   {reactionActions.decline}
                 </button>
@@ -117,14 +119,14 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
                   className="primary-button"
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, true, duelTargetEntrantId || undefined)}
-                  disabled={(pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy") && !duelTargetEntrantId}
+                  disabled={!canActAsPlayer(pendingReaction.playerId) || ((pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy") && !duelTargetEntrantId)}
                 >
                   {reactionActions.accept}
                 </button>
               </div>
             </div>
           </section>
-        ) : (
+        ) : canActAsPlayer(currentPlayer.id) ? (
           <DicePanel
             debugMode={game.settings.debugMode}
             race={race}
@@ -133,6 +135,14 @@ export function RaceScreen({ game, onConfirmReaction, onRoll }: RaceScreenProps)
             effectiveAbilityKey={getEffectiveImplementationKey(game, race, currentEntrant)}
             onRoll={onRoll}
           />
+        ) : (
+          <section className="dice-panel" aria-label="Waiting for turn">
+            <div className="current-racer-copy">
+              <p className="eyebrow">Online room</p>
+              <h2>{`等待 ${currentPlayer.name} 行动`}</h2>
+              <p>对方的操作会由服务端同步到这里。</p>
+            </div>
+          </section>
         )}
         <GameLog entries={game.log} />
       </div>

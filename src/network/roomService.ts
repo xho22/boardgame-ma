@@ -42,6 +42,33 @@ export class RoomService {
     return this.rooms.get(roomId) ?? null;
   }
 
+  getRoomForPlayer(roomId: string, playerId: string): RoomState | null {
+    const room = this.rooms.get(roomId);
+    if (!room?.gameState || room.gameState.phase !== "selecting") {
+      return room ?? null;
+    }
+
+    const game = room.gameState;
+    return {
+      ...room,
+      gameState: {
+        ...game,
+        players: game.players.map((player) => player.id === playerId ? player : { ...player, athleteIds: [] }),
+        selectionState: game.selectionState
+          ? {
+              ...game.selectionState,
+              selectionsByPlayerId: Object.fromEntries(
+                Object.entries(game.selectionState.selectionsByPlayerId).map(([candidateId, athleteIds]) => [
+                  candidateId,
+                  candidateId === playerId ? athleteIds : [],
+                ]),
+              ),
+            }
+          : null,
+      },
+    };
+  }
+
   disconnect(roomId: string, playerId: string): RoomState | null {
     const room = this.rooms.get(roomId);
     if (!room) {
@@ -77,7 +104,11 @@ export class RoomService {
     const gameState: GameState = {
       ...game,
       roomId,
-      players: game.players.map((player) => ({ ...player, isConnected: true })),
+      players: game.players.map((player, index) => ({
+        ...player,
+        id: occupiedSlots[index].playerId!,
+        isConnected: occupiedSlots[index].isConnected,
+      })),
     };
     const updatedRoom = this.withConnectionState({
       ...room,
@@ -165,6 +196,15 @@ export class RoomService {
 
     if (["BEGIN_SELECTION", "REVEAL_RACE", "BEGIN_NEXT_RACE", "FINISH_GAME"].includes(command.type)) {
       this.requireHost(room, actorId);
+    }
+
+    if (command.type === "SET_MASTERMIND_PREDICTION" || command.type === "SET_BEFORE_RACE_COPY_CHOICE") {
+      const owner = room.gameState?.players.find((player) =>
+        room.gameState?.selectionState?.selectionsByPlayerId[player.id]?.includes(command.athleteId),
+      );
+      if (owner?.id !== actorId) {
+        throw new RoomServiceError("只能为自己的 racer 设置赛前能力选择。");
+      }
     }
 
     if (["START_GAME", "ASSIGN_TEAMS", "USE_ABILITY"].includes(command.type)) {

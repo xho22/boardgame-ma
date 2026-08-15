@@ -6,9 +6,11 @@ type RaceRevealScreenProps = {
   onPredictionChange: (athleteId: string, predictedAthleteId: string) => void;
   onCopyChoiceChange: (athleteId: string, copiedAthleteId: string) => void;
   onStartRace: () => void;
+  canChangeAthlete?: (athleteId: string) => boolean;
+  canStartRace?: boolean;
 };
 
-export function RaceRevealScreen({ game, onPredictionChange, onCopyChoiceChange, onStartRace }: RaceRevealScreenProps) {
+export function RaceRevealScreen({ game, onPredictionChange, onCopyChoiceChange, onStartRace, canChangeAthlete = () => true, canStartRace = true }: RaceRevealScreenProps) {
   const selectionState = game.selectionState;
   const revealedRacers = game.players.flatMap((player) =>
     (selectionState?.selectionsByPlayerId[player.id] ?? []).map((athleteId) => ({
@@ -91,6 +93,7 @@ export function RaceRevealScreen({ game, onPredictionChange, onCopyChoiceChange,
               <span>{athlete?.displayName ?? athleteId}</span>
               <select
                 value={predictions[athleteId] ?? ""}
+                disabled={!canChangeAthlete(athleteId)}
                 onChange={(event) => onPredictionChange(athleteId, event.target.value)}
               >
                 <option value="" disabled>
@@ -115,6 +118,7 @@ export function RaceRevealScreen({ game, onPredictionChange, onCopyChoiceChange,
               <span>{athlete?.displayName ?? athleteId}</span>
               <select
                 value={copyChoices[athleteId] ?? ""}
+                disabled={!canChangeAthlete(athleteId)}
                 onChange={(event) => onCopyChoiceChange(athleteId, event.target.value)}
               >
                 <option value="" disabled>
@@ -142,6 +146,7 @@ export function RaceRevealScreen({ game, onPredictionChange, onCopyChoiceChange,
               <span>{athlete?.displayName ?? athleteId}</span>
               <select
                 value={copyChoices[athleteId] ?? ""}
+                disabled={!canChangeAthlete(athleteId)}
                 onChange={(event) => onCopyChoiceChange(athleteId, event.target.value)}
               >
                 <option value="" disabled>
@@ -162,7 +167,7 @@ export function RaceRevealScreen({ game, onPredictionChange, onCopyChoiceChange,
       ) : null}
 
       <footer className="bottom-actions">
-        <button className="primary-button" type="button" onClick={onStartRace} disabled={hasMissingPrediction || hasMissingCopyChoice}>
+        <button className="primary-button" type="button" onClick={onStartRace} disabled={!canStartRace || hasMissingPrediction || hasMissingCopyChoice}>
           Start Race
         </button>
       </footer>

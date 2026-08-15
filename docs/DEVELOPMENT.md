@@ -502,6 +502,8 @@ const rooms = new Map<string, RoomState>();
 - 每个命令带上客户端看到的 `revision`。
 - 如果 revision 过旧，服务端拒绝命令并返回最新状态。
 
+阶段 12 当前实现：`RoomService` 对每个连接单独生成选角阶段的客户端视图，其他玩家的 `athleteIds` 与选择结果不会发送到当前终端；公开揭示后才广播完整阵容。服务端同时校验命令携带的玩家或 racer 归属，拒绝代替其他玩家选角、掷骰或确认反应。
+
 客户端在在线模式不可直接调用 reducer 或写入权威比赛状态；本地模式则继续直接调用同一 reducer。服务端、WebSocket、房间状态和连接身份只能放在 `server/`、`src/network/` 或在线会话实现中，禁止渗入 `src/game/` 的纯规则模块。
 
 命令格式：

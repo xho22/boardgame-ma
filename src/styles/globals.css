@@ -151,6 +151,23 @@ h1 {
   max-width: 920px;
 }
 
+.online-mode-banner {
+  position: fixed;
+  z-index: 10;
+  top: 12px;
+  right: 16px;
+  color: #23675b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.online-waiting-panel {
+  display: grid;
+  gap: 14px;
+  margin: min(26vh, 220px) auto 0;
+  max-width: 680px;
+}
+
 .room-panel {
   display: grid;
   gap: 20px;

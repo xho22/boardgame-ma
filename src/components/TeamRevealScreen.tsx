@@ -8,9 +8,11 @@ type TeamRevealScreenProps = {
   onClearGame: () => void;
   onRandomizeTeams: () => void;
   onBeginSelection: () => void;
+  canBeginSelection?: boolean;
+  canRandomizeTeams?: boolean;
 };
 
-export function TeamRevealScreen({ game, onNewGame, onClearGame, onRandomizeTeams, onBeginSelection }: TeamRevealScreenProps) {
+export function TeamRevealScreen({ game, onNewGame, onClearGame, onRandomizeTeams, onBeginSelection, canBeginSelection = true, canRandomizeTeams = true }: TeamRevealScreenProps) {
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
 
   function showTooltip(text: string, x: number, y: number) {
@@ -78,10 +80,10 @@ export function TeamRevealScreen({ game, onNewGame, onClearGame, onRandomizeTeam
       </section>
 
       <footer className="bottom-actions">
-        <button className="secondary-button" type="button" onClick={onRandomizeTeams}>
+        <button className="secondary-button" type="button" onClick={onRandomizeTeams} disabled={!canRandomizeTeams}>
           Randomize Teams
         </button>
-        <button className="primary-button" type="button" onClick={onBeginSelection}>
+        <button className="primary-button" type="button" onClick={onBeginSelection} disabled={!canBeginSelection}>
           Choose Racers
         </button>
       </footer>
