@@ -416,6 +416,7 @@ describe("phase 9 abilities", () => {
     }), "player-1", [3]);
     expect(position(game, "player-1")).toBe(9);
     expect(entrant(game, "player-1").finished).toBe(false);
+    expect(messages(game).some((message) => message.includes("需要刚好冲线"))).toBe(true);
 
     game = roll(setPositions(createRace(["Third Wheel", "Baba Yaga", "Banana"]), {
       "player-1": 0,

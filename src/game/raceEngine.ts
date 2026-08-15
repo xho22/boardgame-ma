@@ -221,6 +221,9 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     leaptoad: mainMove.usesLeaptoadMove,
     preventOverFinish: mainMove.preventsOverFinish,
   });
+  const exactFinishBlocked =
+    mainMove.preventsOverFinish &&
+    mainMove.entrant.position + mainMove.finalMove > mainMove.race.trackLength;
   const moverBefore = {
     ...mainMove.entrant,
     position: mainMove.turnStartPosition,
@@ -266,6 +269,14 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
     ...(mainMove.dieRoll === null
       ? []
       : [{ type: "dice_roll" as const, message: `${describeRaceEntrant(game, entrant)} 掷出了 ${mainMove.dieRoll}。` }]),
+    ...(exactFinishBlocked
+      ? [
+          {
+            type: "ability_trigger" as const,
+            message: `较真者在场，${describeRaceEntrant(game, entrant)}需要刚好冲线；本应移动 ${mainMove.finalMove} 格，改为停在终点前一格。`,
+          },
+        ]
+      : []),
     {
       type: "movement" as const,
       message:

@@ -14,6 +14,13 @@ export function Track({ game, race }: TrackProps) {
     [race.entrants],
   );
   const [displayedPositions, setDisplayedPositions] = useState<Record<string, number>>(targetPositions);
+  const [hoveredRacer, setHoveredRacer] = useState<{
+    playerName: string;
+    racerName: string;
+    abilityText: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   useEffect(() => {
     setDisplayedPositions(Object.fromEntries(race.entrants.map((entrant) => [entrant.id, entrant.position])));
@@ -66,8 +73,24 @@ export function Track({ game, race }: TrackProps) {
                     <span
                       className={`track-piece moving-piece ${entrant.skippedTurns > 0 ? "tripped" : ""} ${entrant.eliminated ? "eliminated" : ""}`}
                       key={entrant.id}
-                      title={`${player?.name ?? entrant.playerId}: ${athlete?.displayName ?? entrant.athleteId}`}
                       style={{ borderColor: player?.color ?? "#1d6258" }}
+                      onMouseEnter={(event) =>
+                        setHoveredRacer({
+                          playerName: player?.name ?? entrant.playerId,
+                          racerName: athlete?.displayName ?? entrant.athleteId,
+                          abilityText: athlete?.abilityText ?? "暂无能力说明。",
+                          x: event.clientX,
+                          y: event.clientY,
+                        })
+                      }
+                      onMouseMove={(event) =>
+                        setHoveredRacer((current) =>
+                          current
+                            ? { ...current, x: event.clientX, y: event.clientY }
+                            : current,
+                        )
+                      }
+                      onMouseLeave={() => setHoveredRacer(null)}
                     >
                       {athlete ? <img src={athlete.imagePath} alt={athlete.displayName} /> : player?.name.slice(0, 1).toUpperCase() ?? "?"}
                       {entrant.eliminated ? <span className="chomp-marker">CHOMP!</span> : null}
@@ -79,6 +102,16 @@ export function Track({ game, race }: TrackProps) {
           );
         })}
       </div>
+      {hoveredRacer ? (
+        <aside
+          className="racer-hover-card"
+          role="tooltip"
+          style={{ left: hoveredRacer.x + 14, top: hoveredRacer.y + 14 }}
+        >
+          <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
+          <span>{hoveredRacer.abilityText}</span>
+        </aside>
+      ) : null}
     </section>
   );
 }
