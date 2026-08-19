@@ -618,6 +618,48 @@ h1 {
   border-radius: 8px;
   background: #fffdf8;
   padding: 6px;
+  position: relative;
+}
+
+.track-space.special-space {
+  border-width: 2px;
+}
+
+.track-space.special-score {
+  border-color: #c58d1d;
+  background: #fff8d8;
+}
+
+.track-space.special-trip {
+  border-color: #c3453c;
+  background: #fff0eb;
+}
+
+.track-space.special-move {
+  border-color: #247a73;
+  background: #eaf8f3;
+}
+
+.special-space-marker {
+  position: absolute;
+  top: 25px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 8px);
+  overflow: hidden;
+  color: #403a31;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.special-track-legend {
+  margin: 12px 0 0;
+  color: #4d4841;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .space-label {

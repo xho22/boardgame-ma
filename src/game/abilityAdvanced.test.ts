@@ -680,7 +680,7 @@ describe("ability simulation", () => {
       const rng = createRng(`simulation-rolls-${index}`);
       let actions = 0;
 
-      while (game.phase !== "finalResults" && actions < 1_000) {
+      while (game.phase !== "finalResults" && actions < 2_000) {
         if (game.phase === "teamReveal") {
           game = reduceGameCommand(game, { type: "BEGIN_SELECTION" }, rng);
           continue;
@@ -732,7 +732,9 @@ describe("ability simulation", () => {
                 type: "CONFIRM_REACTION",
                 playerId: prompt.playerId,
                 reactionId: prompt.id,
-                accepted: prompt.promptType === "duel" || prompt.promptType === "copy" ? Boolean(targetEntrantId) : true,
+                accepted: prompt.promptType === "duel" || prompt.promptType === "copy"
+                  ? Boolean(targetEntrantId)
+                  : prompt.promptType !== "optionalPower",
                 targetEntrantId,
               },
               rng,
@@ -754,7 +756,7 @@ describe("ability simulation", () => {
       }
 
       expect(game.phase, `simulation-${index} stopped at ${game.phase} after ${actions} actions`).toBe("finalResults");
-      expect(actions, `simulation-${index} used too many actions`).toBeLessThan(1_000);
+      expect(actions, `simulation-${index} used too many actions`).toBeLessThan(2_000);
     }
   });
 });

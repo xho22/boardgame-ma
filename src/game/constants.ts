@@ -65,4 +65,5 @@ export const DEFAULT_SETTINGS: GameSettings = {
   trackLength: DEFAULT_TRACK_LENGTH,
   teamAssignment: "snake",
   debugMode: false,
+  boardMode: "alternating",
 };

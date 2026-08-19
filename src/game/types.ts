@@ -47,6 +47,8 @@ export type GameSettings = {
   trackLength: number;
   teamAssignment: "snake" | "random";
   debugMode: boolean;
+  /** Omitted only by pre-special-board persisted games; treat those as alternating. */
+  boardMode?: "alternating" | "allSpecial";
 };
 
 export type GameState = {
@@ -120,6 +122,8 @@ export type RaceState = {
   id: string;
   raceNumber: number;
   trackLength: number;
+  /** Fixed when a race begins so every client renders the same board. */
+  boardKind?: "normal" | "special";
   firstPlacePoints: number;
   secondPlacePoints: number;
   turnOrder: string[];
@@ -151,6 +155,8 @@ export type Entrant = {
   actionCount: number;
   abilityUses: Record<string, number>;
   temporaryEffects: TemporaryEffect[];
+  /** The special space already resolved at the racer's current position. */
+  resolvedSpecialSpace?: number;
 };
 
 export type TemporaryEffect = {

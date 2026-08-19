@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
+import { getSpecialTrackEffect } from "../game/specialTrack";
 import type { GameState, RaceState } from "../game/types";
 
 type TrackProps = {
@@ -60,10 +61,12 @@ export function Track({ game, race }: TrackProps) {
       >
         {spaces.map((space) => {
           const entrants = race.entrants.filter((entrant) => (displayedPositions[entrant.id] ?? entrant.position) === space);
+          const specialEffect = race.boardKind === "special" ? getSpecialTrackEffect(space) : undefined;
 
           return (
-            <div className="track-space" key={space}>
+            <div className={`track-space ${specialEffect ? `special-space special-${specialEffect.type}` : ""}`} key={space}>
               <span className="space-label">{space === 0 ? "Start" : space === race.trackLength ? "Finish" : space}</span>
+              {specialEffect ? <span className="special-space-marker" title={`特殊格：${specialEffect.label}`}>{specialEffect.label}</span> : null}
               <div className="piece-stack">
                 {entrants.map((entrant) => {
                   const player = game.players.find((candidate) => candidate.id === entrant.playerId);
@@ -102,6 +105,11 @@ export function Track({ game, race }: TrackProps) {
           );
         })}
       </div>
+      {race.boardKind === "special" ? (
+        <p className="special-track-legend" aria-label="Special track legend">
+          特殊棋盘：得分 +1 可获得分数；绊倒会跳过下一次主移动；前进/后退格会立即继续移动。
+        </p>
+      ) : null}
       {hoveredRacer ? (
         <aside
           className="racer-hover-card"

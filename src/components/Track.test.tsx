@@ -56,6 +56,7 @@ const race: RaceState = {
   id: "race-1",
   raceNumber: 1,
   trackLength: 6,
+  boardKind: "special",
   firstPlacePoints: 5,
   secondPlacePoints: 2,
   turnOrder: entrants.map((entrant) => entrant.id),
@@ -101,5 +102,7 @@ describe("Track", () => {
     expect(markup).toContain(alchemist.imagePath);
     expect(markup).toContain(legs.imagePath);
     expect(markup).toContain("track-piece moving-piece tripped");
+    expect(markup).toContain("special-space-marker");
+    expect(markup).toContain("特殊棋盘");
   });
 });

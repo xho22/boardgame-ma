@@ -86,6 +86,16 @@ function finishActiveRace(game: GameState): GameState {
       throw new Error("Expected active race");
     }
 
+    const pendingReaction = race.pendingReactions[0];
+    if (pendingReaction) {
+      nextGame = reduceGameCommand(
+        nextGame,
+        { type: "CONFIRM_REACTION", playerId: pendingReaction.playerId, reactionId: pendingReaction.id, accepted: false },
+        sixRng,
+      );
+      continue;
+    }
+
     const playerId = race.turnOrder[race.currentTurnIndex];
     nextGame = reduceGameCommand(nextGame, { type: "ROLL_DICE", playerId }, sixRng);
   }

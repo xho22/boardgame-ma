@@ -12,6 +12,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
   const [racersPerPlayerPerRace, setRacersPerPlayerPerRace] = useState<1 | 2>(1);
   const [playerNames, setPlayerNames] = useState(["Dad", "Kid"]);
   const [debugMode, setDebugMode] = useState(false);
+  const [boardMode, setBoardMode] = useState<"alternating" | "allSpecial">("alternating");
 
   const visibleNames = useMemo(
     () =>
@@ -110,6 +111,28 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
           />
         </label>
 
+        {debugMode ? (
+          <div className="control-band">
+            <label htmlFor="board-mode">Board Mode</label>
+            <div className="segmented-control" id="board-mode">
+              <button
+                className={boardMode === "alternating" ? "selected" : ""}
+                type="button"
+                onClick={() => setBoardMode("alternating")}
+              >
+                Alternate
+              </button>
+              <button
+                className={boardMode === "allSpecial" ? "selected" : ""}
+                type="button"
+                onClick={() => setBoardMode("allSpecial")}
+              >
+                All Special
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <dl className="summary-strip" aria-label="Game summary">
           <div>
             <dt>Races</dt>
@@ -136,6 +159,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
               playerNames: visibleNames,
               racersPerPlayerPerRace,
               debugMode,
+              boardMode,
             })
           }
         >

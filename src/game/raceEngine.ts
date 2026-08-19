@@ -6,7 +6,8 @@ import {
   setMastermindPrediction,
 } from "./selection";
 import { createInitialGameState } from "./setup";
-import { moveEntrantForward } from "./movement";
+import { moveEntrantBackward, moveEntrantForward } from "./movement";
+import { getBoardKind, getSpecialTrackEffect } from "./specialTrack";
 import { applyRaceScoring, isGameComplete } from "./scoring";
 import {
   applyBeforeRaceAbilities,
@@ -132,6 +133,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
     id: `race-${raceSummary.raceNumber}`,
     raceNumber: raceSummary.raceNumber,
     trackLength: game.settings.trackLength,
+    boardKind: getBoardKind(raceSummary.raceNumber, game.settings.boardMode),
     firstPlacePoints: raceSummary.firstPlacePoints,
     secondPlacePoints: raceSummary.secondPlacePoints,
     turnOrder: createPlayerInterleavedTurnOrder(game, baseEntrants),
@@ -334,7 +336,12 @@ function finishResolvedMove(
     path: moveResult.path,
     abilityTriggered: mainMove.logs.some((log) => log.type === "ability_trigger"),
   });
-  const raceAfterSecondaryFinishes = syncFinishers(afterMove.race);
+  const specialResolution = resolveSpecialTrackEffects(
+    { ...game, players: afterMove.players, activeRace: afterMove.race },
+    afterMove.race,
+    afterMove.players,
+  );
+  const raceAfterSecondaryFinishes = syncFinishers(specialResolution.race);
   const baseLogs = [
     ...mainMove.logs,
     ...(mainMove.dieRoll === null
@@ -356,12 +363,13 @@ function finishResolvedMove(
           : `${describeRaceEntrant(game, entrant)} 移动 ${mainMove.finalMove} 格，到达 ${moveResult.entrant.position}。`,
     },
     ...afterMove.logs,
+    ...specialResolution.logs,
   ];
   const gameWithMove = {
     ...game,
-    players: afterMove.players,
+    players: specialResolution.players,
     activeRace: {
-      ...raceAfterSecondaryFinishes.race,
+        ...raceAfterSecondaryFinishes.race,
       pendingTurnState:
         raceAfterSecondaryFinishes.race.pendingReactions.length > 0
           ? {
@@ -407,6 +415,98 @@ function finishResolvedMove(
   }
 
   return advanceTurn(gameWithMove, raceAfterSecondaryFinishes.race);
+}
+
+function resolveSpecialTrackEffects(
+  game: GameState,
+  race: RaceState,
+  players: GameState["players"],
+): { race: RaceState; players: GameState["players"]; logs: { type: GameLogEntry["type"]; message: string }[] } {
+  if (race.boardKind !== "special") {
+    return { race, players, logs: [] };
+  }
+
+  let workingRace: RaceState = {
+    ...race,
+    entrants: race.entrants.map((entrant) =>
+      entrant.resolvedSpecialSpace !== undefined && entrant.resolvedSpecialSpace !== entrant.position
+        ? { ...entrant, resolvedSpecialSpace: undefined }
+        : entrant,
+    ),
+  };
+  let nextPlayers = players;
+  const logs: { type: GameLogEntry["type"]; message: string }[] = [];
+
+  // A special move can land on another special space. The guard protects malformed custom tracks.
+  for (let resolutionCount = 0; resolutionCount < 40; resolutionCount += 1) {
+    const entrant = workingRace.entrants.find((candidate) =>
+      !candidate.finished &&
+      !candidate.eliminated &&
+      candidate.resolvedSpecialSpace !== candidate.position &&
+      getSpecialTrackEffect(candidate.position),
+    );
+
+    if (!entrant) {
+      break;
+    }
+
+    const effect = getSpecialTrackEffect(entrant.position)!;
+    workingRace = {
+      ...workingRace,
+      entrants: workingRace.entrants.map((candidate) =>
+        candidate.id === entrant.id ? { ...candidate, resolvedSpecialSpace: entrant.position } : candidate,
+      ),
+    };
+
+    if (effect.type === "score") {
+      nextPlayers = nextPlayers.map((player) =>
+        player.id === entrant.playerId ? { ...player, score: Math.max(0, player.score + effect.points) } : player,
+      );
+      logs.push({ type: "score_awarded", message: `${describeRaceEntrant(game, entrant)} 落到特殊格 ${entrant.position}，获得 ${effect.points} 分。` });
+      continue;
+    }
+
+    if (effect.type === "trip") {
+      workingRace = {
+        ...workingRace,
+        entrants: workingRace.entrants.map((candidate) =>
+          candidate.id === entrant.id ? { ...candidate, skippedTurns: candidate.skippedTurns + 1 } : candidate,
+        ),
+      };
+      logs.push({ type: "status_added", message: `${describeRaceEntrant(game, entrant)} 落到特殊格 ${entrant.position}，绊倒并跳过下一次主移动。` });
+      continue;
+    }
+
+    const moveResult = effect.spaces > 0
+      ? moveEntrantForward(entrant, effect.spaces, workingRace.trackLength)
+      : moveEntrantBackward(entrant, Math.abs(effect.spaces));
+    const movedEntrant = { ...moveResult.entrant, resolvedSpecialSpace: undefined };
+    workingRace = {
+      ...workingRace,
+      entrants: workingRace.entrants.map((candidate) =>
+        candidate.id === entrant.id ? movedEntrant : candidate,
+      ),
+    };
+    logs.push({
+      type: "movement",
+      message: `${describeRaceEntrant(game, entrant)} 落到特殊格 ${entrant.position}，${effect.spaces > 0 ? "前进" : "后退"} ${Math.abs(effect.spaces)} 格到 ${movedEntrant.position}。`,
+    });
+
+    const afterMove = resolveAfterMove({
+      game: { ...game, players: nextPlayers, activeRace: workingRace },
+      race: workingRace,
+      players: nextPlayers,
+      moverBefore: entrant,
+      moverAfter: movedEntrant,
+      path: moveResult.path,
+      abilityTriggered: true,
+    });
+    workingRace = afterMove.race;
+    nextPlayers = afterMove.players;
+    logs.push(...afterMove.logs);
+  }
+
+  return { race: workingRace, players: nextPlayers, logs };
 }
 
 function confirmReaction(
@@ -521,6 +621,16 @@ function confirmReaction(
     }
   }
 
+  const specialFollowResolution = resolveSpecialTrackEffects(
+    { ...game, players: reactionPlayers, activeRace: workingRace },
+    workingRace,
+    reactionPlayers,
+  );
+  workingRace = specialFollowResolution.race;
+  reactionPlayers = specialFollowResolution.players;
+  reactionLogs.push(
+    ...specialFollowResolution.logs.map((log, index) => createLog(game, log.type, log.message, reactionLogs.length + index)),
+  );
   const syncedFollowRace = syncFinishers(workingRace);
   workingRace = syncedFollowRace.race;
   reactionLogs.push(
@@ -686,13 +796,19 @@ function finalizeReaction(
   logs: GameLogEntry[],
   rng: Rng,
 ): GameState {
-  const synced = syncFinishers(race);
+  const specialResolution = resolveSpecialTrackEffects({ ...game, players, activeRace: race }, race, players);
+  const synced = syncFinishers(specialResolution.race);
   const workingRace = synced.race;
   const nextGame: GameState = {
     ...game,
-    players,
+    players: specialResolution.players,
     activeRace: workingRace,
-    log: [...game.log, ...logs, ...synced.logs.map((log, index) => createLog(game, log.type, log.message, logs.length + index))],
+    log: [
+      ...game.log,
+      ...logs,
+      ...specialResolution.logs.map((log, index) => createLog(game, log.type, log.message, logs.length + index)),
+      ...synced.logs.map((log, index) => createLog(game, log.type, log.message, logs.length + specialResolution.logs.length + index)),
+    ],
     revision: game.revision + 1,
   };
 
