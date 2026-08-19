@@ -1,22 +1,67 @@
+import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
+import { extname, resolve } from "node:path";
 import { WebSocket, WebSocketServer } from "ws";
 import { RoomService, RoomServiceError } from "../src/network/roomService";
 import type { ClientMessage, ServerMessage } from "../src/network/protocol";
 
 const port = Number(process.env.PORT ?? 8787);
+const host = process.env.HOST ?? "0.0.0.0";
+const clientDistDirectory = resolve(process.cwd(), "dist");
 const rooms = new RoomService();
 const clients = new Map<WebSocket, { roomId: string; playerId: string }>();
-const httpServer = createServer((request, response) => {
+const contentTypes: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
+};
+
+const httpServer = createServer(async (request, response) => {
   if (request.url === "/health") {
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ status: "ok" }));
     return;
   }
 
-  response.writeHead(404);
-  response.end();
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    response.writeHead(405);
+    response.end();
+    return;
+  }
+
+  const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+  const relativePath = url.pathname === "/" ? "index.html" : url.pathname.slice(1);
+  const requestedPath = resolve(clientDistDirectory, relativePath);
+  const safePath = requestedPath.startsWith(`${clientDistDirectory}/`) ? requestedPath : null;
+  const fallbackPath = resolve(clientDistDirectory, "index.html");
+
+  try {
+    const body = await readFile(safePath ?? fallbackPath);
+    response.writeHead(200, { "content-type": contentTypes[extname(safePath ?? fallbackPath)] ?? "application/octet-stream" });
+    response.end(request.method === "HEAD" ? undefined : body);
+  } catch {
+    if (extname(relativePath)) {
+      response.writeHead(404);
+      response.end();
+      return;
+    }
+
+    try {
+      const body = await readFile(fallbackPath);
+      response.writeHead(200, { "content-type": contentTypes[".html"] });
+      response.end(request.method === "HEAD" ? undefined : body);
+    } catch {
+      response.writeHead(503, { "content-type": "application/json" });
+      response.end(JSON.stringify({ error: "Client build is unavailable. Run npm run build first." }));
+    }
+  }
 });
-const server = new WebSocketServer({ server: httpServer });
+const server = new WebSocketServer({ server: httpServer, path: "/ws" });
 
 function send(socket: WebSocket, message: ServerMessage): void {
   if (socket.readyState === WebSocket.OPEN) {
@@ -39,6 +84,10 @@ server.on("connection", (socket) => {
   socket.on("message", (rawMessage) => {
     try {
       const message = JSON.parse(rawMessage.toString()) as ClientMessage;
+
+      if (message.type === "HEARTBEAT") {
+        return;
+      }
 
       if (message.type === "JOIN_ROOM") {
         const joined = rooms.join(message.roomId, message.playerName, message.previousPlayerId);
@@ -81,6 +130,6 @@ server.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(port, "127.0.0.1", () => {
-  console.log(`boardgame-ma room server listening on ws://127.0.0.1:${port}`);
+httpServer.listen(port, host, () => {
+  console.log(`boardgame-ma serving HTTP and WebSocket on ${host}:${port}`);
 });

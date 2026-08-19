@@ -28,6 +28,7 @@ npm run e2e
 - UI 可用后必须能通过手动浏览器检查。
 - Playwright 引入后必须覆盖桌面、平板、手机三个视口。
 - 当前环境中 `npm run test` 偶发 Vitest worker 在用例完成后无法退出；执行测试时应与构建、e2e 分开运行，并检查是否遗留 Vitest 进程组。不得停止 `5173` 上的 Vite 开发服务器。
+- 生产部署验收：`npm run start` 必须只监听一个 `PORT`，且在同一端口返回页面、`/health` 与 `/ws`；Cloudflare Tunnel 下页面须连接同源 `/ws`。应手动验证空闲超过心跳周期以及主动断开后能自动重新加入固定房间。
 
 ## 3. 阶段验收清单
 

@@ -18,7 +18,7 @@ const ROOM_IDS = ["family-a", "family-b", "family-c"];
 
 function socketUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.hostname}:8787`;
+  return `${protocol}//${window.location.host}/ws`;
 }
 
 function storedPlayerId(roomId: string): string | undefined {

@@ -518,6 +518,8 @@ const rooms = new Map<string, RoomState>();
 
 客户端在在线模式不可直接调用 reducer 或写入权威比赛状态；本地模式则继续直接调用同一 reducer。服务端、WebSocket、房间状态和连接身份只能放在 `server/`、`src/network/` 或在线会话实现中，禁止渗入 `src/game/` 的纯规则模块。
 
+生产运行时，Node 服务同时托管 `dist/`、`/health` 和 WebSocket `/ws`，以 `PORT`（默认 `8787`）作为唯一监听端口；前端根据页面协议与 `window.location.host` 连接同源 `/ws`。开发模式下 Vite 的 `5173` 将 `/ws` 代理到本地 `8787`，保持生产与开发的客户端连接地址一致。`RoomClient` 每 25 秒发送应用层心跳，并在断线后以封顶 10 秒的指数退避重连；重连后继续使用浏览器保存的 `playerId` 加入房间。
+
 命令格式：
 
 ```ts

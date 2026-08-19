@@ -2,6 +2,7 @@ import type { GameCommand, GameSettings, RoomState } from "../game/types";
 
 export type ClientMessage =
   | { type: "JOIN_ROOM"; roomId: string; playerName: string; previousPlayerId?: string }
+  | { type: "HEARTBEAT" }
   | { type: "START_SHARED_GAME"; options?: StartSharedGameOptions }
   | { type: "RESET_SHARED_GAME" }
   | { type: "GAME_COMMAND"; revision: number; command: GameCommand };
