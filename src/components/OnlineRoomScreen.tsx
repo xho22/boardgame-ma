@@ -35,6 +35,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   const [error, setError] = useState<string | null>(null);
   const [racersPerPlayerPerRace, setRacersPerPlayerPerRace] = useState<1 | 2>(1);
   const [debugMode, setDebugMode] = useState(false);
+  const [boardMode, setBoardMode] = useState<"alternating" | "allSpecial">("alternating");
 
   useEffect(() => () => client.current.close(), []);
 
@@ -177,19 +178,28 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
                       <span>Debug Mode</span>
                       <input checked={debugMode} id="online-debug-mode" type="checkbox" onChange={(event) => setDebugMode(event.target.checked)} />
                     </label>
+                    {debugMode ? (
+                      <div className="control-band">
+                        <label htmlFor="online-board-mode">Board Mode</label>
+                        <div className="segmented-control" id="online-board-mode">
+                          <button className={boardMode === "alternating" ? "selected" : ""} type="button" onClick={() => setBoardMode("alternating")}>Alternate</button>
+                          <button className={boardMode === "allSpecial" ? "selected" : ""} type="button" onClick={() => setBoardMode("allSpecial")}>All Special</button>
+                        </div>
+                      </div>
+                    ) : null}
                     <button
                       className="primary-button"
                       type="button"
                       disabled={!canStart}
                       onClick={() => client.current.send({
                         type: "START_SHARED_GAME",
-                        options: { racersPerPlayerPerRace, debugMode } satisfies StartSharedGameOptions,
+                        options: { racersPerPlayerPerRace, debugMode, boardMode } satisfies StartSharedGameOptions,
                       })}
                     >
                       Start Shared Game
                     </button>
                   </>
-                ) : <p className="choice-hint">等待房主设置每人 racer 数量和 Debug 模式。</p>}
+                ) : <p className="choice-hint">等待房主设置每人 racer 数量、Debug 模式和棋盘模式。</p>}
               </section>
             ) : null}
 

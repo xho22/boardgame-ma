@@ -213,6 +213,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
         type: "position_swap",
         message: `${racerName} 使用翻转者，与${describeEntrant(game, target)}交换位置。`,
       });
+      workingRace = triggerScoocherOnOtherPower(game, workingRace, entrant.id, logs);
     }
 
     return buildResolution({
@@ -654,6 +655,7 @@ function applyBeforeMainMove(
         type: "position_swap",
         message: `${name} 使用催眠师，将${describeEntrant(game, target)}传送到 ${entrant.position}。`,
       });
+      workingRace = triggerScoocherOnOtherPower(game, workingRace, entrant.id, logs);
     }
   }
 
@@ -673,6 +675,7 @@ function applyBeforeMainMove(
         type: "position_swap",
         message: `${name} 使用第三者，传送到有两名其他选手的格子 ${targetSpace}。`,
       });
+      workingRace = triggerScoocherOnOtherPower(game, workingRace, entrant.id, logs);
     }
   }
 
@@ -837,6 +840,34 @@ function applyBananaPassTraps(
         message: `${describeEntrant(game, banana)} 在经过判定中绊倒了${describeEntrant(game, moverAfter)}。`,
       });
     }
+  }
+
+  return workingRace;
+}
+
+function triggerScoocherOnOtherPower(
+  game: GameState,
+  race: RaceState,
+  sourceEntrantId: string,
+  logs: AbilityLog[],
+): RaceState {
+  let workingRace = race;
+
+  for (const scoocher of workingRace.entrants) {
+    if (
+      scoocher.id === sourceEntrantId ||
+      scoocher.finished ||
+      scoocher.eliminated ||
+      getEffectiveImplementationKey(game, workingRace, scoocher) !== "move_one_on_other_power"
+    ) {
+      continue;
+    }
+
+    workingRace = moveEntrantInRace(game, workingRace, scoocher.id, 1);
+    logs.push({
+      type: "movement",
+      message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
+    });
   }
 
   return workingRace;

@@ -11,4 +11,4 @@ export type ServerMessage =
   | { type: "COMMAND_REJECTED"; reason: string; room?: RoomState }
   | { type: "CONNECTION_ERROR"; reason: string };
 
-export type StartSharedGameOptions = Partial<Pick<GameSettings, "debugMode" | "racersPerPlayerPerRace">>;
+export type StartSharedGameOptions = Partial<Pick<GameSettings, "boardMode" | "debugMode" | "racersPerPlayerPerRace">>;

@@ -514,7 +514,7 @@ const rooms = new Map<string, RoomState>();
 
 阶段 12 当前实现：`RoomService` 对每个连接单独生成选角阶段的客户端视图，其他玩家的 `athleteIds` 与选择结果不会发送到当前终端；公开揭示后才广播完整阵容。服务端同时校验命令携带的玩家或 racer 归属，拒绝代替其他玩家选角、掷骰或确认反应。
 
-在线创建共享局时，玩家人数和昵称由已占用的房间座位生成；房主通过 `START_SHARED_GAME.options` 传入 `racersPerPlayerPerRace` 与 `debugMode`，服务端调用同一套 `normalizeSettings` 校验后创建权威 `GameState`。
+在线创建共享局时，玩家人数和昵称由已占用的房间座位生成；房主通过 `START_SHARED_GAME.options` 传入 `racersPerPlayerPerRace`、`debugMode` 与 `boardMode`，服务端调用同一套 `normalizeSettings` 校验后创建权威 `GameState`。启用 Debug 后，房主可选择 `Alternate` 或 `All Special`；后者会同步为整局每场均使用特殊棋盘。
 
 客户端在在线模式不可直接调用 reducer 或写入权威比赛状态；本地模式则继续直接调用同一 reducer。服务端、WebSocket、房间状态和连接身份只能放在 `server/`、`src/network/` 或在线会话实现中，禁止渗入 `src/game/` 的纯规则模块。
 
@@ -651,7 +651,7 @@ type SelectionState = {
 - before main move：Party Animal 已改为主动选择；Copycat 会将唯一领先者的有效能力传入同一套操作面板与规则结算，赛前复制能力除外。
 - pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
-- 所有能力定义为 `move` 的额外位移统一通过 `moveEntrantInRace` 进入吸盘鱼反应队列；骰子商人重投造成的移动会先完成吸盘鱼确认，再恢复原角色的重投结算。warp、换位和推挤不走此路径。
+- 所有能力定义为 `move` 的额外位移统一通过 `moveEntrantInRace` 进入吸盘鱼反应队列；骰子商人重投造成的移动会先完成吸盘鱼确认，再恢复原角色的重投结算。warp、换位和推挤不走此路径。任何其他 racer 成功使用能力时，挪挪仍须收到能力触发并移动 1 格；因此翻转者、催眠师、电灯泡等直接换位或 warp 也必须显式发出此事件，但不会错误触发吸盘鱼。
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
 - on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。
 - before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。

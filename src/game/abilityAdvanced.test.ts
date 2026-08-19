@@ -415,6 +415,13 @@ describe("phase 9 abilities", () => {
     expect(position(game, "player-1")).toBe(2);
     expect(position(game, "player-2")).toBe(5);
 
+    game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga", "Scoocher"]), {
+      "player-1": 0,
+      "player-2": 5,
+      "player-3": 9,
+    }), "player-1", [1], { useFlipFlopSwap: true, flipFlopTargetEntrantId: "player-2" });
+    expect(position(game, "player-3")).toBe(10);
+
     game = roll(createRace(["Genius", "Baba Yaga"]), "player-1", [4], { geniusGuess: 4 });
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-1");
 
@@ -436,6 +443,14 @@ describe("phase 9 abilities", () => {
       "player-3": 4,
     }), "player-1", [1], { useHypnotist: true, hypnotistTargetEntrantId: "player-3" });
     expect(position(game, "player-3")).toBe(0);
+
+    game = roll(setPositions(createRace(["Hypnotist", "Scoocher", "Baba Yaga"]), {
+      "player-1": 3,
+      "player-2": 8,
+      "player-3": 12,
+    }), "player-1", [2], { useHypnotist: true, hypnotistTargetEntrantId: "player-2" });
+    expect(position(game, "player-2")).toBe(4);
+    expect(messages(game).some((message) => message.includes("挪挪") && message.includes("移动 1 格"))).toBe(true);
 
     game = roll(setPositions(createRace(["Leaptoad", "Baba Yaga"]), {
       "player-1": 0,
@@ -527,6 +542,14 @@ describe("phase 9 abilities", () => {
       "player-5": 7,
     }), "player-1", [1], { useThirdWheel: true, thirdWheelTargetPosition: 7 });
     expect(position(game, "player-1")).toBe(8);
+
+    game = roll(setPositions(createRace(["Third Wheel", "Scoocher", "Baba Yaga", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 10,
+      "player-3": 4,
+      "player-4": 4,
+    }), "player-1", [2], { useThirdWheel: true });
+    expect(position(game, "player-2")).toBe(11);
 
     game = roll(createRace(["Twin", "Baba Yaga"], 30, "Alchemist"), "player-1", [1]);
     expect(position(game, "player-1")).toBe(4);

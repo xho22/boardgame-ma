@@ -427,7 +427,7 @@ afterRace          比赛结束时
 | 27 | Party Animal | 派对动物 | 聚集增益 | main move 前，所有选手各 move 1 朝向 Party Animal；之后其格子上每有 1 名其他选手，main move +1 | `pull_all_then_bonus_per_guest` |
 | 28 | Rocket Scientist | 火箭科学家 | 加倍冒险 | main move 掷骰后，可以移动双倍点数；若这样做，自己 trip | `optional_double_roll_then_trip` |
 | 29 | Romantic | 浪漫者 | 两人同格触发 | 任意选手停在恰好有 1 名其他选手的格子时，Romantic move 2；若两个选手一起移动并分别触发，则触发两次 | `move_two_on_pair_stop` |
-| 30 | Scoocher | 挪挪 | 能力响应 | 其他选手的能力发生时，Scoocher move 1 | `move_one_on_other_power` |
+| 30 | Scoocher | 挪挪 | 能力响应 | 其他选手成功使用能力时，Scoocher move 1；包括翻转者换位、催眠师和电灯泡的 warp，但不把这些位置变化视作吸盘鱼可跟随的 move | `move_one_on_other_power` |
 | 31 | Sisyphus | 西西弗斯 | 点数负担 | before race 获得 4 个 1 分筹码；main move 掷出 6 时，改为 warp 到起点并失去 1 分，替代本次移动 | `points_then_six_warp_start` |
 | 32 | Skipper | 插队者 | 回合顺序 | 任意选手 main move 掷出 1 时，Skipper 立刻成为下一位行动者；之后从 Skipper 左侧继续 turn order | `take_next_turn_on_roll_one` |
 | 33 | Stickler | 较真者 | 精确冲线 | 其他选手只能用刚好到终点的移动跨线；若移动超过所需格数，则不能冲线 | `others_need_exact_finish` |

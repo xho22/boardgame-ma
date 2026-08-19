@@ -102,6 +102,7 @@ export class RoomService {
         playerNames: occupiedSlots.map((slot) => slot.playerName),
         racersPerPlayerPerRace: options.racersPerPlayerPerRace,
         debugMode: options.debugMode,
+        boardMode: options.boardMode,
       },
     });
     const gameState: GameState = {
