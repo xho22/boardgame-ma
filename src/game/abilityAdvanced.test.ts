@@ -422,6 +422,13 @@ describe("phase 9 abilities", () => {
     }), "player-1", [1], { useFlipFlopSwap: true, flipFlopTargetEntrantId: "player-2" });
     expect(position(game, "player-3")).toBe(10);
 
+    game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga", "Suckerfish"]), {
+      "player-1": 0,
+      "player-2": 5,
+      "player-3": 0,
+    }), "player-1", [1], { useFlipFlopSwap: true, flipFlopTargetEntrantId: "player-2" });
+    expect(requireRace(game).pendingReactions).toHaveLength(0);
+
     game = roll(createRace(["Genius", "Baba Yaga"]), "player-1", [4], { geniusGuess: 4 });
     expect(requireRace(game).turnOrder[requireRace(game).currentTurnIndex]).toBe("player-1");
 
@@ -510,6 +517,13 @@ describe("phase 9 abilities", () => {
     game = roll(game, "player-1", [6]);
     expect(game.players[0].score).toBe(3);
     expect(position(game, "player-1")).toBe(0);
+
+    game = roll(setPositions(createRace(["Sisyphus", "Scoocher"]), {
+      "player-1": 7,
+      "player-2": 10,
+    }), "player-1", [6]);
+    expect(position(game, "player-1")).toBe(0);
+    expect(position(game, "player-2")).toBe(11);
 
     game = createRace(["Sisyphus", "Baba Yaga"]);
     game = { ...game, players: game.players.map((player, index) => index === 0 ? { ...player, score: 0 } : player) };

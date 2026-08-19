@@ -652,6 +652,7 @@ type SelectionState = {
 - pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
 - 所有能力定义为 `move` 的额外位移统一通过 `moveEntrantInRace` 进入吸盘鱼反应队列；骰子商人重投造成的移动会先完成吸盘鱼确认，再恢复原角色的重投结算。warp、换位和推挤不走此路径。任何其他 racer 成功使用能力时，挪挪仍须收到能力触发并移动 1 格；因此翻转者、催眠师、电灯泡等直接换位或 warp 也必须显式发出此事件，但不会错误触发吸盘鱼。
+- 位移交互审计边界：普通 `move`（主移动、长腿、啦啦队长、派对动物、尺蠖、跟班、浪漫者、决斗奖励、推人等）要进入吸盘鱼与挪挪链；warp/换位（翻转者、催眠师、电灯泡、西西弗斯回起点）只触发挪挪，不触发吸盘鱼；巨婴的落点改写不算 move，也不触发吸盘鱼。
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
 - on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。
 - before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
