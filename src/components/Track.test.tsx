@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { STANDARD_ATHLETES } from "../game/athletes";
-import { Track } from "./Track";
+import { getBackwardSpecialWaypoints, Track } from "./Track";
 import type { Entrant, GameState, Player, RaceState } from "../game/types";
 
 const alchemist = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Alchemist");
@@ -104,5 +104,26 @@ describe("Track", () => {
     expect(markup).toContain("track-piece moving-piece tripped");
     expect(markup).toContain("special-space-marker");
     expect(markup).toContain("特殊棋盘");
+  });
+
+  it("adds a landing waypoint before animating a backward special space", () => {
+    const backwardRace: RaceState = {
+      ...race,
+      entrants: [{ ...entrants[0], position: 12 }],
+    };
+    const backwardGame: GameState = {
+      ...game,
+      activeRace: backwardRace,
+      log: [{
+        id: "log-backward",
+        type: "movement",
+        message: `Dad的${alchemist.displayName} 落到特殊格 16，后退 4 格到 12。`,
+        createdAt: 1,
+      }],
+    };
+
+    expect(getBackwardSpecialWaypoints(backwardGame, backwardRace, backwardGame.log)).toEqual({
+      "player-1:racer-1": [16, 12],
+    });
   });
 });

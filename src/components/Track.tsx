@@ -1,12 +1,39 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
 import { getSpecialTrackEffect } from "../game/specialTrack";
-import type { GameState, RaceState } from "../game/types";
+import type { GameLogEntry, GameState, RaceState } from "../game/types";
 
 type TrackProps = {
   game: GameState;
   race: RaceState;
 };
+
+export function getBackwardSpecialWaypoints(
+  game: GameState,
+  race: RaceState,
+  entries: GameLogEntry[],
+): Record<string, number[]> {
+  const waypoints: Record<string, number[]> = {};
+
+  for (const entrant of race.entrants) {
+    const player = game.players.find((candidate) => candidate.id === entrant.playerId);
+    const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+    const label = `${player?.name ?? entrant.playerId}的${athlete?.displayName ?? athlete?.standardName ?? entrant.athleteId}`;
+
+    for (const entry of entries) {
+      if (!entry.message.startsWith(`${label} 落到特殊格 `)) {
+        continue;
+      }
+
+      const match = entry.message.match(/特殊格 (\d+)，后退 \d+ 格到 (\d+)。$/);
+      if (match) {
+        waypoints[entrant.id] = [...(waypoints[entrant.id] ?? []), Number(match[1]), Number(match[2])];
+      }
+    }
+  }
+
+  return waypoints;
+}
 
 export function Track({ game, race }: TrackProps) {
   const spaces = Array.from({ length: race.trackLength + 1 }, (_, index) => index);
@@ -15,6 +42,8 @@ export function Track({ game, race }: TrackProps) {
     [race.entrants],
   );
   const [displayedPositions, setDisplayedPositions] = useState<Record<string, number>>(targetPositions);
+  const movementQueuesRef = useRef<Record<string, number[]>>({});
+  const processedLogCountRef = useRef(game.log.length);
   const [hoveredRacer, setHoveredRacer] = useState<{
     playerName: string;
     racerName: string;
@@ -25,7 +54,19 @@ export function Track({ game, race }: TrackProps) {
 
   useEffect(() => {
     setDisplayedPositions(Object.fromEntries(race.entrants.map((entrant) => [entrant.id, entrant.position])));
+    movementQueuesRef.current = {};
+    processedLogCountRef.current = game.log.length;
   }, [race.id]);
+
+  useEffect(() => {
+    const newEntries = game.log.slice(processedLogCountRef.current);
+    processedLogCountRef.current = game.log.length;
+    const newWaypoints = getBackwardSpecialWaypoints(game, race, newEntries);
+
+    for (const [entrantId, waypoints] of Object.entries(newWaypoints)) {
+      movementQueuesRef.current[entrantId] = [...(movementQueuesRef.current[entrantId] ?? []), ...waypoints];
+    }
+  }, [game, race]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -35,7 +76,17 @@ export function Track({ game, race }: TrackProps) {
 
         for (const entrant of race.entrants) {
           const currentPosition = nextPositions[entrant.id] ?? entrant.position;
-          const targetPosition = targetPositions[entrant.id] ?? entrant.position;
+          const queuedPositions = movementQueuesRef.current[entrant.id] ?? [];
+          const queuedTarget = queuedPositions[0];
+          const targetPosition = queuedTarget ?? targetPositions[entrant.id] ?? entrant.position;
+
+          if (currentPosition === queuedTarget) {
+            queuedPositions.shift();
+            if (queuedPositions.length === 0) {
+              delete movementQueuesRef.current[entrant.id];
+            }
+            continue;
+          }
 
           if (currentPosition < targetPosition) {
             nextPositions[entrant.id] = currentPosition + 1;
