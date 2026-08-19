@@ -165,6 +165,28 @@ describe("phase 7 abilities", () => {
     expect(latestMessages(game).filter((message) => message.includes("魔术师重投")).length).toBe(1);
   });
 
+  it("assigns a Magician prompt to the racer owner in a two-racer turn", () => {
+    const game = createRace("Magician", "Baba Yaga");
+    const multiRacerGame: GameState = {
+      ...game,
+      activeRace: {
+        ...game.activeRace!,
+        turnOrder: ["player-1:racer-1", "player-2"],
+        entrants: game.activeRace!.entrants.map((entrant) =>
+          entrant.id === "player-1" ? { ...entrant, id: "player-1:racer-1" } : entrant,
+        ),
+      },
+    };
+    const prompted = reduceGameCommand(
+      multiRacerGame,
+      { type: "ROLL_DICE", playerId: "player-1:racer-1", choice: { forcedDieRoll: 2 } },
+      scriptedRng([2]),
+    );
+
+    expect(prompted.activeRace?.pendingReactions[0]?.playerId).toBe("player-1");
+    expect(prompted.activeRace?.pendingDiceDecision).toMatchObject({ playerId: "player-1", entrantId: "player-1:racer-1" });
+  });
+
   it("Rocket Scientist doubles the main move and trips until the next main move", () => {
     let game = roll(createRace("Rocket Scientist", "Baba Yaga"), "player-1", [3]);
 

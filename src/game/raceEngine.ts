@@ -233,7 +233,8 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
         previousFinalMoveValue: dieRoll,
         pendingDiceDecision: {
           kind: "dicemonger",
-          playerId,
+          playerId: entrant.playerId,
+          entrantId: entrant.id,
           dieRoll,
           choice: choice ?? {},
           dicemongerEntrantId: dicemonger.id,
@@ -242,7 +243,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
           ...race.pendingReactions,
           {
             id: promptId,
-            playerId,
+            playerId: entrant.playerId,
             athleteId: entrant.athleteId,
             promptType: "reroll",
             sourceEntrantId: dicemonger.id,
@@ -263,7 +264,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
 
   if (usesDie && !choice?.skipAfterRollPrompt) {
     const dieRoll = (choice?.forcedDieRoll ?? rng.rollDie(6)) as 1 | 2 | 3 | 4 | 5 | 6;
-    const postRollPrompt = createPostRollPrompt(game, race, entrant, playerId, dieRoll, choice ?? {});
+    const postRollPrompt = createPostRollPrompt(game, race, entrant, dieRoll, choice ?? {});
 
     if (postRollPrompt) {
       return {
@@ -906,7 +907,7 @@ function confirmDicemongerReroll(
     };
   }
 
-  return rollForCurrentPlayer(gameAfterDecision, playerId, rng, rerollChoice);
+  return rollForCurrentPlayer(gameAfterDecision, decision.entrantId, rng, rerollChoice);
 }
 
 function confirmAfterRollDecision(
@@ -964,27 +965,26 @@ function confirmAfterRollDecision(
     revision: game.revision + 1,
   };
 
-  return rollForCurrentPlayer(gameAfterDecision, playerId, rng, choice);
+  return rollForCurrentPlayer(gameAfterDecision, decision.entrantId, rng, choice);
 }
 
 function createPostRollPrompt(
   game: GameState,
   race: RaceState,
   entrant: Entrant,
-  playerId: string,
   dieRoll: 1 | 2 | 3 | 4 | 5 | 6,
   choice: MainMoveChoice,
 ): { decision: NonNullable<RaceState["pendingDiceDecision"]>; prompt: RaceState["pendingReactions"][number] } | null {
   const key = getEffectiveImplementationKey(game, race, entrant);
   const actor = describeRaceEntrant(game, entrant);
-  const base = { playerId, dieRoll, choice };
+  const base = { playerId: entrant.playerId, entrantId: entrant.id, dieRoll, choice };
 
   if (key === "main_roll_low_becomes_four" && dieRoll <= 2) {
     return {
       decision: { ...base, kind: "alchemist" },
       prompt: {
         id: `alchemist:${entrant.id}:${race.round}:${entrant.actionCount}`,
-        playerId,
+        playerId: entrant.playerId,
         athleteId: entrant.athleteId,
         promptType: "optionalPower",
         title: "炼金师：是否改为移动 4 格？",
@@ -998,7 +998,7 @@ function createPostRollPrompt(
       decision: { ...base, kind: "magician", rerollsUsed: choice.magicianRerollsUsed ?? 0 },
       prompt: {
         id: `magician:${entrant.id}:${race.round}:${entrant.actionCount}:${choice.magicianRerollsUsed ?? 0}`,
-        playerId,
+        playerId: entrant.playerId,
         athleteId: entrant.athleteId,
         promptType: "optionalPower",
         title: "魔术师：是否重投？",
@@ -1012,7 +1012,7 @@ function createPostRollPrompt(
       decision: { ...base, kind: "rocketScientist" },
       prompt: {
         id: `rocket:${entrant.id}:${race.round}:${entrant.actionCount}`,
-        playerId,
+        playerId: entrant.playerId,
         athleteId: entrant.athleteId,
         promptType: "optionalPower",
         title: "火箭科学家：是否加倍？",

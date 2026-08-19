@@ -206,7 +206,10 @@ export type MainMoveChoice = {
 
 export type PendingDiceDecision = {
   kind: "dicemonger" | "alchemist" | "magician" | "rocketScientist";
+  /** Player who owns the decision and is allowed to confirm it. */
   playerId: string;
+  /** Specific racer whose roll must resume after confirmation. */
+  entrantId: string;
   dieRoll: 1 | 2 | 3 | 4 | 5 | 6;
   choice: MainMoveChoice;
   dicemongerEntrantId?: string;

@@ -123,6 +123,8 @@ type RaceState = {
 
 特殊棋盘配置应为规则模块中的不可变结构，例如 `SPECIAL_TRACK_SPACES: Record<number, TrackSpaceEffect>`，包含格号、效果类型与移动/得分参数。`Track` 只消费该配置以绘制标记；格子效果必须由规则引擎结算，不能由组件直接改位置或分数。
 
+骰后可选能力的 `PendingDiceDecision` 必须分别保存拥有确认权限的 `playerId` 与待恢复主移动的 `entrantId`。双 racer 模式下 entrant id 不是 player id；提示按钮以 `playerId` 做在线权限校验，确认后以 `entrantId` 恢复对应 racer 的掷骰流程。
+
 `turnOrder` 存储的是 entrant id，而不是 player id。每名玩家每场 1 名 racer 时，entrant id 与 player id 相同以兼容旧流程；每名玩家每场 2 名 racer 时，entrant id 使用类似 `player-1:racer-1`、`player-1:racer-2` 的格式。双 racer 模式按玩家交错排序，例如 `player-1:racer-1`、`player-2:racer-1`、`player-1:racer-2`、`player-2:racer-2`。
 
 ## 7.5 Entrant
