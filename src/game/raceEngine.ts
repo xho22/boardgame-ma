@@ -422,7 +422,10 @@ function resolveSpecialTrackEffects(
   race: RaceState,
   players: GameState["players"],
 ): { race: RaceState; players: GameState["players"]; logs: { type: GameLogEntry["type"]; message: string }[] } {
-  if (race.boardKind !== "special") {
+  // Reactions to the landing (notably Suckerfish) happen before the space resolves.
+  // Once every pending reaction is answered, this resolver runs again and each racer
+  // standing on the space receives its own special-space effect.
+  if (race.boardKind !== "special" || race.pendingReactions.length > 0) {
     return { race, players, logs: [] };
   }
 

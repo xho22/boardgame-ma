@@ -19,7 +19,12 @@ function athleteId(name: string): string {
   return athlete.id;
 }
 
-function createSpecialRace(firstAthlete = "Baba Yaga", position = 0): GameState {
+function createSpecialRace(
+  firstAthlete = "Baba Yaga",
+  position = 0,
+  secondAthlete = "Baba Yaga",
+  secondPosition = 0,
+): GameState {
   const game = createInitialGameState({
     settings: { playerCount: 2, playerNames: ["Dad", "Kid"], trackLength: 30, boardMode: "allSpecial" },
     seed: "special-track",
@@ -28,8 +33,8 @@ function createSpecialRace(firstAthlete = "Baba Yaga", position = 0): GameState 
   const entrants: Entrant[] = game.players.map((player, index) => ({
     id: player.id,
     playerId: player.id,
-    athleteId: athleteId(index === 0 ? firstAthlete : "Baba Yaga"),
-    position: index === 0 ? position : 0,
+    athleteId: athleteId(index === 0 ? firstAthlete : secondAthlete),
+    position: index === 0 ? position : secondPosition,
     finished: false,
     finishRank: null,
     skippedTurns: 0,
@@ -102,5 +107,42 @@ describe("special track", () => {
 
     expect(game.activeRace?.entrants[0].position).toBe(5);
     expect(game.activeRace?.entrants[0].skippedTurns).toBe(1);
+  });
+
+  it("keeps resolving turn-end powers when a special-space trip is recovered", () => {
+    const game = createSpecialRace("Baba Yaga", 5, "Heckler");
+    const trippedGame: GameState = {
+      ...game,
+      activeRace: {
+        ...game.activeRace!,
+        entrants: game.activeRace!.entrants.map((entrant) =>
+          entrant.id === "player-1" ? { ...entrant, skippedTurns: 1, resolvedSpecialSpace: 5 } : entrant,
+        ),
+      },
+    };
+    const recovered = roll(trippedGame, 1);
+
+    expect(recovered.activeRace?.entrants.find((entrant) => entrant.id === "player-1")?.skippedTurns).toBe(0);
+    expect(recovered.activeRace?.entrants.find((entrant) => entrant.id === "player-2")?.position).toBe(2);
+    expect(recovered.log.some((entry) => entry.message.includes("嘲讽短移动回合"))).toBe(true);
+  });
+
+  it("lets Suckerfish resolve its own special space after following onto it", () => {
+    const landed = roll(createSpecialRace("Baba Yaga", 6, "Suckerfish", 6), 1);
+    const followPrompt = landed.activeRace?.pendingReactions[0];
+
+    expect(followPrompt?.promptType).toBe("optionalPower");
+    expect(landed.activeRace?.entrants.find((entrant) => entrant.id === "player-1")?.position).toBe(7);
+    expect(landed.activeRace?.entrants.find((entrant) => entrant.id === "player-2")?.position).toBe(6);
+
+    const resolved = reduceGameCommand(
+      landed,
+      { type: "CONFIRM_REACTION", playerId: "player-2", reactionId: followPrompt!.id, accepted: true },
+      fixedRng,
+    );
+
+    expect(resolved.activeRace?.entrants.find((entrant) => entrant.id === "player-1")?.position).toBe(10);
+    expect(resolved.activeRace?.entrants.find((entrant) => entrant.id === "player-2")?.position).toBe(10);
+    expect(resolved.log.filter((entry) => entry.message.includes("特殊格 7，前进 3 格到 10")).length).toBe(2);
   });
 });
