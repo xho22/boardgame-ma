@@ -187,6 +187,33 @@ describe("phase 7 abilities", () => {
     expect(prompted.activeRace?.pendingDiceDecision).toMatchObject({ playerId: "player-1", entrantId: "player-1:racer-1" });
   });
 
+  it("resumes the same racer after its owner answers a Dicemonger prompt", () => {
+    const game = createRace("Baba Yaga", "Dicemonger");
+    const multiRacerGame: GameState = {
+      ...game,
+      activeRace: {
+        ...game.activeRace!,
+        turnOrder: ["player-1:racer-1", "player-2"],
+        entrants: game.activeRace!.entrants.map((entrant) =>
+          entrant.id === "player-1" ? { ...entrant, id: "player-1:racer-1" } : entrant,
+        ),
+      },
+    };
+    const prompted = reduceGameCommand(
+      multiRacerGame,
+      { type: "ROLL_DICE", playerId: "player-1:racer-1", choice: { forcedDieRoll: 2 } },
+      scriptedRng([2]),
+    );
+    const prompt = prompted.activeRace!.pendingReactions[0];
+    const resolved = reduceGameCommand(
+      prompted,
+      { type: "CONFIRM_REACTION", playerId: "player-1", reactionId: prompt.id, accepted: false },
+      scriptedRng([2]),
+    );
+
+    expect(resolved.activeRace?.entrants.find((entrant) => entrant.id === "player-1:racer-1")?.position).toBe(2);
+  });
+
   it("Rocket Scientist doubles the main move and trips until the next main move", () => {
     let game = roll(createRace("Rocket Scientist", "Baba Yaga"), "player-1", [3]);
 

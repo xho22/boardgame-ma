@@ -878,8 +878,8 @@ function confirmDicemongerReroll(
   }
 
   const decisionLog = accepted
-    ? `${describeRaceEntrant(game, race.entrants.find((entrant) => entrant.id === playerId) ?? race.entrants[0])} 选择重投：${decision.dieRoll} -> ${finalRoll}；${dicemonger ? describeRaceEntrant(game, dicemonger) : "骰子商人"}移动 1 格。`
-    : `${describeRaceEntrant(game, race.entrants.find((entrant) => entrant.id === playerId) ?? race.entrants[0])} 保留点数 ${decision.dieRoll}。`;
+    ? `${describeRaceEntrant(game, race.entrants.find((entrant) => entrant.id === decision.entrantId) ?? race.entrants[0])} 选择重投：${decision.dieRoll} -> ${finalRoll}；${dicemonger ? describeRaceEntrant(game, dicemonger) : "骰子商人"}移动 1 格。`
+    : `${describeRaceEntrant(game, race.entrants.find((entrant) => entrant.id === decision.entrantId) ?? race.entrants[0])} 保留点数 ${decision.dieRoll}。`;
   const gameAfterDecision: GameState = {
     ...game,
     activeRace: continuedRace,
@@ -901,7 +901,7 @@ function confirmDicemongerReroll(
         pendingTurnState: {
           extraTurnPlayerId: null,
           nextTurnPlayerId: null,
-          resumeDiceRoll: { playerId, dieRoll: finalRoll, choice: decision.choice },
+          resumeDiceRoll: { playerId: decision.entrantId, dieRoll: finalRoll, choice: decision.choice },
         },
       },
     };
@@ -929,7 +929,7 @@ function confirmAfterRollDecision(
     pendingDiceDecision: null,
     pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
   };
-  const actor = race.entrants.find((entrant) => entrant.id === playerId) ?? race.entrants[0];
+  const actor = race.entrants.find((entrant) => entrant.id === decision.entrantId) ?? race.entrants[0];
   let choice: MainMoveChoice = { ...decision.choice, forcedDieRoll: decision.dieRoll, skipDicemongerPrompt: true };
   let message: string;
 
