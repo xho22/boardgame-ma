@@ -34,6 +34,8 @@ type GameState = {
 
 `GameSettings` 增加 `racersPerPlayerPerRace: 1 | 2`。默认值为 `1`；仅 2-3 人局允许设置为 `2`。当该值为 `2` 时，每名玩家每场秘密选择 2 名 racer，初始发牌数默认为 `racesCount * racersPerPlayerPerRace`。
 
+还需增加 `boardMode: "alternating" | "allSpecial"`：默认 `alternating`，第 2、4 场为特殊棋盘；Debug 设置可选 `allSpecial`，令每场均使用特殊棋盘。`RaceState` 应保存已派生的 `boardKind: "normal" | "special"`，避免客户端或在线房间自行根据 `raceIndex` 推断。
+
 ## 7.2 Player
 
 ```ts
@@ -105,6 +107,7 @@ type RaceState = {
   id: string;
   raceNumber: number;
   trackLength: number;
+  boardKind: "normal" | "special";
   firstPlacePoints: number;
   secondPlacePoints: number;
   turnOrder: string[];
@@ -117,6 +120,8 @@ type RaceState = {
   status: "revealing" | "active" | "complete";
 };
 ```
+
+特殊棋盘配置应为规则模块中的不可变结构，例如 `SPECIAL_TRACK_SPACES: Record<number, TrackSpaceEffect>`，包含格号、效果类型与移动/得分参数。`Track` 只消费该配置以绘制标记；格子效果必须由规则引擎结算，不能由组件直接改位置或分数。
 
 `turnOrder` 存储的是 entrant id，而不是 player id。每名玩家每场 1 名 racer 时，entrant id 与 player id 相同以兼容旧流程；每名玩家每场 2 名 racer 时，entrant id 使用类似 `player-1:racer-1`、`player-1:racer-2` 的格式。双 racer 模式按玩家交错排序，例如 `player-1:racer-1`、`player-2:racer-1`、`player-1:racer-2`、`player-2:racer-2`。
 
@@ -288,6 +293,8 @@ game_end
 - 目标对象：影响了哪名选手。
 - 结果：移动了几格、是否 trip、是否 warp、是否冲线、是否得分。
 
+特殊棋盘日志还必须说明“落到第 N 格特殊格”、效果和结果，例如“爸爸的长腿落到特殊格 7，前进 3 格到 10。”
+
 日志必须由规则引擎或命令结算层生成，UI 只负责展示。
 
 日志展示规则：
@@ -388,6 +395,7 @@ game_end
 - 同一次 move 的棋子应逐格追到目标位置。
 - 如果能力造成多个棋子移动，应按规则结算顺序播放或分组播放，不能让玩家无法判断因果。
 - 动画结束后再推进下一步会改变玩家决策的交互。
+- 特殊格必须在落点动画结束后显示一次明确反馈；特殊格的前进或后退再逐格播放，不能只更新最终位置。
 
 ## 10. AI 玩家
 
@@ -648,6 +656,7 @@ type SelectionState = {
 - sharing optional reaction：Duelist 在同格时通过 `pendingReactions` 请求确认，并由客户端提交所选的 `targetEntrantId`；结算只移动决斗获胜者 2 格，平局归 Duelist。
 - Copycat 在 entrant 上保存并列领先时的 `copiedLeaderEntrantId` 与领先集合签名；领先集合改变时，规则引擎通过 `pendingReactions` 的 `copy` 提示请求选择。若提示出现在模仿猫自己的回合开始前，确认后恢复该回合；若由其他选手移动引起，则在该反应链中结算。
 - Duelist 的决斗奖励属于正常 `move`：若胜者前进 2 格后与选手同格，仍会继续进入同格反应并可再次发起决斗。
+- 特殊棋盘格由统一的落点结算入口处理：主移动、所有技能位置变化、跟随、换位与 warp 落到特殊格时均要触发；由特殊格带来的前进或后退会继续进入相同的移动、能力与特殊格结算链。
 
 trip UI 状态：
 
