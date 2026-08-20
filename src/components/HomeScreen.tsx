@@ -6,6 +6,24 @@ type HomeScreenProps = {
   onOpenOnlineRoom: () => void;
 };
 
+declare const __BUILD_TIMESTAMP__: string;
+
+const BUILD_TIMESTAMP = typeof __BUILD_TIMESTAMP__ === "string"
+  ? __BUILD_TIMESTAMP__
+  : "1970-01-01T00:00:00.000Z";
+
+export function formatBuildTimestamp(timestamp: string): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(timestamp));
+}
+
 export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame, onOpenCatalog, onOpenOnlineRoom }: HomeScreenProps) {
   return (
     <main className="app-shell home-layout">
@@ -24,6 +42,7 @@ export function HomeScreen({ hasSavedGame, onNewGame, onContinueGame, onOpenCata
             Racers
           </button>
         </div>
+        <p className="build-info">{`最后更新：${formatBuildTimestamp(BUILD_TIMESTAMP)}（UTC+8）`}</p>
       </section>
     </main>
   );

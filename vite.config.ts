@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 export default defineConfig({
+  define: {
+    __BUILD_TIMESTAMP__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [react()],
   server: {
     host: "127.0.0.1",

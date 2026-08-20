@@ -82,6 +82,12 @@ h1 {
   margin-top: 28px;
 }
 
+.build-info {
+  margin-top: 18px;
+  color: #5f5b55;
+  font-size: 13px;
+}
+
 .primary-button,
 .secondary-button,
 .ghost-button {
