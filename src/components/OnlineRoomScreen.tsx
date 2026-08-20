@@ -14,7 +14,7 @@ type OnlineRoomScreenProps = {
   onBack: () => void;
 };
 
-const ROOM_IDS = ["family-a", "family-b", "family-c"];
+export const ONLINE_ROOM_IDS = ["family-a", "family-b", "family-c", "family-d", "family-e", "family-f", "family-g", "family-h"] as const;
 
 function socketUrl(): string {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -27,7 +27,7 @@ function storedPlayerId(roomId: string): string | undefined {
 
 export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   const client = useRef(new RoomClient());
-  const [roomId, setRoomId] = useState(ROOM_IDS[0]);
+  const [roomId, setRoomId] = useState<string>(ONLINE_ROOM_IDS[0]);
   const [playerName, setPlayerName] = useState("Player");
   const [room, setRoom] = useState<RoomState | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
@@ -132,7 +132,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
             <label className="name-field">
               <span>固定房间</span>
               <select value={roomId} onChange={(event) => setRoomId(event.target.value)}>
-                {ROOM_IDS.map((id) => <option key={id} value={id}>{id}</option>)}
+                {ONLINE_ROOM_IDS.map((id) => <option key={id} value={id}>{id}</option>)}
               </select>
             </label>
             <label className="name-field">
