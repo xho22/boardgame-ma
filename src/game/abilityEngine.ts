@@ -156,7 +156,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
       players,
       logs: [
         {
-          type: "ability_trigger",
+          type: "status_removed",
           message: `${racerName} 从摔倒中恢复，跳过本次主移动。`,
         },
       ],
@@ -244,8 +244,9 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
   } else {
     dieRoll = choice.forcedDieRoll ?? rng.rollDie(6);
 
-    const rollReaction = applyRollReactions(game, workingRace, workingEntrant, dieRoll);
+    const rollReaction = applyRollReactions(game, workingRace, workingEntrant, dieRoll, players);
     workingRace = rollReaction.race;
+    players = rollReaction.players;
     logs.push(...rollReaction.logs);
 
     if (rollReaction.skipMover) {
@@ -552,12 +553,15 @@ export function resolveAfterMove({
         !scoocher.finished &&
         !scoocher.eliminated
       ) {
-        workingRace = moveEntrantInRace(game, workingRace, scoocher.id, 1);
-      logs.push({
-        type: "ability_trigger",
-        message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
-      });
-    }
+        const movement = resolveTriggeredMove(game, workingRace, nextPlayers, scoocher.id, 1, false);
+        workingRace = movement.race;
+        nextPlayers = movement.players;
+        logs.push(...movement.logs);
+        logs.push({
+          type: "ability_trigger",
+          message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
+        });
+      }
     }
   }
 
@@ -706,9 +710,11 @@ function applyRollReactions(
   race: RaceState,
   entrant: Entrant,
   dieRoll: number,
-): { race: RaceState; logs: AbilityLog[]; skipMover: boolean; nextTurnPlayerId: string | null } {
+  initialPlayers: Player[],
+): { race: RaceState; players: Player[]; logs: AbilityLog[]; skipMover: boolean; nextTurnPlayerId: string | null } {
   const logs: AbilityLog[] = [];
   let workingRace = race;
+  let players = initialPlayers;
   let skipMover = false;
   let nextTurnPlayerId: string | null = null;
 
@@ -716,7 +722,10 @@ function applyRollReactions(
     const inchworm = findOtherByKey(game, workingRace, entrant, "skip_others_one_roll_move_self");
 
     if (inchworm) {
-      workingRace = moveEntrantInRace(game, workingRace, inchworm.id, 1);
+      const movement = resolveTriggeredMove(game, workingRace, players, inchworm.id, 1);
+      workingRace = movement.race;
+      players = movement.players;
+      logs.push(...movement.logs);
       skipMover = true;
       logs.push({
         type: "ability_trigger",
@@ -739,7 +748,10 @@ function applyRollReactions(
     const lackey = findOtherByKey(game, workingRace, entrant, "move_two_before_other_six");
 
     if (lackey) {
-      workingRace = moveEntrantInRace(game, workingRace, lackey.id, 2);
+      const movement = resolveTriggeredMove(game, workingRace, players, lackey.id, 2);
+      workingRace = movement.race;
+      players = movement.players;
+      logs.push(...movement.logs);
       logs.push({
         type: "ability_trigger",
         message: `${describeEntrant(game, lackey)} 看到点数 6，在${describeEntrant(game, entrant)}移动前先移动 2 格。`,
@@ -747,7 +759,7 @@ function applyRollReactions(
     }
   }
 
-  return { race: workingRace, logs, skipMover, nextTurnPlayerId };
+  return { race: workingRace, players, logs, skipMover, nextTurnPlayerId };
 }
 
 function applyMainMoveModifiers(
@@ -864,7 +876,9 @@ function triggerScoocherOnOtherPower(
       continue;
     }
 
-    workingRace = moveEntrantInRace(game, workingRace, scoocher.id, 1);
+    const movement = resolveTriggeredMove(game, workingRace, game.players, scoocher.id, 1, false);
+    workingRace = movement.race;
+    logs.push(...movement.logs);
     logs.push({
       type: "movement",
       message: `${describeEntrant(game, scoocher)} 在其他选手使用能力后移动 1 格。`,
@@ -872,6 +886,39 @@ function triggerScoocherOnOtherPower(
   }
 
   return workingRace;
+}
+
+function resolveTriggeredMove(
+  game: GameState,
+  race: RaceState,
+  players: Player[],
+  entrantId: string,
+  spaces: number,
+  abilityTriggered = true,
+): { race: RaceState; players: Player[]; logs: AbilityLog[] } {
+  const moverBefore = findEntrantById(race, entrantId);
+
+  if (!moverBefore) {
+    return { race, players, logs: [] };
+  }
+
+  const moveResult = moveEntrantForward(moverBefore, spaces, race.trackLength);
+  const movedRace = moveEntrantInRace(game, race, entrantId, spaces);
+  const moverAfter = findEntrantById(movedRace, entrantId);
+
+  if (!moverAfter) {
+    return { race: movedRace, players, logs: [] };
+  }
+
+  return resolveAfterMove({
+    game: { ...game, players, activeRace: movedRace },
+    race: movedRace,
+    players,
+    moverBefore,
+    moverAfter,
+    path: moveResult.path,
+    abilityTriggered,
+  });
 }
 
 function buildResolution(options: Partial<MainMoveResolution> & Pick<MainMoveResolution, "dieRoll" | "finalMove" | "entrant" | "race" | "players" | "logs" | "turnStartPosition">): MainMoveResolution {

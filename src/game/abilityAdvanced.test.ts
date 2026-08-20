@@ -377,6 +377,40 @@ describe("phase 8 abilities", () => {
     expect(messages(game).some((message) => message.includes("主移动从 6 减为 5"))).toBe(true);
     expect(messages(game).some((message) => message.includes("在其他选手使用能力后移动 1 格"))).toBe(true);
   });
+
+  it("resolves Baba Yaga after Scoocher and Lackey ability moves", () => {
+    let game = roll(setPositions(createRace(["Alchemist", "Gunk", "Scoocher", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 10,
+      "player-3": 4,
+      "player-4": 5,
+    }), "player-1", [4]);
+
+    expect(position(game, "player-3")).toBe(5);
+    expect(entrant(game, "player-3").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("绊倒了P3的挪挪"))).toBe(true);
+
+    game = roll(setPositions(createRace(["Alchemist", "Lackey", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 3,
+      "player-3": 5,
+    }), "player-1", [6]);
+
+    expect(position(game, "player-2")).toBe(5);
+    expect(entrant(game, "player-2").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("绊倒了P2的跟班"))).toBe(true);
+  });
+
+  it("does not treat a tripped racer's recovery as another power for Scoocher", () => {
+    let game = roll(createRace(["Rocket Scientist", "Scoocher"]), "player-1", [3]);
+
+    game = roll(game, "player-2", [2]);
+    const scoocherPositionBeforeRecovery = position(game, "player-2");
+    game = roll(game, "player-1", [6]);
+
+    expect(position(game, "player-2")).toBe(scoocherPositionBeforeRecovery);
+    expect(messages(game).some((message) => message.includes("从摔倒中恢复"))).toBe(true);
+  });
 });
 
 describe("phase 9 abilities", () => {

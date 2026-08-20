@@ -258,6 +258,7 @@ export type GameLogEntry = {
     | "movement"
     | "position_swap"
     | "status_added"
+    | "status_removed"
     | "finish"
     | "score_awarded"
     | "race_end"
