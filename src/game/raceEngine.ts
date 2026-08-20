@@ -16,6 +16,7 @@ import {
   queueCopycatSelectionReactions,
   resolveAfterMove,
   resolveMainMove,
+  triggerScoocherOnOtherPower,
 } from "./abilityEngine";
 import type { Entrant, Finisher, GameCommand, GameLogEntry, GameState, MainMoveChoice, RaceState } from "./types";
 import type { Rng } from "./rng";
@@ -328,9 +329,20 @@ function finishResolvedMove(
     finishers,
     previousFinalMoveValue: mainMove.finalMove,
   };
+  let raceAfterLeaptoadJumps: RaceState = updatedRace;
+  const leaptoadLogs: { type: GameLogEntry["type"]; message: string }[] = [];
+
+  for (let jumpIndex = 0; jumpIndex < moveResult.skippedEntrantIds.length; jumpIndex += 1) {
+    raceAfterLeaptoadJumps = triggerScoocherOnOtherPower(
+      { ...game, players: mainMove.players, activeRace: raceAfterLeaptoadJumps },
+      raceAfterLeaptoadJumps,
+      entrant.id,
+      leaptoadLogs,
+    );
+  }
   const afterMove = resolveAfterMove({
-    game: { ...game, players: mainMove.players, activeRace: updatedRace },
-    race: updatedRace,
+    game: { ...game, players: mainMove.players, activeRace: raceAfterLeaptoadJumps },
+    race: raceAfterLeaptoadJumps,
     players: mainMove.players,
     moverBefore,
     moverAfter: moveResult.entrant,
@@ -364,6 +376,7 @@ function finishResolvedMove(
           : `${describeRaceEntrant(game, entrant)} 移动 ${mainMove.finalMove} 格，到达 ${moveResult.entrant.position}。`,
     },
     ...afterMove.logs,
+    ...leaptoadLogs,
     ...specialResolution.logs,
   ];
   const gameWithMove = {
@@ -1189,21 +1202,27 @@ function moveWithAbility(
       : spaces;
 
   if (!options.leaptoad) {
-    return moveEntrantForward(entrant, maxSpaces, race.trackLength);
+    return { ...moveEntrantForward(entrant, maxSpaces, race.trackLength), skippedEntrantIds: [] };
   }
 
-  const occupiedSpaces = new Set(
-    race.entrants
-      .filter((candidate) => candidate.playerId !== entrant.playerId && !candidate.finished && !candidate.eliminated)
-      .map((candidate) => candidate.position),
-  );
+  const occupantsBySpace = new Map<number, string[]>();
+  for (const candidate of race.entrants) {
+    if (candidate.id === entrant.id || candidate.finished || candidate.eliminated) {
+      continue;
+    }
+
+    occupantsBySpace.set(candidate.position, [...(occupantsBySpace.get(candidate.position) ?? []), candidate.id]);
+  }
+  const skippedEntrantIds: string[] = [];
   const path: number[] = [];
   let position = entrant.position;
 
   while (path.length < maxSpaces && position < race.trackLength) {
     position += 1;
 
-    if (occupiedSpaces.has(position) && position !== race.trackLength) {
+    const occupants = occupantsBySpace.get(position) ?? [];
+    if (occupants.length > 0 && position !== race.trackLength) {
+      skippedEntrantIds.push(...occupants);
       continue;
     }
 
@@ -1220,6 +1239,7 @@ function moveWithAbility(
     },
     path,
     finished: nextPosition >= race.trackLength,
+    skippedEntrantIds,
   };
 }
 

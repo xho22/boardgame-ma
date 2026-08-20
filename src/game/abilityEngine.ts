@@ -858,7 +858,7 @@ function applyBananaPassTraps(
   return workingRace;
 }
 
-function triggerScoocherOnOtherPower(
+export function triggerScoocherOnOtherPower(
   game: GameState,
   race: RaceState,
   sourceEntrantId: string,

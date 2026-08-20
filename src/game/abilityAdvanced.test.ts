@@ -510,6 +510,80 @@ describe("phase 9 abilities", () => {
     expect(position(game, "player-1")).toBe(3);
   });
 
+  it("Leaptoad skips teammates and moves Scoocher once for every racer jumped", () => {
+    let game = setPositions(createRace(["Leaptoad", "Alchemist", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 1,
+    });
+    game = {
+      ...game,
+      activeRace: {
+        ...requireRace(game),
+        entrants: requireRace(game).entrants.map((candidate) =>
+          candidate.id === "player-2" ? { ...candidate, playerId: "player-1" } : candidate,
+        ),
+      },
+    };
+
+    game = roll(game, "player-1", [2]);
+    expect(requireRace(game).entrants.find((candidate) => candidate.id === "player-1")?.position).toBe(3);
+
+    game = roll(setPositions(createRace(["Leaptoad", "Alchemist", "Baba Yaga", "Scoocher"]), {
+      "player-1": 0,
+      "player-2": 1,
+      "player-3": 2,
+      "player-4": 10,
+    }), "player-1", [2]);
+    expect(position(game, "player-1")).toBe(4);
+    expect(position(game, "player-4")).toBe(12);
+
+    game = setPositions(createRace(["Egg", "Alchemist", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 1,
+    });
+    game = {
+      ...game,
+      activeRace: {
+        ...requireRace(game),
+        entrants: requireRace(game).entrants.map((candidate) => {
+          if (candidate.id === "player-1") {
+            return { ...candidate, copiedAbilityKey: "skip_occupied_spaces_while_moving" };
+          }
+
+          return candidate.id === "player-2" ? { ...candidate, playerId: "player-1" } : candidate;
+        }),
+      },
+    };
+
+    game = roll(game, "player-1", [2]);
+    expect(requireRace(game).entrants.find((candidate) => candidate.id === "player-1")?.position).toBe(3);
+  });
+
+  it("does not trigger another Scoocher when a tripped Scoocher recovers", () => {
+    let game = setPositions(createRace(["Scoocher", "Egg", "Baba Yaga"]), {
+      "player-1": 0,
+      "player-2": 5,
+      "player-3": 1,
+    });
+    game = {
+      ...game,
+      activeRace: {
+        ...requireRace(game),
+        entrants: requireRace(game).entrants.map((candidate) =>
+          candidate.id === "player-2" ? { ...candidate, copiedAbilityKey: "move_one_on_other_power" } : candidate,
+        ),
+      },
+    };
+
+    game = roll(game, "player-1", [1]);
+    game = roll(game, "player-2", [2]);
+    game = roll(game, "player-3", [2]);
+    const copiedScoocherPositionBeforeRecovery = requireRace(game).entrants.find((candidate) => candidate.id === "player-2")?.position;
+    game = roll(game, "player-1", [6]);
+
+    expect(requireRace(game).entrants.find((candidate) => candidate.id === "player-2")?.position).toBe(copiedScoocherPositionBeforeRecovery);
+  });
+
   it("Mastermind, M.O.U.T.H., Party Animal, Sisyphus, Skipper, Stickler, Third Wheel, and Twin can trigger", () => {
     let game = roll(
       setPositions(createRace(["Mastermind", "Baba Yaga"], 1, undefined, "Baba Yaga"), {}, "player-2"),
