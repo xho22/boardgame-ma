@@ -89,15 +89,16 @@ describe("selection flow", () => {
     expect(game.selectionState?.mastermindPredictionsByAthleteId[firstAthlete]).toBe(secondAthlete);
   });
 
-  it("draws Egg's three candidates from racers not in the race", () => {
+  it("draws Egg's three candidates after excluding every player's assigned racers", () => {
     const eggId = athleteId("Egg");
     const bananaId = athleteId("Banana");
+    const coachId = athleteId("Coach");
     const selectionGame = createSelectionGame();
     let game = {
       ...selectionGame,
       players: selectionGame.players.map((player, index) => ({
         ...player,
-        athleteIds: index === 0 ? [eggId] : [bananaId],
+        athleteIds: index === 0 ? [eggId, coachId] : [bananaId],
       })),
     };
 
@@ -110,6 +111,30 @@ describe("selection flow", () => {
     expect(candidates).toHaveLength(3);
     expect(candidates).not.toContain(eggId);
     expect(candidates).not.toContain(bananaId);
+    expect(candidates).not.toContain(coachId);
+  });
+
+  it("repeats Egg candidates only when fewer than three unassigned racers remain", () => {
+    const eggId = athleteId("Egg");
+    const bananaId = athleteId("Banana");
+    const remainingId = athleteId("Blimp");
+    const selectionGame = createSelectionGame();
+    const gameWithAlmostEveryRacerAssigned = {
+      ...selectionGame,
+      players: selectionGame.players.map((player, index) => ({
+        ...player,
+        athleteIds: index === 0
+          ? STANDARD_ATHLETES.filter((athlete) => athlete.id !== remainingId && athlete.id !== bananaId).map((athlete) => athlete.id)
+          : [bananaId],
+      })),
+    };
+    let game = selectAthleteForRace(gameWithAlmostEveryRacerAssigned, "player-1", eggId);
+
+    game = lockPlayerSelection(game, "player-1", orderedRng);
+    game = selectAthleteForRace(game, "player-2", bananaId);
+    game = lockPlayerSelection(game, "player-2", orderedRng);
+
+    expect(game.selectionState?.eggCandidatesByAthleteId[eggId]).toEqual([remainingId, remainingId, remainingId]);
   });
 
   it("requires two selected racers when the game is configured for two racers per player", () => {

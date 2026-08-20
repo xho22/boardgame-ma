@@ -15,6 +15,7 @@ type DicePanelProps = {
 export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effectiveAbilityKey, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
+  const [revealedRollValue, setRevealedRollValue] = useState<number | null>(null);
   const [useBeforeMainAbility, setUseBeforeMainAbility] = useState(false);
   const [selectedTargetEntrantId, setSelectedTargetEntrantId] = useState("");
   const [selectedThirdWheelPosition, setSelectedThirdWheelPosition] = useState<number | "">("");
@@ -22,6 +23,9 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
   const [forcedDieRoll, setForcedDieRoll] = useState<1 | 2 | 3 | 4 | 5 | 6>(6);
   const intervalRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const revealTimeoutRef = useRef<number | null>(null);
+  const awaitingRollResultRef = useRef(false);
+  const isDiceBusy = isRolling || revealedRollValue !== null;
 
   function stopRollAnimation() {
     if (intervalRef.current !== null) {
@@ -34,10 +38,20 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
       timeoutRef.current = null;
     }
 
+    if (revealTimeoutRef.current !== null) {
+      window.clearTimeout(revealTimeoutRef.current);
+      revealTimeoutRef.current = null;
+    }
+
+    awaitingRollResultRef.current = false;
     setIsRolling(false);
   }
 
   useEffect(() => {
+    if (awaitingRollResultRef.current || revealedRollValue !== null) {
+      return;
+    }
+
     setIsRolling(false);
     setRollingValue(race.previousFinalMoveValue ?? 1);
     setUseBeforeMainAbility(false);
@@ -48,13 +62,33 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
   }, [currentEntrant.id, currentPlayer.id, race.previousFinalMoveValue]);
 
   useEffect(() => {
+    if (!awaitingRollResultRef.current || race.previousFinalMoveValue === null) {
+      return;
+    }
+
+    awaitingRollResultRef.current = false;
+    setIsRolling(false);
+    setRollingValue(race.previousFinalMoveValue);
+    setRevealedRollValue(race.previousFinalMoveValue);
+    revealTimeoutRef.current = window.setTimeout(() => {
+      revealTimeoutRef.current = null;
+      setRevealedRollValue(null);
+      setUseBeforeMainAbility(false);
+      setSelectedTargetEntrantId("");
+      setSelectedThirdWheelPosition("");
+      setGeniusGuess("");
+      setForcedDieRoll(6);
+    }, 1_000);
+  }, [currentEntrant.id, race.previousFinalMoveValue]);
+
+  useEffect(() => {
     return () => {
       stopRollAnimation();
     };
   }, []);
 
   useEffect(() => {
-    if (currentEntrant.skippedTurns <= 0 || isRolling) {
+    if (currentEntrant.skippedTurns <= 0 || isDiceBusy) {
       return;
     }
 
@@ -63,32 +97,38 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
     }, 3_000);
 
     return () => window.clearTimeout(recoveryTimer);
-  }, [currentEntrant.id, currentEntrant.skippedTurns, isRolling, onRoll]);
+  }, [currentEntrant.id, currentEntrant.skippedTurns, isDiceBusy, onRoll]);
 
   function startRollAnimation(choice?: MainMoveChoice) {
-    if (isRolling) {
+    if (isRolling || revealedRollValue !== null) {
       return;
     }
 
     setIsRolling(true);
+    setRevealedRollValue(null);
     intervalRef.current = window.setInterval(() => {
       setRollingValue(Math.floor(Math.random() * 6) + 1);
     }, 80);
     timeoutRef.current = window.setTimeout(() => {
-      stopRollAnimation();
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      timeoutRef.current = null;
+      awaitingRollResultRef.current = true;
       onRoll(currentEntrant.id, choice);
     }, 2_000);
   }
 
   function useDirectAbility(choice: MainMoveChoice) {
-    if (isRolling) {
+    if (isRolling || revealedRollValue !== null) {
       return;
     }
 
     onRoll(currentEntrant.id, choice);
   }
 
-  const displayValue = isRolling ? rollingValue : (race.previousFinalMoveValue ?? "-");
+  const displayValue = isRolling ? rollingValue : (revealedRollValue ?? race.previousFinalMoveValue ?? "-");
   const currentAthlete = STANDARD_ATHLETE_BY_ID.get(currentEntrant.athleteId);
   const abilityKey = effectiveAbilityKey;
   const copiedAthlete = currentAthlete?.implementationKey !== abilityKey
@@ -176,14 +216,14 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
         ) : abilityKey === "cheer_last_place_then_self" ? (
           <>
             <div className="ability-choice-actions" aria-label="啦啦队长能力选择">
-              <button className="secondary-button" type="button" onClick={() => startRollAnimation({ ...rollChoice, useCheerleader: false })} disabled={isRolling}>
+              <button className="secondary-button" type="button" onClick={() => startRollAnimation({ ...rollChoice, useCheerleader: false })} disabled={isDiceBusy}>
                 {isRolling ? "掷骰中..." : "直接掷骰"}
               </button>
               <button
                 className="primary-button"
                 type="button"
                 onClick={() => startRollAnimation({ ...rollChoice, useCheerleader: true })}
-                disabled={isRolling || !uniqueLast}
+                disabled={isDiceBusy || !uniqueLast}
               >
                 先支援最后一名再掷骰
               </button>
@@ -193,14 +233,14 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
         ) : abilityKey === "pull_all_then_bonus_per_guest" ? (
           <>
             <div className="ability-choice-actions" aria-label="派对动物能力选择">
-              <button className="secondary-button" type="button" onClick={() => startRollAnimation({ ...rollChoice, usePartyAnimal: false })} disabled={isRolling}>
+              <button className="secondary-button" type="button" onClick={() => startRollAnimation({ ...rollChoice, usePartyAnimal: false })} disabled={isDiceBusy}>
                 {isRolling ? "掷骰中..." : "直接掷骰"}
               </button>
               <button
                 className="primary-button"
                 type="button"
                 onClick={() => startRollAnimation({ ...rollChoice, usePartyAnimal: true })}
-                disabled={isRolling}
+                disabled={isDiceBusy}
               >
                 召集派对后掷骰
               </button>
@@ -242,7 +282,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
                 </select>
               </label>
             ) : null}
-            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isDiceBusy}>
               {isRolling ? "掷骰中..." : "猜好后掷骰"}
             </button>
           </>
@@ -265,14 +305,14 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
               </label>
             ) : null}
             <div className="ability-choice-actions" aria-label="长腿能力选择">
-              <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling}>
+              <button className="secondary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isDiceBusy}>
                 {isRolling ? "掷骰中..." : "掷骰移动"}
               </button>
               <button
                 className="primary-button"
                 type="button"
                 onClick={() => useDirectAbility({ useLegsFixedMove: true })}
-                disabled={isRolling}
+                disabled={isDiceBusy}
               >
                 直接移动 5 格
               </button>
@@ -297,7 +337,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
                   className="secondary-button"
                   type="button"
                   onClick={() => useDirectAbility({ useFlipFlopSwap: true, flipFlopTargetEntrantId: selectedTargetEntrantId })}
-                  disabled={isRolling || !selectedTargetEntrantId}
+                  disabled={isDiceBusy || !selectedTargetEntrantId}
                 >
                   使用能力换位
                 </button>
@@ -362,7 +402,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
               </label>
             ) : null}
 
-            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isRolling || needsSelectedTarget}>
+            <button className="primary-button" type="button" onClick={() => startRollAnimation(rollChoice)} disabled={isDiceBusy || needsSelectedTarget}>
               {isRolling ? "掷骰中..." : "掷骰"}
             </button>
           </>

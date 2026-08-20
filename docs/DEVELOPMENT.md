@@ -659,7 +659,7 @@ type SelectionState = {
 - 特殊棋盘动画不得只展示最终结算位置：落到后退格（16 后退 4、24 后退 2）时，棋盘客户端要按“原位置 → 特殊格 → 后退目标”的队列逐格播放；规则引擎依旧可以原子化结算最终位置，动画队列仅根据新增的中文移动日志派生，不能改变在线权威状态。
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
 - on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。
-- before race copy：Egg 在全部锁定后由 seed RNG 抽取 3 名未参赛候选；Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
+- before race copy：Egg 在全部锁定后由 seed RNG 从未分配给任一玩家的角色中抽取 3 名候选；不足 3 名时按候选池循环补足，允许重复。Twin 读取历史比赛的第一名角色。两者都通过 `SET_BEFORE_RACE_COPY_CHOICE` 保存玩家选择，并在开始比赛前校验。
 - sharing optional reaction：Duelist 在同格时通过 `pendingReactions` 请求确认，并由客户端提交所选的 `targetEntrantId`；结算只移动决斗获胜者 2 格，平局归 Duelist。
 - Copycat 在 entrant 上保存并列领先时的 `copiedLeaderEntrantId` 与领先集合签名；领先集合改变时，规则引擎通过 `pendingReactions` 的 `copy` 提示请求选择。若提示出现在模仿猫自己的回合开始前，确认后恢复该回合；若由其他选手移动引起，则在该反应链中结算。
 - Duelist 的决斗奖励属于正常 `move`：若胜者前进 2 格后与选手同格，仍会继续进入同格反应并可再次发起决斗。

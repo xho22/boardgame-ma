@@ -48,6 +48,32 @@ describe("RoomService", () => {
     expect(kidView?.gameState?.selectionState?.selectionsByPlayerId[dad.playerId]).toEqual([]);
   });
 
+  it("lets the host randomize shared teams before racer selection", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    const started = service.startSharedGame("family-a", dad.playerId, { racersPerPlayerPerRace: 2 });
+
+    const randomized = service.dispatchGameCommand(
+      "family-a",
+      dad.playerId,
+      started.gameState!.revision,
+      { type: "ASSIGN_TEAMS" },
+    );
+
+    expect(randomized.gameState?.phase).toBe("teamReveal");
+    expect(randomized.gameState?.revision).toBeGreaterThan(started.gameState!.revision);
+    expect(randomized.gameState?.players.map((player) => player.id)).toEqual([dad.playerId, kid.playerId]);
+    expect(randomized.gameState?.players.every((player) => player.athleteIds.length === 8)).toBe(true);
+
+    expect(() => service.dispatchGameCommand(
+      "family-a",
+      kid.playerId,
+      randomized.gameState!.revision,
+      { type: "ASSIGN_TEAMS" },
+    )).toThrow("只有房主");
+  });
+
   it("rejects non-host setup commands and stale revisions", () => {
     const service = new RoomService();
     const dad = service.join("family-a", "Dad");

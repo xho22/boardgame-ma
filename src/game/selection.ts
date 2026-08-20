@@ -152,6 +152,9 @@ export function lockPlayerSelection(game: GameState, playerId: string, rng: Rng)
   const nextPlayer = game.players.find((player) => !lockedPlayerIds.includes(player.id));
   const allLocked = lockedPlayerIds.length === game.players.length;
   const allSelectedAthleteIds = Object.values(selectionState.selectionsByPlayerId).flat();
+  const unassignedAthletes = STANDARD_ATHLETES.filter(
+    (athlete) => !game.players.some((player) => player.athleteIds.includes(athlete.id)),
+  );
   const eggCandidatesByAthleteId = allLocked
     ? Object.fromEntries(
         allSelectedAthleteIds
@@ -160,14 +163,7 @@ export function lockPlayerSelection(game: GameState, playerId: string, rng: Rng)
           )
           .map((eggAthleteId) => [
             eggAthleteId,
-            rng
-              .shuffle(
-                STANDARD_ATHLETES.filter(
-                  (athlete) => athlete.id !== eggAthleteId && !allSelectedAthleteIds.includes(athlete.id),
-                ),
-              )
-              .slice(0, 3)
-              .map((athlete) => athlete.id),
+            drawEggCandidates(unassignedAthletes, rng),
           ]),
       )
     : selectionState.eggCandidatesByAthleteId;
@@ -184,6 +180,16 @@ export function lockPlayerSelection(game: GameState, playerId: string, rng: Rng)
     },
     revision: game.revision + 1,
   };
+}
+
+function drawEggCandidates(availableAthletes: typeof STANDARD_ATHLETES, rng: Rng): string[] {
+  const shuffled = rng.shuffle(availableAthletes);
+
+  if (shuffled.length === 0) {
+    return [];
+  }
+
+  return Array.from({ length: 3 }, (_, index) => shuffled[index % shuffled.length].id);
 }
 
 function previousWinnerAthleteIds(game: GameState): string[] {

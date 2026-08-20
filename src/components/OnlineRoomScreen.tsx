@@ -279,10 +279,10 @@ function renderOnlineGameScreen(
         game={game}
         onNewGame={onBack}
         onClearGame={onBack}
-        onRandomizeTeams={() => undefined}
+        onRandomizeTeams={() => onCommand({ type: "ASSIGN_TEAMS" })}
         onBeginSelection={() => onCommand({ type: "BEGIN_SELECTION" })}
         canBeginSelection={isHost}
-        canRandomizeTeams={false}
+        canRandomizeTeams={isHost}
       />
     );
   }

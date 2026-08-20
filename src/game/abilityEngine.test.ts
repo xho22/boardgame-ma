@@ -228,6 +228,15 @@ describe("phase 7 abilities", () => {
     expect(latestMessages(game).some((message) => message.includes("从摔倒中恢复"))).toBe(true);
   });
 
+  it("applies Coach's bonus after Rocket Scientist doubles a shared main move", () => {
+    const game = roll(createRace("Rocket Scientist", "Coach"), "player-1", [3]);
+
+    expect(entrantPosition(game, "player-1")).toBe(7);
+    expect(game.activeRace?.previousFinalMoveValue).toBe(7);
+    expect(latestMessages(game).some((message) => message.includes("主移动翻倍为 6"))).toBe(true);
+    expect(latestMessages(game).some((message) => message.includes("主移动 +1，当前为 7"))).toBe(true);
+  });
+
   it("Rocket Scientist can skip the optional double move", () => {
     const game = roll(createRace("Rocket Scientist", "Baba Yaga"), "player-1", [3], {
       useRocketScientistDouble: false,

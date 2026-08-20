@@ -152,11 +152,13 @@ export class RoomService {
     }
 
     this.assertCommandAuthority(room, actorId, command);
-    const updatedGame = reduceGameCommand(
-      game,
-      command,
-      createRng(`${game.rngSeed}:${game.revision}:${Date.now()}`),
-    );
+    const updatedGame = command.type === "ASSIGN_TEAMS"
+      ? this.randomizeSharedTeams(room, game)
+      : reduceGameCommand(
+          game,
+          command,
+          createRng(`${game.rngSeed}:${game.revision}:${Date.now()}`),
+        );
     const updatedRoom = this.withConnectionState({
       ...room,
       status: updatedGame.phase === "finalResults" ? "complete" : "playing",
@@ -212,7 +214,7 @@ export class RoomService {
       throw new RoomServiceError("不能替其他玩家执行操作。");
     }
 
-    if (["BEGIN_SELECTION", "REVEAL_RACE", "BEGIN_NEXT_RACE", "FINISH_GAME"].includes(command.type)) {
+    if (["ASSIGN_TEAMS", "BEGIN_SELECTION", "REVEAL_RACE", "BEGIN_NEXT_RACE", "FINISH_GAME"].includes(command.type)) {
       this.requireHost(room, actorId);
     }
 
@@ -225,9 +227,30 @@ export class RoomService {
       }
     }
 
-    if (["START_GAME", "ASSIGN_TEAMS", "USE_ABILITY"].includes(command.type)) {
+    if (["START_GAME", "USE_ABILITY"].includes(command.type)) {
       throw new RoomServiceError("该命令不支持通过在线房间直接执行。");
     }
+  }
+
+  private randomizeSharedTeams(room: RoomState, game: GameState): GameState {
+    const randomized = createInitialGameState({ settings: game.settings });
+
+    return {
+      ...randomized,
+      roomId: room.roomId,
+      revision: game.revision + 1,
+      players: randomized.players.map((player, index) => {
+        const existingPlayer = game.players[index];
+
+        return {
+          ...player,
+          id: existingPlayer.id,
+          name: existingPlayer.name,
+          color: existingPlayer.color,
+          isConnected: existingPlayer.isConnected,
+        };
+      }),
+    };
   }
 
   private withConnectionState(room: RoomState): RoomState {
