@@ -6,6 +6,8 @@ export const DEFAULT_RACES_COUNT = 4;
 export const DEFAULT_RACERS_PER_PLAYER_PER_RACE = 1;
 export const DEFAULT_ATHLETES_PER_PLAYER = 4;
 export const DEFAULT_TRACK_LENGTH = 30;
+/** The second physical corner of the standard Wild Wilds track. */
+export const BLIMP_SECOND_CORNER_SPACE = 15;
 
 export const PLAYER_COLORS = ["red", "blue", "green", "yellow", "purple", "cyan"] as const;
 

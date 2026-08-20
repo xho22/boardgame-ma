@@ -1,4 +1,5 @@
 import { STANDARD_ATHLETE_BY_ID } from "./athletes";
+import { BLIMP_SECOND_CORNER_SPACE } from "./constants";
 import {
   shouldAutoUseFlipFlop,
   shouldAutoUseRocketScientist,
@@ -768,7 +769,7 @@ function applyMainMoveModifiers(
   }
 
   if (key === "corner_based_main_move_modifier") {
-    const secondCorner = Math.floor(race.trackLength * 0.66);
+    const secondCorner = Math.min(BLIMP_SECOND_CORNER_SPACE, race.trackLength);
     const modifier = entrant.position < secondCorner ? 3 : -1;
     moveValue += modifier;
     logs.push({

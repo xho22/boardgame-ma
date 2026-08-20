@@ -34,7 +34,7 @@ const STANDARD_ATHLETE_DATA = [
     standardName: "Blimp",
     displayName: "飞艇",
     type: "mainMove",
-    abilityText: "回合开始时若在第二个弯角前，main move +3；若在该弯角或之后，main move -1。",
+    abilityText: "回合开始时若在第 15 格前，main move +3；若在第 15 格或之后，main move -1。",
     abilityHooks: ["beforeMainMove", "modifyMainMove"],
     implementationKey: "corner_based_main_move_modifier",
     tags: ["standard", "track-position", "main-move"],

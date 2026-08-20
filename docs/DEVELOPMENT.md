@@ -655,6 +655,7 @@ type SelectionState = {
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
 - 所有能力定义为 `move` 的额外位移统一通过 `moveEntrantInRace` 进入吸盘鱼反应队列；骰子商人重投造成的移动会先完成吸盘鱼确认，再恢复原角色的重投结算。warp、换位和推挤不走此路径。任何其他 racer 成功使用能力时，挪挪仍须收到能力触发并移动 1 格；因此翻转者、催眠师、电灯泡等直接换位或 warp 也必须显式发出此事件，但不会错误触发吸盘鱼。
 - 位移交互审计边界：普通 `move`（主移动、长腿、啦啦队长、派对动物、尺蠖、跟班、浪漫者、决斗奖励、推人等）要进入吸盘鱼与挪挪链；warp/换位（翻转者、催眠师、电灯泡、西西弗斯回起点）只触发挪挪，不触发吸盘鱼；巨婴的落点改写不算 move，也不触发吸盘鱼。
+- 飞艇的第二个弯角不按赛道长度比例推算；标准棋盘图的实际分界固定为第 `15` 格，规则引擎由 `BLIMP_SECOND_CORNER_SPACE` 常量统一引用。
 - 特殊棋盘动画不得只展示最终结算位置：落到后退格（16 后退 4、24 后退 2）时，棋盘客户端要按“原位置 → 特殊格 → 后退目标”的队列逐格播放；规则引擎依旧可以原子化结算最终位置，动画队列仅根据新增的中文移动日志派生，不能改变在线权威状态。
 - after roll：Alchemist、Magician、Rocket Scientist 已在骰面出现后使用 `pendingDiceDecision` 暂停并确认；Magician 最多重掷 1 次。
 - on other roll：Dicemonger 已使用 `pendingReactions` 让掷骰者选择保留或重掷；Inchworm、Lackey 目前仍按规则自动反应。

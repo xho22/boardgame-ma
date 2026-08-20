@@ -384,6 +384,16 @@ describe("phase 9 abilities", () => {
     let game = roll(createRace(["Blimp", "Baba Yaga"]), "player-1", [1]);
     expect(position(game, "player-1")).toBe(4);
 
+    game = roll(setPositions(createRace(["Blimp", "Baba Yaga"]), {
+      "player-1": 14,
+    }), "player-1", [1]);
+    expect(position(game, "player-1")).toBe(18);
+
+    game = roll(setPositions(createRace(["Blimp", "Baba Yaga"]), {
+      "player-1": 15,
+    }), "player-1", [2]);
+    expect(position(game, "player-1")).toBe(16);
+
     game = roll(setPositions(createRace(["Copycat", "Legs"]), {
       "player-1": 0,
       "player-2": 4,

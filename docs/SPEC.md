@@ -401,7 +401,7 @@ afterRace          比赛结束时
 | 1 | Alchemist | 炼金师 | 主移动修正 | main move 掷出 1 或 2 时，可以改为移动 4 格 | `main_roll_low_becomes_four` |
 | 2 | Baba Yaga | 芭芭雅嘎 | 同格陷阱 | 任意选手停在她的格子，或她停在任意选手格子时，使对方 trip | `trip_on_shared_stop` |
 | 3 | Banana | 香蕉 | 经过陷阱 | 任意选手 passing 她时，使该选手 trip | `trip_passing_racer` |
-| 4 | Blimp | 飞艇 | 赛道位置修正 | 回合开始时若在第二个弯角前，main move +3；若在该弯角或之后，main move -1 | `corner_based_main_move_modifier` |
+| 4 | Blimp | 飞艇 | 赛道位置修正 | 标准棋盘的第二个弯角为第 15 格；回合开始时在第 15 格前，main move +3；在第 15 格或之后，main move -1 | `corner_based_main_move_modifier` |
 | 5 | Centaur | 半人马 | 超越惩罚 | 当他 passing 一名选手时，被超过者 move -2，最低不低于起点 | `move_passed_racer_back_two` |
 | 6 | Cheerleader | 啦啦队长 | 落后支援 | main move 前可以让 last place 选手 move 2；若这样做，自己再 move 1 | `cheer_last_place_then_self` |
 | 7 | Coach | 教练 | 同格增益 | 和 Coach 同格的所有选手 main move +1，包括 Coach 自己 | `same_space_main_move_plus_one` |
