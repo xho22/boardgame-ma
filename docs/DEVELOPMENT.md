@@ -367,7 +367,7 @@ game_end
 
 必须有：
 
-- 骰子滚动动画，点击后约 2 秒内在 1 到 6 间快速变化，再显示真实结果
+- 骰子滚动动画，点击后约 2 秒内在 1 到 6 间快速变化；服务端真实结果返回后至少停留 1 秒，再开放下一步操作
 - 棋子逐格移动，普通 move 和后退必须能看出经过的每一步
 - 能力触发闪烁
 - warp、换位、淘汰等非连续位置变化的高亮或淡入淡出反馈
@@ -383,7 +383,7 @@ game_end
 动画时长建议：
 
 ```text
-骰子：约 2000ms
+骰子：约 2000ms 滚动 + 1000ms 真实结果停留
 每格移动：120ms 到 200ms
 能力提示：700ms
 冲线：900ms
@@ -650,7 +650,7 @@ type SelectionState = {
 当前主动能力交互状态：
 
 - before main move：Legs、Flip Flop、Cheerleader、Hypnotist、Third Wheel 已有本地 UI 选择。
-- before main move：Party Animal 已改为主动选择；Copycat 会将唯一领先者的有效能力传入同一套操作面板与规则结算，赛前复制能力除外。
+- before main move：Party Animal 已改为主动选择；Copycat 仅会将其他全场领先者的有效能力传入同一套操作面板与规则结算。模仿猫独自领先时没有有效复制能力，赛前复制能力除外。
 - pre-roll prediction：Genius 已有本地猜点数 UI，预测值通过 `ROLL_DICE.choice.geniusGuess` 进入规则结算。
 - after move optional reaction：Suckerfish 已通过 `pendingReactions` 弹出跟随确认；确认后再继续本回合剩余结算。
 - 所有能力定义为 `move` 的额外位移统一通过 `moveEntrantInRace` 进入吸盘鱼反应队列；骰子商人重投造成的移动会先完成吸盘鱼确认，再恢复原角色的重投结算。warp、换位和推挤不走此路径。任何其他 racer 成功使用能力时，挪挪仍须收到能力触发并移动 1 格；因此翻转者、催眠师、电灯泡等直接换位或 warp 也必须显式发出此事件，但不会错误触发吸盘鱼。

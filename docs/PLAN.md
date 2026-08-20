@@ -31,10 +31,10 @@
 | 7 | 第一批能力实现 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 32 tests passed | 已实现 7 个第一批 main move 能力、能力日志和 trip 跳过效果 |
 | 8 | 复杂移动与第二批能力 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 已实现 passing、sharing、on-roll、on-power、trip、二次移动冲线同步和死锁保护 |
 | 9 | 第三批能力与完整 36 角色 | 已完成 | 通过 | `npm run build`: 通过；`npm run test`: 38 tests passed；1000 局自动模拟: 通过 | 36 个角色均有本地 MVP 行为；已补角色图鉴 |
-| 10 | 体验打磨 | 已完成 | 通过 | `npm run build`: 通过；相关测试 15 passed、1000 局模拟通过（2026-08-15）；既有 `npm run e2e`: 2 passed | 已补中文比赛日志、角色头像棋子、trip 倒置/自动恢复、Mastermind 预测 UI、Gunk 触发日志、Genius 猜点、Cheerleader/Legs/Flip Flop/Hypnotist/Third Wheel/Party Animal 等主移动前明确选择；骰子商人、炼金师、魔术师、火箭科学家均已改为骰后确认；Banana 覆盖同格起步与啦啦队长带动的经过判定；Suckerfish 跟随确认覆盖主移动及能力移动，并会继续结算后续移动触发；Duelist 已改为选择对手后的可选决斗，奖励移动可继续连锁决斗；Egg 三选一、Twin 历史冠军选择和双 racer 按玩家交错回合已完成；Copycat 已支持唯一领先者自动复制和并列领先选择。Copycat 与较真者等全局限制能力的冲突语义审计，以及全量主动技能交互审计，转为后续维护优化项。 |
+| 10 | 体验打磨 | 已完成 | 通过 | `npm run test`: 89 passed；`npm run build`: 通过；1000 局模拟通过（2026-08-20） | 已补中文比赛日志、角色头像棋子、trip 倒置/自动恢复、Mastermind 预测 UI、Gunk 触发日志、Genius 猜点、Cheerleader/Legs/Flip Flop/Hypnotist/Third Wheel/Party Animal 等主移动前明确选择；骰子商人、炼金师、魔术师、火箭科学家均已改为骰后确认；Banana 覆盖同格起步与啦啦队长带动的经过判定；Suckerfish 跟随确认覆盖主移动及能力移动，并会继续结算后续移动触发；Duelist 已改为选择对手后的可选决斗，奖励移动可继续连锁决斗；Egg 三选一、Twin 历史冠军选择和双 racer 按玩家交错回合已完成。被动移动、跳跳蛙、巨婴、啦啦队长、模仿猫与绊倒恢复的边界均已加入回归测试。 |
 | 11 | 在线房间技术验证 | 已完成 | 通过 | `npm run test -- src/network/roomService.test.ts`: 3 passed；`npm run build`: 通过；`npm run typecheck:server`: 通过；`npm run e2e`: 3 passed（2026-08-15） | 已实现首页双模式入口、固定房间、WebSocket 广播、座位占用/离线/重连、服务端 revision 与命令权限校验。双浏览器验证了加入同一房间、创建共享局及服务端执行 `BEGIN_SELECTION` 后同步。完整在线选角与比赛交互留在阶段 12。 |
 | 12 | 在线完整游玩 | 进行中 | 部分通过 | `npm run start` 单端口冒烟：页面、`/health`、`/ws` 通过；`npm run build`、`npm run typecheck:server` 通过（2026-08-19） | 已将在线房间接入队伍、私密选角、Race Reveal、赛道、反应和赛后继续流程；服务端按玩家过滤选角状态并校验命令归属。房主可重置房间游戏并保留座位；Debug 模式下可将 `All Special` 作为权威设置同步到双方。生产单端口、25 秒心跳和自动重连已完成；房间仍为内存状态。待验收：两终端完整 2 人 4 场、比赛中断线重连及 Cloudflare Tunnel 手动验证；长期部署前需补持久化与房间访问控制。 |
-| 13 | 特殊棋盘 | 已完成 | 通过 | `npm test`: 78 passed；`npm run build`: 通过；特殊棋盘与赛道测试 8 passed；用户本地实测通过（2026-08-19） | 已完成普通/特殊棋盘切换、`allSpecial` 本地 Debug 设置、10 个特殊格、技能落点扫描、日志、标记与图例；落点反应先完成，再由格上每名 racer 分别结算特殊效果。 |
+| 13 | 特殊棋盘 | 已完成 | 通过 | `npm run test`: 89 passed；`npm run build`: 通过；1000 局模拟通过（2026-08-20）；用户本地实测通过 | 已完成普通/特殊棋盘切换、`allSpecial` 本地 Debug 设置、10 个特殊格、技能落点扫描、日志、标记与图例；落点反应先完成，再由格上每名 racer 分别结算特殊效果。巨婴将角色推回已结算特殊格时，该格效果不重复触发。 |
 
 更新规则：
 
