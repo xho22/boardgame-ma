@@ -403,9 +403,9 @@ afterRace          比赛结束时
 | 3 | Banana | 香蕉 | 经过陷阱 | 任意选手 passing 她时，使该选手 trip | `trip_passing_racer` |
 | 4 | Blimp | 飞艇 | 赛道位置修正 | 标准棋盘的第二个弯角为第 15 格；回合开始时在第 15 格前，main move +3；在第 15 格或之后，main move -1 | `corner_based_main_move_modifier` |
 | 5 | Centaur | 半人马 | 超越惩罚 | 当他 passing 一名选手时，被超过者 move -2，最低不低于起点 | `move_passed_racer_back_two` |
-| 6 | Cheerleader | 啦啦队长 | 落后支援 | main move 前可以让 last place 选手 move 2；若这样做，自己再 move 1 | `cheer_last_place_then_self` |
+| 6 | Cheerleader | 啦啦队长 | 落后支援 | main move 前可以让唯一 last place 选手 move 2；若这样做，自己再 move 1；自己是唯一最后一名时可连续移动 3 格 | `cheer_last_place_then_self` |
 | 7 | Coach | 教练 | 同格增益 | 和 Coach 同格的所有选手 main move +1，包括 Coach 自己 | `same_space_main_move_plus_one` |
-| 8 | Copycat | 模仿猫 | 复制能力 | 持续拥有当前 lead 选手的能力；多人并列 lead 时选择一个；不复制 before race 能力；冲突时原能力优先 | `copy_lead_racer_power` |
+| 8 | Copycat | 模仿猫 | 复制能力 | 持续拥有其他当前 lead 选手的能力；多人并列 lead 时选择一个；自己独自领先时不复制任何能力；不复制 before race 能力；冲突时原能力优先 | `copy_lead_racer_power` |
 | 9 | Dicemonger | 骰子商人 | 公共重掷 | 任意选手每回合可重掷 main move 一次；其他选手使用该重掷时，Dicemonger move 1 | `grant_reroll_move_on_use` |
 | 10 | Duelist | 决斗家 | 同格决斗 | 任意选手与 Duelist 同格时，可以选择一名同格选手决斗；双方掷骰，高者 move 2；Duelist 平局胜 | `duel_on_shared_space` |
 | 11 | Egg | 鸡蛋 | 替身能力 | before race 抽 3 名新选手并选择 1 名，使用 Egg 棋子参赛但获得所选角色能力，包括 before race 能力 | `draft_temp_power_before_race` |
@@ -587,7 +587,7 @@ AI：关闭
 - Suckerfish：任意同格其他角色发生 `move` 后必须弹出跟随确认，包括主移动、长腿、啦啦队长、派对动物、挪挪、浪漫者、决斗、骰子商人等能力移动；warp、换位和巨婴推挤不属于 move。确认跟随后，这次移动同样进入经过、同格和后续跟随等结算，再继续本回合剩余流程。
 - Dicemonger：其他选手掷出 main move 后，必须先显示原始骰面，并由该选手选择保留或重投一次；仅在选择重投时，Dicemonger move 1。该确认流程同样适用于本地和未来在线对局。
 - Mastermind：揭示本场 racer 后、正式开赛前必须选择预测目标。目标是具体 racer，不是玩家；未选择时不能开始比赛。
-- Copycat：有唯一其他领先者时自动获得其能力；并列领先时，无论是否轮到模仿猫行动，都由模仿猫玩家选择一名当前领先者作为复制目标。领先集合变化后会重新选择；不复制 Egg、Twin 等赛前复制能力。
+- Copycat：有唯一其他领先者时自动获得其能力；并列领先时，无论是否轮到模仿猫行动，都由模仿猫玩家选择一名当前领先者作为复制目标。自己独自领先时没有可复制目标，不得从次领先者中选择。领先集合变化后会重新选择；不复制 Egg、Twin 等赛前复制能力。
 - Duelist：有选手与其同格时，由决斗家选择是否发起决斗；同格超过 2 人时必须选择一名对手。双方掷骰后仅高点者移动 2 格，败者不绊倒；平局由决斗家获胜。奖励移动同样结算同格反应，若胜者到达新的同格可继续发起决斗。
 - Egg：揭示阵容后，先排除所有玩家手中的 racer 卡，再展示随机的 3 名候选角色；若可用角色不足 3 名，候选允许重复。当前玩家必须选择 1 名作为本场复制能力。
 - Twin：从第二场起，揭示阵容后展示此前各场第一名的角色；当前玩家必须选择 1 名作为本场复制能力。

@@ -497,7 +497,9 @@ function resolveSpecialTrackEffects(
     const moveResult = effect.spaces > 0
       ? moveEntrantForward(entrant, effect.spaces, workingRace.trackLength)
       : moveEntrantBackward(entrant, Math.abs(effect.spaces));
-    const movedEntrant = { ...moveResult.entrant, resolvedSpecialSpace: undefined };
+    // Keep the source space marked as resolved in case another effect sends this racer back to it.
+    // A different special destination still has a different position and will resolve normally.
+    const movedEntrant = { ...moveResult.entrant, resolvedSpecialSpace: entrant.position };
     workingRace = {
       ...workingRace,
       entrants: workingRace.entrants.map((candidate) =>
@@ -773,10 +775,9 @@ function confirmCopycatChoice(
     throw new Error("Missing Copycat for copy reaction");
   }
 
-  const leaders = race.entrants
-    .filter((entrant) => entrant.id !== copycat.id && !entrant.finished && !entrant.eliminated);
-  const leadPosition = Math.max(...leaders.map((entrant) => entrant.position));
-  const eligibleLeaders = leaders.filter((entrant) => entrant.position === leadPosition);
+  const activeEntrants = race.entrants.filter((entrant) => !entrant.finished && !entrant.eliminated);
+  const leadPosition = Math.max(...activeEntrants.map((entrant) => entrant.position));
+  const eligibleLeaders = activeEntrants.filter((entrant) => entrant.id !== copycat.id && entrant.position === leadPosition);
   const signature = eligibleLeaders.map((entrant) => entrant.id).sort().join(":");
   const selectedLeader = targetEntrantId ? eligibleLeaders.find((entrant) => entrant.id === targetEntrantId) : null;
 

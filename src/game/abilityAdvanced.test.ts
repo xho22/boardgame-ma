@@ -511,7 +511,14 @@ describe("phase 9 abilities", () => {
   });
 
   it("Leaptoad skips teammates and moves Scoocher once for every racer jumped", () => {
-    let game = setPositions(createRace(["Leaptoad", "Alchemist", "Baba Yaga"]), {
+    let game = roll(setPositions(createRace(["Leaptoad", "Alchemist", "Coach"]), {
+      "player-1": 0,
+      "player-2": 0,
+      "player-3": 1,
+    }), "player-1", [1]);
+    expect(position(game, "player-1")).toBe(2);
+
+    game = setPositions(createRace(["Leaptoad", "Alchemist", "Baba Yaga"]), {
       "player-1": 0,
       "player-2": 1,
     });
@@ -582,6 +589,38 @@ describe("phase 9 abilities", () => {
     game = roll(game, "player-1", [6]);
 
     expect(requireRace(game).entrants.find((candidate) => candidate.id === "player-2")?.position).toBe(copiedScoocherPositionBeforeRecovery);
+  });
+
+  it("lets Cheerleader support itself when it is uniquely last", () => {
+    const game = roll(setPositions(createRace(["Cheerleader", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 4,
+    }), "player-1", [2], { useCheerleader: true });
+
+    expect(position(game, "player-1")).toBe(5);
+    expect(messages(game).some((message) => message.includes("让P1的啦啦队长前进 2 格，自己再移动 1 格"))).toBe(true);
+  });
+
+  it("pushes racers back when Huge Baby enters their space", () => {
+    const game = roll(setPositions(createRace(["Alchemist", "Huge Baby"]), {
+      "player-1": 3,
+      "player-2": 0,
+    }, "player-2"), "player-2", [3]);
+
+    expect(position(game, "player-2")).toBe(3);
+    expect(position(game, "player-1")).toBe(2);
+    expect(messages(game).some((message) => message.includes("撞入同格"))).toBe(true);
+  });
+
+  it("does not copy lower-ranked racers when Copycat is alone in the lead", () => {
+    const game = roll(setPositions(createRace(["Copycat", "Alchemist", "Coach"]), {
+      "player-1": 6,
+      "player-2": 4,
+      "player-3": 4,
+    }), "player-1", [1]);
+
+    expect(position(game, "player-1")).toBe(7);
+    expect(requireRace(game).pendingReactions.some((reaction) => reaction.promptType === "copy")).toBe(false);
   });
 
   it("Mastermind, M.O.U.T.H., Party Animal, Sisyphus, Skipper, Stickler, Third Wheel, and Twin can trigger", () => {

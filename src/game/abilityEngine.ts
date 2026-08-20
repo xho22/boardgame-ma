@@ -376,6 +376,33 @@ export function resolveAfterMove({
     didAnyAbilityTrigger = true;
   }
 
+  if (moverKey === "prevent_sharing_space_push_behind" && path.length > 0) {
+    const sharedEntrants = workingRace.entrants.filter(
+      (entrant) =>
+        entrant.id !== moverAfter.id &&
+        !entrant.finished &&
+        !entrant.eliminated &&
+        entrant.position === moverAfter.position,
+    );
+
+    if (sharedEntrants.length > 0) {
+      const pushedPosition = Math.max(0, moverAfter.position - 1);
+      workingRace = {
+        ...workingRace,
+        entrants: workingRace.entrants.map((entrant) =>
+          sharedEntrants.some((sharedEntrant) => sharedEntrant.id === entrant.id)
+            ? { ...entrant, position: pushedPosition }
+            : entrant,
+        ),
+      };
+      logs.push({
+        type: "ability_trigger",
+        message: `${describeEntrant(game, moverAfter)} 撞入同格，将${sharedEntrants.map((entrant) => describeEntrant(game, entrant)).join("、")}推回到 ${pushedPosition}。`,
+      });
+      didAnyAbilityTrigger = true;
+    }
+  }
+
   for (const entrant of workingRace.entrants) {
     if (entrant.id === moverAfter.id || entrant.finished || entrant.eliminated) {
       continue;
@@ -624,7 +651,7 @@ function applyBeforeMainMove(
   if (key === "cheer_last_place_then_self" && (choice.useCheerleader ?? true)) {
     const last = findAloneLast(workingRace);
 
-    if (last && last.id !== entrant.id) {
+    if (last) {
       const lastBefore = last;
       workingRace = moveEntrantInRace(game, workingRace, last.id, 2);
       const lastAfter = workingRace.entrants.find((candidate) => candidate.id === last.id) ?? last;
@@ -987,12 +1014,12 @@ function isAloneInLead(race: RaceState, entrant: Entrant): boolean {
 }
 
 function findOtherLeaders(race: RaceState, except: Entrant): Entrant[] {
-  const activeEntrants = activeEntrantsOnly(race).filter((candidate) => candidate.id !== except.id);
+  const activeEntrants = activeEntrantsOnly(race);
   if (activeEntrants.length === 0) {
     return [];
   }
   const leadPosition = Math.max(...activeEntrants.map((candidate) => candidate.position));
-  return activeEntrants.filter((candidate) => candidate.position === leadPosition);
+  return activeEntrants.filter((candidate) => candidate.id !== except.id && candidate.position === leadPosition);
 }
 
 function findLeaderOther(race: RaceState, entrant: Entrant): Entrant | null {

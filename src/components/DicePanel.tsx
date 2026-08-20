@@ -150,7 +150,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
     const lastPosition = Math.min(...activeEntrants.map((entrant) => entrant.position));
     const lastEntrants = activeEntrants.filter((entrant) => entrant.position === lastPosition);
 
-    return lastEntrants.length === 1 && lastEntrants[0].id !== currentEntrant.id ? lastEntrants[0] : null;
+    return lastEntrants.length === 1 ? lastEntrants[0] : null;
   })();
   const thirdWheelSpaces = (() => {
     const counts = new Map<number, number>();
