@@ -76,6 +76,7 @@ npm run e2e
 - [规格介绍](./docs/SPEC.md)：玩法范围、核心规则、标准版术语、36 名选手能力、用户流程。
 - [开发文档](./docs/DEVELOPMENT.md)：数据结构、规则引擎、命令模型、UI 技术方案、在线房间预留。
 - [计划文档](./docs/PLAN.md)：里程碑、分阶段执行计划、每次对话交付模板、上下文控制策略。
+- [体验打磨计划](./docs/UX_POLISH_PLAN.md)：第二轮 UI、回合节奏、转弯棋盘与在线大厅优化的分阶段目标和验收标准。
 - [测试验收文档](./docs/TEST_ACCEPTANCE.md)：单元测试、能力测试、自动模拟、浏览器检查、阶段验收清单。
 - [部署文档](./docs/DEPLOYMENT.md)：单端口生产启动、Cloudflare Tunnel 与在线房间运行边界。
 
