@@ -65,7 +65,7 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await expect(page.locator(".current-racer-image")).toBeVisible();
   await expect(page.locator(".current-racer-copy").locator("p").last()).toHaveText(/.+/);
   await expect(page.getByLabel("行动顺序")).toBeVisible();
-  await expect(page.getByLabel("本局名次积分")).toContainText("1名 +3");
+  await expect(page.getByLabel("本局名次积分")).toContainText("第1名 +3分");
   await expect(page.locator(".track-infield")).toBeVisible();
   await expect(page.locator(".current-racer-marker")).toBeVisible();
   await expect(page.locator(".race-board-layout")).toBeVisible();

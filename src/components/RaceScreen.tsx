@@ -101,8 +101,8 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
           </dl>
           <div className="race-awards-inline" aria-label="本局名次积分">
             <span>本局</span>
-            <strong>{`1名 +${race.firstPlacePoints}`}</strong>
-            <strong>{`2名 +${race.secondPlacePoints}`}</strong>
+            <strong>{`第1名 +${race.firstPlacePoints}分`}</strong>
+            <strong>{`第2名 +${race.secondPlacePoints}分`}</strong>
           </div>
         </div>
       </header>
