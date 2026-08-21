@@ -89,29 +89,32 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
           <p className="eyebrow">{`Race ${race.raceNumber}`}</p>
           <h1>Track</h1>
         </div>
-        <dl className="race-score-strip">
-          {game.players.map((player) => (
-            <div key={player.id}>
-              <dt>{player.name}</dt>
-              <dd>{player.score}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="race-scoreboard">
+          <span className="race-scoreboard-label">当前积分榜</span>
+          <dl className="race-score-strip">
+            {game.players.map((player) => (
+              <div key={player.id}>
+                <dt>{player.name}</dt>
+                <dd>{player.score}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="race-awards-inline" aria-label="本局名次积分">
+            <span>本局</span>
+            <strong>{`1名 +${race.firstPlacePoints}`}</strong>
+            <strong>{`2名 +${race.secondPlacePoints}`}</strong>
+          </div>
+        </div>
       </header>
 
-      <div className="race-info-grid">
-        <TurnOrder game={game} race={race} />
-        <section className="race-awards" aria-label="本局名次积分">
-          <p className="eyebrow">Race rewards</p>
-          <h2>本局名次积分</h2>
-          <div>
-            <strong>{`第一名 +${race.firstPlacePoints}`}</strong>
-            <strong>{`第二名 +${race.secondPlacePoints}`}</strong>
-          </div>
-        </section>
+      <div className="race-board-layout">
+        <aside className="race-sidebar">
+          <TurnOrder game={game} race={race} />
+        </aside>
+        <div className="race-track-column">
+          <Track game={game} race={race} />
+        </div>
       </div>
-
-      <Track game={game} race={race} />
 
       {revealedDieRoll !== null ? (
         <section className="dice-result-hold" role="status" aria-label="本次骰子结果">

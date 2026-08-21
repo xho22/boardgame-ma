@@ -35,7 +35,7 @@
 | 11 | 在线房间技术验证 | 已完成 | 通过 | `npm run test -- src/network/roomService.test.ts`: 3 passed；`npm run build`: 通过；`npm run typecheck:server`: 通过；`npm run e2e`: 3 passed（2026-08-15） | 已实现首页双模式入口、固定房间、WebSocket 广播、座位占用/离线/重连、服务端 revision 与命令权限校验。双浏览器验证了加入同一房间、创建共享局及服务端执行 `BEGIN_SELECTION` 后同步。完整在线选角与比赛交互留在阶段 12。 |
 | 12 | 在线完整游玩 | 进行中 | 部分通过 | `npm run start` 单端口冒烟：页面、`/health`、`/ws` 通过；`npm run build`、`npm run typecheck:server` 通过（2026-08-19） | 已将在线房间接入队伍、私密选角、Race Reveal、赛道、反应和赛后继续流程；服务端按玩家过滤选角状态并校验命令归属。房主可重置房间游戏并保留座位；Debug 模式下可将 `All Special` 作为权威设置同步到双方。生产单端口、25 秒心跳和自动重连已完成；房间仍为内存状态。待验收：两终端完整 2 人 4 场、比赛中断线重连及 Cloudflare Tunnel 手动验证；长期部署前需补持久化与房间访问控制。 |
 | 13 | 特殊棋盘 | 已完成 | 通过 | `npm run test`: 89 passed；`npm run build`: 通过；1000 局模拟通过（2026-08-20）；用户本地实测通过 | 已完成普通/特殊棋盘切换、`allSpecial` 本地 Debug 设置、10 个特殊格、技能落点扫描、日志、标记与图例；落点反应先完成，再由格上每名 racer 分别结算特殊效果。巨婴将角色推回已结算特殊格时，该格效果不重复触发。 |
-| 14 | 第二轮体验打磨 | 进行中 | 部分通过 | `npm test`: 94 passed；`npm run build`、`npm run typecheck:server`、赛道 Playwright：通过（2026-08-21） | 14.1 权威骰面和 14.2 信息层级已由用户验收通过；14.3 已完成 U 形赛道、放大格子/头像、当前 racer 定位与紧凑赛道信息带，待实际视觉验收。其余子阶段见 [体验打磨计划](./UX_POLISH_PLAN.md)。 |
+| 14 | 第二轮体验打磨 | 进行中 | 部分通过 | `npm test`: 94 passed；`npm run build`、`npm run typecheck:server`、赛道 Playwright：通过（2026-08-21） | 14.1 权威骰面和 14.2 信息层级已由用户验收通过；14.3 已完成 U 形赛道、放大格子/头像、当前 racer 定位，行动顺序左侧栏，以及当前积分榜/本局奖励合并横栏，待实际视觉验收。其余子阶段见 [体验打磨计划](./UX_POLISH_PLAN.md)。 |
 
 更新规则：
 
