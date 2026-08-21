@@ -181,6 +181,22 @@ describe("RoomService", () => {
     expect(resetRoom.playerSlots.filter((slot) => slot.isOccupied).map((slot) => slot.playerName)).toEqual(["Dad", "Kid"]);
   });
 
+  it("lets the host clear a room while keeping only the host seat", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    service.startSharedGame("family-a", dad.playerId);
+
+    expect(() => service.clearRoom("family-a", kid.playerId)).toThrow("只有房主");
+
+    const cleared = service.clearRoom("family-a", dad.playerId);
+    expect(cleared.status).toBe("waiting");
+    expect(cleared.gameState).toBeNull();
+    expect(cleared.playerSlots.filter((slot) => slot.isOccupied).map((slot) => slot.playerId)).toEqual([
+      dad.playerId,
+    ]);
+  });
+
   it("lets the host release only an offline lobby seat without reusing its identity", () => {
     const service = new RoomService();
     const dad = service.join("family-a", "Dad");

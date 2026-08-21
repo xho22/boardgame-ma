@@ -80,6 +80,18 @@ function broadcast(roomId: string): void {
   }
 }
 
+function disconnectClearedRoomClients(roomId: string, hostPlayerId: string): void {
+  for (const [socket, client] of clients) {
+    if (client.roomId !== roomId || client.playerId === hostPlayerId) {
+      continue;
+    }
+
+    clients.delete(socket);
+    send(socket, { type: "ROOM_CLEARED", reason: "房主已清空房间，请重新加入。" });
+    socket.close(4001, "Room cleared by host");
+  }
+}
+
 server.on("connection", (socket) => {
   socket.on("message", (rawMessage) => {
     try {
@@ -106,6 +118,9 @@ server.on("connection", (socket) => {
         rooms.startSharedGame(client.roomId, client.playerId, message.options);
       } else if (message.type === "RESET_SHARED_GAME") {
         rooms.resetSharedGame(client.roomId, client.playerId);
+      } else if (message.type === "CLEAR_ROOM") {
+        rooms.clearRoom(client.roomId, client.playerId);
+        disconnectClearedRoomClients(client.roomId, client.playerId);
       } else if (message.type === "REMOVE_OFFLINE_PLAYER") {
         rooms.removeOfflinePlayer(client.roomId, client.playerId, message.targetPlayerId);
       } else if (message.type === "GAME_COMMAND") {

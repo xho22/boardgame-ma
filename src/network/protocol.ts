@@ -5,12 +5,14 @@ export type ClientMessage =
   | { type: "HEARTBEAT"; sentAt: number }
   | { type: "START_SHARED_GAME"; options?: StartSharedGameOptions }
   | { type: "RESET_SHARED_GAME" }
+  | { type: "CLEAR_ROOM" }
   | { type: "REMOVE_OFFLINE_PLAYER"; targetPlayerId: string }
   | { type: "GAME_COMMAND"; revision: number; command: GameCommand };
 
 export type ServerMessage =
   | { type: "STATE_SYNC"; room: RoomState; playerId: string }
   | { type: "HEARTBEAT_ACK"; sentAt: number }
+  | { type: "ROOM_CLEARED"; reason: string }
   | { type: "COMMAND_REJECTED"; reason: string; room?: RoomState }
   | { type: "CONNECTION_ERROR"; reason: string };
 

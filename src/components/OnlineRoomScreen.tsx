@@ -46,6 +46,16 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
       return;
     }
 
+    if (message.type === "ROOM_CLEARED") {
+      client.current.close();
+      window.localStorage.removeItem(`boardgame-ma:online-player:${roomId}`);
+      setRoom(null);
+      setPlayerId(null);
+      setStatus(message.reason);
+      setError(null);
+      return;
+    }
+
     if (message.type === "STATE_SYNC") {
       setRoom(message.room);
       setPlayerId(message.playerId);
@@ -97,7 +107,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   }
 
   function resetSharedGame() {
-    if (!window.confirm("重置会删除当前房间的比赛进度，所有人将回到房间大厅。继续吗？")) {
+    if (!window.confirm("重置本局会删除当前比赛进度，但保留所有玩家座位。继续吗？")) {
       return;
     }
 
@@ -105,6 +115,18 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
       client.current.send({ type: "RESET_SHARED_GAME" });
     } catch (resetError) {
       setError(resetError instanceof Error ? resetError.message : "无法重置房间游戏。");
+    }
+  }
+
+  function clearRoom() {
+    if (!window.confirm("清空房间会删除本局进度、移除所有其他玩家，房主保留当前座位。继续吗？")) {
+      return;
+    }
+
+    try {
+      client.current.send({ type: "CLEAR_ROOM" });
+    } catch (clearError) {
+      setError(clearError instanceof Error ? clearError.message : "无法清空房间。");
     }
   }
 
@@ -132,7 +154,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   }, [occupiedCount]);
 
   if (game && playerId) {
-    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} connectionLatencyMs={connectionLatencyMs} selectionFailureToken={selectionFailureToken} />;
+    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} onClearRoom={clearRoom} connectionLatencyMs={connectionLatencyMs} selectionFailureToken={selectionFailureToken} />;
   }
 
   return (
@@ -165,6 +187,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
             <div className="room-status-row">
               <strong>{status}</strong>
               <span>{`座位 ${occupiedCount} / 6`}</span>
+              {isHost ? <button className="ghost-button danger" type="button" onClick={clearRoom}>清空房间</button> : null}
             </div>
             <div className="room-seat-grid">
               {room.playerSlots.map((slot) => (
@@ -268,11 +291,12 @@ type OnlineGameViewProps = {
   onBack: () => void;
   onCommand: (command: GameCommand) => void;
   onReset: () => void;
+  onClearRoom: () => void;
   connectionLatencyMs: number | null;
   selectionFailureToken: number;
 };
 
-function OnlineGameView({ room, playerId, onBack, onCommand, onReset, connectionLatencyMs, selectionFailureToken }: OnlineGameViewProps) {
+function OnlineGameView({ room, playerId, onBack, onCommand, onReset, onClearRoom, connectionLatencyMs, selectionFailureToken }: OnlineGameViewProps) {
   const game = room.gameState!;
   const isHost = room.hostPlayerId === playerId;
   const canChangeAthlete = (athleteId: string) => game.players.some(
@@ -285,7 +309,8 @@ function OnlineGameView({ room, playerId, onBack, onCommand, onReset, connection
       <div className="online-mode-banner">
         <span>{`在线房间: ${room.roomName}`}</span>
         <span className="online-latency">{connectionLatencyMs === null ? "延迟测量中" : `延迟 ${connectionLatencyMs} ms`}</span>
-        {isHost ? <button className="ghost-button danger" type="button" onClick={onReset}>重置房间</button> : null}
+        {isHost ? <button className="ghost-button" type="button" onClick={onReset}>重置本局</button> : null}
+        {isHost ? <button className="ghost-button danger" type="button" onClick={onClearRoom}>清空房间</button> : null}
       </div>
       {content}
     </>

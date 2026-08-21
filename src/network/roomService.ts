@@ -140,6 +140,32 @@ export class RoomService {
     return updatedRoom;
   }
 
+  clearRoom(roomId: string, playerId: string): RoomState {
+    const room = this.requireRoom(roomId);
+    this.requireHost(room, playerId);
+
+    const hostSlot = room.playerSlots.find(
+      (slot) => slot.playerId === playerId && slot.isOccupied,
+    );
+    if (!hostSlot) {
+      throw new RoomServiceError("房主座位不存在，无法清空房间。");
+    }
+
+    const updatedRoom: RoomState = {
+      ...room,
+      status: "waiting",
+      gameState: null,
+      playerSlots: room.playerSlots.map((slot) =>
+        slot.playerId === playerId
+          ? { ...slot, isConnected: true }
+          : createEmptySlot(slot.slotIndex),
+      ),
+      updatedAt: Date.now(),
+    };
+    this.rooms.set(roomId, updatedRoom);
+    return updatedRoom;
+  }
+
   removeOfflinePlayer(roomId: string, playerId: string, targetPlayerId: string): RoomState {
     const room = this.requireRoom(roomId);
     this.requireHost(room, playerId);
@@ -161,15 +187,7 @@ export class RoomService {
       ...room,
       playerSlots: room.playerSlots.map((slot) =>
         slot.playerId === targetPlayerId
-          ? {
-              slotIndex: slot.slotIndex,
-              playerId: null,
-              playerName: `座位 ${slot.slotIndex + 1}`,
-              color: "#d4c9ba",
-              isOccupied: false,
-              isConnected: false,
-              isAI: false,
-            }
+          ? createEmptySlot(slot.slotIndex)
           : slot,
       ),
       updatedAt: Date.now(),
@@ -218,15 +236,7 @@ export class RoomService {
       roomName: roomId,
       hostPlayerId: "",
       status: "waiting",
-      playerSlots: Array.from({ length: ROOM_CAPACITY }, (_, slotIndex): PlayerSlot => ({
-        slotIndex,
-        playerId: null,
-        playerName: `座位 ${slotIndex + 1}`,
-        color: "#d4c9ba",
-        isOccupied: false,
-        isConnected: false,
-        isAI: false,
-      })),
+      playerSlots: Array.from({ length: ROOM_CAPACITY }, (_, slotIndex): PlayerSlot => createEmptySlot(slotIndex)),
       gameState: null,
       createdAt: now,
       updatedAt: now,
@@ -314,4 +324,16 @@ export class RoomService {
       },
     };
   }
+}
+
+function createEmptySlot(slotIndex: number): PlayerSlot {
+  return {
+    slotIndex,
+    playerId: null,
+    playerName: `座位 ${slotIndex + 1}`,
+    color: "#d4c9ba",
+    isOccupied: false,
+    isConnected: false,
+    isAI: false,
+  };
 }

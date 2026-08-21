@@ -66,7 +66,7 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
   await expect(kid.getByRole("heading", { name: "魔法运动会" })).toBeVisible();
 
   dad.once("dialog", (dialog) => dialog.accept());
-  await dad.getByRole("button", { name: "重置房间" }).click();
+  await dad.getByRole("button", { name: "重置本局" }).click();
   await expect(dad.getByRole("button", { name: "Start Shared Game" })).toBeVisible();
   await expect(kid.getByText("等待房主设置每人 racer 数量、Debug 模式和棋盘模式。")).toBeVisible();
   await expect(dad.getByText("座位 2 / 6")).toBeVisible();
@@ -89,4 +89,33 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
 
   await dadContext.close();
   await friendContext.close();
+});
+
+test("lets the host clear a room and release every other seat", async ({ browser }, testInfo) => {
+  const roomId = `clear-${testInfo.project.name}-${Date.now()}`;
+  const hostContext = await browser.newContext();
+  const guestContext = await browser.newContext();
+  const host = await hostContext.newPage();
+  const guest = await guestContext.newPage();
+
+  await Promise.all([host.goto("/"), guest.goto("/")]);
+  await Promise.all([
+    host.getByRole("button", { name: "Online Room" }).click(),
+    guest.getByRole("button", { name: "Online Room" }).click(),
+  ]);
+  await host.locator(".room-join-form input").fill("Host");
+  await guest.locator(".room-join-form input").fill("Guest");
+  await selectTestRoom(host, roomId);
+  await selectTestRoom(guest, roomId);
+  await host.getByRole("button", { name: "Join Room" }).click();
+  await guest.getByRole("button", { name: "Join Room" }).click();
+  await expect(host.getByText("座位 2 / 6")).toBeVisible();
+
+  host.once("dialog", (dialog) => dialog.accept());
+  await host.getByRole("button", { name: "清空房间" }).click();
+  await expect(host.getByText("座位 1 / 6")).toBeVisible();
+  await expect(guest.getByRole("button", { name: "Join Room" })).toBeVisible();
+
+  await hostContext.close();
+  await guestContext.close();
 });
