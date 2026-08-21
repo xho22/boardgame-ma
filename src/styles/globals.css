@@ -1508,6 +1508,15 @@ h1 {
     padding: 20px;
   }
 
+  .online-mode-banner {
+    position: relative;
+    top: auto;
+    right: auto;
+    justify-content: space-between;
+    margin: 0 20px;
+    padding: 8px 0;
+  }
+
   .top-bar {
     grid-template-columns: 56px 1fr 56px;
     gap: 8px;

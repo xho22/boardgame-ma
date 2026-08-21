@@ -16,7 +16,7 @@ async function fillMastermindPredictions(page: Parameters<typeof test>[0]["page"
   }
 }
 
-test("shows racer card images in catalog, selection, and current turn", async ({ page }) => {
+test("shows racer card images in catalog, selection, and current turn", async ({ page }, testInfo) => {
   await page.getByRole("button", { name: "Racers" }).click();
 
   await expect(page.getByRole("heading", { name: "Racers" })).toBeVisible();
@@ -66,6 +66,9 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await expect(page.getByLabel("本局名次积分")).toContainText("1名 +3");
   await expect(page.locator(".track-infield")).toBeVisible();
   await expect(page.locator(".current-racer-marker")).toBeVisible();
+  await expect(page.locator(".race-board-layout")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath("race-layout.png"), fullPage: true });
 });
 
 test("supports choosing two racers per player in a small game", async ({ page }) => {
