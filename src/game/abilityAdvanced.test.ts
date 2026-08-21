@@ -299,6 +299,17 @@ describe("phase 8 abilities", () => {
     expect(messages(game).some((message) => message.includes("经过判定"))).toBe(true);
   });
 
+  it("resolves Huge Baby when Cheerleader moves the last racer onto its space", () => {
+    const game = roll(setPositions(createRace(["Cheerleader", "Rocket Scientist", "Huge Baby"]), {
+      "player-1": 3,
+      "player-2": 0,
+      "player-3": 2,
+    }), "player-1", [1], { useCheerleader: true });
+
+    expect(position(game, "player-2")).toBe(1);
+    expect(messages(game).some((message) => message.includes("巨婴") && message.includes("推回到 1"))).toBe(true);
+  });
+
   it("Suckerfish queues every shared racer and keeps resolving follow movements", () => {
     let game = roll(createRace(["Alchemist", "Suckerfish", "Suckerfish"]), "player-1", [3]);
 

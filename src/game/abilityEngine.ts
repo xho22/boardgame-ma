@@ -655,14 +655,14 @@ function applyBeforeMainMove(
     const last = findAloneLast(workingRace);
 
     if (last) {
-      const lastBefore = last;
-      workingRace = moveEntrantInRace(game, workingRace, last.id, 2);
-      const lastAfter = workingRace.entrants.find((candidate) => candidate.id === last.id) ?? last;
-      const cheerleaderBefore = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
-      workingRace = moveEntrantInRace(game, workingRace, entrant.id, 1);
-      const cheerleaderAfter = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? entrant;
-      workingRace = applyBananaPassTraps(game, workingRace, lastBefore, lastAfter, logs);
-      workingRace = applyBananaPassTraps(game, workingRace, cheerleaderBefore, cheerleaderAfter, logs);
+      const lastMovement = resolveTriggeredMove(game, workingRace, nextPlayers, last.id, 2, false);
+      workingRace = lastMovement.race;
+      nextPlayers = lastMovement.players;
+      logs.push(...lastMovement.logs);
+      const cheerleaderMovement = resolveTriggeredMove(game, workingRace, nextPlayers, entrant.id, 1, false);
+      workingRace = cheerleaderMovement.race;
+      nextPlayers = cheerleaderMovement.players;
+      logs.push(...cheerleaderMovement.logs);
       logs.push({
         type: "ability_trigger",
         message: `${name} 使用啦啦队长，让${describeEntrant(game, last)}前进 2 格，自己再移动 1 格。`,
@@ -853,39 +853,6 @@ function applyMainMoveModifiers(
   }
 
   return Math.max(0, moveValue);
-}
-
-function applyBananaPassTraps(
-  game: GameState,
-  race: RaceState,
-  moverBefore: Entrant,
-  moverAfter: Entrant,
-  logs: AbilityLog[],
-): RaceState {
-  const passedSpaces = getPassedSpaces(moverBefore.position, moverAfter.position);
-  const movedOutFromSharedStart = moverAfter.position > moverBefore.position;
-  let workingRace = race;
-
-  for (const banana of race.entrants) {
-    if (
-      banana.id !== moverAfter.id &&
-      !banana.finished &&
-      !banana.eliminated &&
-      getEffectiveImplementationKey(game, race, banana) === "trip_passing_racer" &&
-      (passedSpaces.includes(banana.position) || (banana.position === moverBefore.position && movedOutFromSharedStart))
-    ) {
-      workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
-        ...current,
-        skippedTurns: current.skippedTurns + 1,
-      }));
-      logs.push({
-        type: "status_added",
-        message: `${describeEntrant(game, banana)} 在经过判定中绊倒了${describeEntrant(game, moverAfter)}。`,
-      });
-    }
-  }
-
-  return workingRace;
 }
 
 export function triggerScoocherOnOtherPower(
