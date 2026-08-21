@@ -10,11 +10,12 @@ export class RoomServiceError extends Error {}
 
 export class RoomService {
   private readonly rooms = new Map<string, RoomState>();
+  private nextPlayerNumber = 1;
 
   join(roomId: string, playerName: string, previousPlayerId?: string): { room: RoomState; playerId: string } {
     const room = this.rooms.get(roomId) ?? this.createRoom(roomId);
     const reconnectingSlot = previousPlayerId
-      ? room.playerSlots.find((slot) => slot.playerId === previousPlayerId)
+      ? room.playerSlots.find((slot) => slot.playerId === previousPlayerId && slot.isOccupied && !slot.isConnected)
       : undefined;
     const slot = reconnectingSlot ?? room.playerSlots.find((candidate) => !candidate.isOccupied);
 
@@ -22,7 +23,7 @@ export class RoomService {
       throw new RoomServiceError("房间已满，请选择另一个固定房间。");
     }
 
-    const playerId = slot.playerId ?? `player-${slot.slotIndex + 1}`;
+    const playerId = slot.playerId ?? `player-${this.nextPlayerNumber++}`;
     const updatedSlots = room.playerSlots.map((candidate) =>
       candidate.slotIndex === slot.slotIndex
         ? { ...candidate, playerId, playerName: playerName.trim() || `Player ${slot.slotIndex + 1}`, isOccupied: true, isConnected: true }
@@ -132,6 +133,45 @@ export class RoomService {
       ...room,
       status: "waiting",
       gameState: null,
+      updatedAt: Date.now(),
+    };
+
+    this.rooms.set(roomId, updatedRoom);
+    return updatedRoom;
+  }
+
+  removeOfflinePlayer(roomId: string, playerId: string, targetPlayerId: string): RoomState {
+    const room = this.requireRoom(roomId);
+    this.requireHost(room, playerId);
+
+    if (room.status !== "waiting" || room.gameState) {
+      throw new RoomServiceError("只能在房间大厅移除离线玩家。");
+    }
+
+    const targetSlot = room.playerSlots.find((slot) => slot.playerId === targetPlayerId);
+    if (!targetSlot?.isOccupied) {
+      throw new RoomServiceError("目标座位不存在或已经释放。");
+    }
+
+    if (targetSlot.isConnected) {
+      throw new RoomServiceError("只能移除已离线的玩家。");
+    }
+
+    const updatedRoom: RoomState = {
+      ...room,
+      playerSlots: room.playerSlots.map((slot) =>
+        slot.playerId === targetPlayerId
+          ? {
+              slotIndex: slot.slotIndex,
+              playerId: null,
+              playerName: `座位 ${slot.slotIndex + 1}`,
+              color: "#d4c9ba",
+              isOccupied: false,
+              isConnected: false,
+              isAI: false,
+            }
+          : slot,
+      ),
       updatedAt: Date.now(),
     };
 

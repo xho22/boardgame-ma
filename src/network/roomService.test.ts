@@ -129,4 +129,35 @@ describe("RoomService", () => {
     expect(resetRoom.gameState).toBeNull();
     expect(resetRoom.playerSlots.filter((slot) => slot.isOccupied).map((slot) => slot.playerName)).toEqual(["Dad", "Kid"]);
   });
+
+  it("lets the host release only an offline lobby seat without reusing its identity", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    service.disconnect("family-a", kid.playerId);
+
+    expect(() => service.removeOfflinePlayer("family-a", kid.playerId, kid.playerId)).toThrow("只有房主");
+    expect(() => service.removeOfflinePlayer("family-a", dad.playerId, dad.playerId)).toThrow("只能移除已离线");
+
+    const released = service.removeOfflinePlayer("family-a", dad.playerId, kid.playerId);
+    expect(released.playerSlots[1]).toMatchObject({ isOccupied: false, isConnected: false, playerId: null });
+
+    const replacement = service.join("family-a", "Friend");
+    expect(replacement.playerId).not.toBe(kid.playerId);
+    expect(replacement.room.playerSlots[1]).toMatchObject({ playerName: "Friend", isOccupied: true, isConnected: true });
+
+    service.disconnect("family-a", replacement.playerId);
+    const oldKid = service.join("family-a", "Kid", kid.playerId);
+    expect(oldKid.playerId).not.toBe(replacement.playerId);
+  });
+
+  it("rejects removing a player once the shared game has started", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    service.startSharedGame("family-a", dad.playerId);
+    service.disconnect("family-a", kid.playerId);
+
+    expect(() => service.removeOfflinePlayer("family-a", dad.playerId, kid.playerId)).toThrow("只能在房间大厅");
+  });
 });

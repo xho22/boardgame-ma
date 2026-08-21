@@ -238,6 +238,13 @@ h1 {
   border-color: #23675b;
 }
 
+.room-seat-remove {
+  width: fit-content;
+  min-height: 28px;
+  padding-inline: 4px;
+  font-size: 12px;
+}
+
 .room-seat span,
 .shared-game-summary span,
 .room-seat small {

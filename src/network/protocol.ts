@@ -5,6 +5,7 @@ export type ClientMessage =
   | { type: "HEARTBEAT" }
   | { type: "START_SHARED_GAME"; options?: StartSharedGameOptions }
   | { type: "RESET_SHARED_GAME" }
+  | { type: "REMOVE_OFFLINE_PLAYER"; targetPlayerId: string }
   | { type: "GAME_COMMAND"; revision: number; command: GameCommand };
 
 export type ServerMessage =

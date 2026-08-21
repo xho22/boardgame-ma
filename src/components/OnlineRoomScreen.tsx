@@ -101,6 +101,18 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
     }
   }
 
+  function removeOfflinePlayer(targetPlayerId: string, playerName: string) {
+    if (!window.confirm(`移除 ${playerName} 的离线座位？对方之后需要重新加入房间。`)) {
+      return;
+    }
+
+    try {
+      client.current.send({ type: "REMOVE_OFFLINE_PLAYER", targetPlayerId });
+    } catch (removeError) {
+      setError(removeError instanceof Error ? removeError.message : "无法移除离线座位。");
+    }
+  }
+
   const occupiedCount = room?.playerSlots.filter((slot) => slot.isOccupied).length ?? 0;
   const isHost = playerId !== null && room?.hostPlayerId === playerId;
   const canStart = Boolean(isHost && occupiedCount >= 2 && room?.status === "waiting");
@@ -155,6 +167,11 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
                   {slot.playerId === room.hostPlayerId ? <small>房主</small> : null}
                   {slot.playerId === playerId ? <small>你</small> : null}
                   {slot.isOccupied ? <small>{slot.isConnected ? "已连接" : "已离线"}</small> : null}
+                  {isHost && room.status === "waiting" && slot.isOccupied && !slot.isConnected && slot.playerId ? (
+                    <button className="ghost-button danger room-seat-remove" type="button" onClick={() => removeOfflinePlayer(slot.playerId!, slot.playerName)}>
+                      移除
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
