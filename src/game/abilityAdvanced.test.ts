@@ -468,6 +468,14 @@ describe("phase 9 abilities", () => {
     expect(position(game, "player-1")).toBe(5);
     expect(position(game, "player-2")).toBe(0);
 
+    game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 5,
+      "player-3": 0,
+    }), "player-1", [1], { useFlipFlopSwap: true, flipFlopTargetEntrantId: "player-2" });
+    expect(entrant(game, "player-3").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("芭芭雅嘎") && message.includes("绊倒了P3的炼金师"))).toBe(true);
+
     game = roll(setPositions(createRace(["Flip Flop", "Baba Yaga"]), {
       "player-1": 0,
       "player-2": 5,

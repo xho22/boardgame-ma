@@ -209,13 +209,45 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
     const target = findEntrantById(workingRace, choice.flipFlopTargetEntrantId) ?? findLeaderOther(workingRace, workingEntrant);
 
     if (target && target.id !== workingEntrant.id && !target.finished && !target.eliminated) {
+      const swapperBefore = workingEntrant;
+      const targetBefore = target;
       workingRace = swapEntrants(workingRace, workingEntrant.id, target.id);
-      workingEntrant =
-        workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
       logs.push({
         type: "position_swap",
         message: `${racerName} 使用翻转者，与${describeEntrant(game, target)}交换位置。`,
       });
+      const swapperAfter = workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
+      const swapperLanding = resolveAfterMove({
+        game: { ...game, players, activeRace: workingRace },
+        race: workingRace,
+        players,
+        moverBefore: swapperBefore,
+        moverAfter: swapperAfter,
+        path: [],
+        abilityTriggered: true,
+        isTurnEnd: false,
+        skipScoocherResponse: true,
+      });
+      workingRace = swapperLanding.race;
+      players = swapperLanding.players;
+      logs.push(...swapperLanding.logs);
+      const targetAfter = workingRace.entrants.find((candidate) => candidate.id === target.id) ?? target;
+      const targetLanding = resolveAfterMove({
+        game: { ...game, players, activeRace: workingRace },
+        race: workingRace,
+        players,
+        moverBefore: targetBefore,
+        moverAfter: targetAfter,
+        path: [],
+        abilityTriggered: true,
+        isTurnEnd: false,
+        skipScoocherResponse: true,
+      });
+      workingRace = targetLanding.race;
+      players = targetLanding.players;
+      logs.push(...targetLanding.logs);
+      workingEntrant =
+        workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
       workingRace = triggerScoocherOnOtherPower(game, workingRace, entrant.id, logs);
     }
 
