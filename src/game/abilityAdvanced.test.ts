@@ -274,6 +274,19 @@ describe("phase 8 abilities", () => {
     expect(messages(game).some((message) => message.includes("跟随"))).toBe(true);
   });
 
+  it("does not treat Scoocher's reaction move as the end of a turn for Heckler", () => {
+    const game = roll(setPositions(createRace(["Alchemist", "Banana", "Scoocher", "Heckler"]), {
+      "player-1": 0,
+      "player-2": 3,
+      "player-3": 0,
+      "player-4": 7,
+    }), "player-1", [4]);
+
+    expect(position(game, "player-3")).toBe(1);
+    expect(position(game, "player-4")).toBe(7);
+    expect(messages(game).some((message) => message.includes("嘲讽短移动回合"))).toBe(false);
+  });
+
   it("Cheerleader supports only a unique last racer and resolves Banana while doing so", () => {
     const game = roll(setPositions(createRace(["Cheerleader", "Alchemist", "Banana"]), {
       "player-1": 3,

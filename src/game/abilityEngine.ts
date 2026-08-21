@@ -57,6 +57,7 @@ type ResolveAfterMoveOptions = {
   moverAfter: Entrant;
   path: number[];
   abilityTriggered: boolean;
+  isTurnEnd?: boolean;
 };
 
 export function applyBeforeRaceAbilities({
@@ -343,6 +344,7 @@ export function resolveAfterMove({
   moverAfter,
   path,
   abilityTriggered,
+  isTurnEnd = false,
 }: ResolveAfterMoveOptions): AfterMoveResolution {
   const logs: AbilityLog[] = [];
   let workingRace = race;
@@ -561,6 +563,7 @@ export function resolveAfterMove({
     if (
       getEffectiveImplementationKey(game, workingRace, heckler) === "move_when_turn_ends_near_start" &&
       heckler.id !== moverAfter.id &&
+      isTurnEnd &&
       Math.abs(moverAfter.position - moverBefore.position) <= 1
     ) {
       workingRace = moveEntrantInRace(game, workingRace, heckler.id, 2);
@@ -945,6 +948,7 @@ function resolveTriggeredMove(
     moverAfter,
     path: moveResult.path,
     abilityTriggered,
+    isTurnEnd: false,
   });
 }
 

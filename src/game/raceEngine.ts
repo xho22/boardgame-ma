@@ -362,6 +362,7 @@ function finishResolvedMove(
     moverAfter: moveResult.entrant,
     path: moveResult.path,
     abilityTriggered: mainMove.logs.some((log) => log.type === "ability_trigger"),
+    isTurnEnd: true,
   });
   const specialResolution = resolveSpecialTrackEffects(
     { ...game, players: afterMove.players, activeRace: afterMove.race },
@@ -533,6 +534,7 @@ function resolveSpecialTrackEffects(
       moverAfter: movedEntrant,
       path: moveResult.path,
       abilityTriggered: true,
+      isTurnEnd: false,
     });
     workingRace = afterMove.race;
     nextPlayers = afterMove.players;
@@ -640,6 +642,7 @@ function confirmReaction(
           moverAfter: reactorAfter,
           path: followPath,
           abilityTriggered: true,
+          isTurnEnd: false,
         });
         workingRace = afterFollow.race;
         reactionPlayers = afterFollow.players;
@@ -766,6 +769,7 @@ function confirmDuel(
         moverAfter: winnerAfter,
         path: rewardMove.path,
         abilityTriggered: true,
+        isTurnEnd: false,
       });
       workingRace = afterMove.race;
       nextPlayers = afterMove.players;

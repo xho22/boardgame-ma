@@ -415,7 +415,7 @@ afterRace          比赛结束时
 | 13 | Genius | 天才 | 预测骰点 | main move 前预测本次会掷出的点数；若猜中，完成当前回合后再获得一个回合 | `predict_roll_extra_turn` |
 | 14 | Gunk | 黏液 | 全局减速 | 其他选手 main move -1；修改移动值而不是修改骰面；这是能力触发，需写日志，并会触发 Scoocher | `others_main_move_minus_one` |
 | 15 | Hare | 野兔 | 领先惩罚 | main move +2；但若回合开始时独自在 lead，则跳过 main move | `hare_fast_unless_alone_lead` |
-| 16 | Heckler | 起哄者 | 原地嘲讽 | 任意选手结束回合时，若距离本回合开始位置不超过 1 格，Heckler move 2；trip 恢复也可触发 | `move_when_turn_ends_near_start` |
+| 16 | Heckler | 起哄者 | 原地嘲讽 | 任意选手结束回合时，若距离本回合开始位置不超过 1 格，Heckler move 2；trip 恢复也可触发。能力响应、特殊格、跟随和决斗奖励造成的额外移动不算回合结束 | `move_when_turn_ends_near_start` |
 | 17 | Huge Baby | 巨婴 | 占位阻挡 | 除起点外，其他选手不能停在 Huge Baby 的格子；若本该停在该格，则放到 Huge Baby 后一格，这不是 move | `prevent_sharing_space_push_behind` |
 | 18 | Hypnotist | 催眠师 | 拉人 warp | main move 前可以选择一名选手 warp 到自己的格子 | `warp_racer_to_self_before_main` |
 | 19 | Inchworm | 尺蠖 | 1 点拦截 | 其他选手 main move 掷出 1 时，该选手跳过本次 move，Inchworm move 1 | `skip_others_one_roll_move_self` |
