@@ -141,6 +141,7 @@ describe("phase 7 abilities", () => {
     const skipped = roll(leadingGame, "player-1", [6]);
 
     expect(entrantPosition(skipped, "player-1")).toBe(3);
+    expect(skipped.activeRace?.previousDieRoll).toBeNull();
     expect(latestMessages(skipped).some((message) => message.includes("独自领先"))).toBe(true);
   });
 

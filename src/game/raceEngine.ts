@@ -12,6 +12,7 @@ import { applyRaceScoring, isGameComplete } from "./scoring";
 import {
   applyBeforeRaceAbilities,
   getEffectiveImplementationKey,
+  isEntrantAloneInLead,
   moveEntrantInRace,
   queueCopycatSelectionReactions,
   resolveAfterMove,
@@ -217,6 +218,15 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
 
   // A tripped racer recovers without rolling, so no after-roll powers may interrupt that turn.
   if (entrant.skippedTurns > 0) {
+    const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
+    return finishResolvedMove(game, entrant, mainMove);
+  }
+
+  if (
+    getEffectiveImplementationKey(game, race, entrant) === "hare_fast_unless_alone_lead" &&
+    race.finishers.length === 0 &&
+    isEntrantAloneInLead(race, entrant)
+  ) {
     const mainMove = resolveMainMove({ game, race, entrant, rng, choice });
     return finishResolvedMove(game, entrant, mainMove);
   }

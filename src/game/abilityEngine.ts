@@ -175,7 +175,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
   workingEntrant =
     workingRace.entrants.find((candidate) => candidate.id === entrant.id) ?? workingEntrant;
 
-  if (key === "hare_fast_unless_alone_lead" && workingRace.finishers.length === 0 && isAloneInLead(workingRace, workingEntrant)) {
+  if (key === "hare_fast_unless_alone_lead" && workingRace.finishers.length === 0 && isEntrantAloneInLead(workingRace, workingEntrant)) {
     return {
       dieRoll: null,
       finalMove: 0,
@@ -189,7 +189,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
         ...logs,
         {
           type: "ability_trigger",
-          message: `${racerName} 独自领先，野兔能力使本次主移动为 0。`,
+          message: `${racerName} 独自领先，野兔能力跳过本次主移动。`,
         },
       ],
       usesLeaptoadMove: false,
@@ -1005,7 +1005,7 @@ function findByKeyAt(race: RaceState, key: AbilityImplementationKey, position: n
   );
 }
 
-function isAloneInLead(race: RaceState, entrant: Entrant): boolean {
+export function isEntrantAloneInLead(race: RaceState, entrant: Entrant): boolean {
   const activeEntrants = activeEntrantsOnly(race);
   const leadPosition = Math.max(...activeEntrants.map((candidate) => candidate.position));
   const leaders = activeEntrants.filter((candidate) => candidate.position === leadPosition);

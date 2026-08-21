@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
+import { isEntrantAloneInLead } from "../game/abilityEngine";
 import type { AbilityImplementationKey } from "../game/abilityTypes";
 import type { Entrant, MainMoveChoice, Player, RaceState } from "../game/types";
 
@@ -27,6 +28,11 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
   const revealTimeoutRef = useRef<number | null>(null);
   const awaitingRollResultRef = useRef(false);
   const isDiceBusy = isRolling || revealedRollValue !== null;
+  const hareSkipsTurn =
+    effectiveAbilityKey === "hare_fast_unless_alone_lead" &&
+    race.finishers.length === 0 &&
+    isEntrantAloneInLead(race, currentEntrant);
+  const automaticallySkipsTurn = currentEntrant.skippedTurns > 0 || hareSkipsTurn;
 
   function stopRollAnimation() {
     if (intervalRef.current !== null) {
@@ -90,7 +96,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
   }, []);
 
   useEffect(() => {
-    if (currentEntrant.skippedTurns <= 0 || isDiceBusy || interactionBlocked) {
+    if (!automaticallySkipsTurn || isDiceBusy || interactionBlocked) {
       return;
     }
 
@@ -99,7 +105,7 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
     }, 3_000);
 
     return () => window.clearTimeout(recoveryTimer);
-  }, [currentEntrant.id, currentEntrant.skippedTurns, interactionBlocked, isDiceBusy, onRoll]);
+  }, [automaticallySkipsTurn, currentEntrant.id, interactionBlocked, isDiceBusy, onRoll]);
 
   function startRollAnimation(choice?: MainMoveChoice) {
     if (isRolling || revealedRollValue !== null || interactionBlocked) {
@@ -207,12 +213,12 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
         ) : null}
       </div>
       <div className={`dice-readout ${isRolling ? "rolling" : ""}`} aria-label="Last die roll">
-        {currentEntrant.skippedTurns > 0 ? "休" : displayValue}
+        {automaticallySkipsTurn ? "休" : displayValue}
       </div>
       <div className="ability-choice-panel">
-        {currentEntrant.skippedTurns > 0 ? (
+        {automaticallySkipsTurn ? (
           <div className="recovery-panel" role="status">
-            <strong>绊倒恢复中</strong>
+            <strong>{hareSkipsTurn ? "野兔独自领先，本回合跳过" : "绊倒恢复中"}</strong>
             <span>3 秒后自动进入下一回合</span>
           </div>
         ) : abilityKey === "cheer_last_place_then_self" ? (

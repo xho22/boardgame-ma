@@ -5,9 +5,11 @@ import { DicePanel } from "./DicePanel";
 import type { Entrant, Player, RaceState } from "../game/types";
 
 const legs = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Legs");
+const hare = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Hare");
+const babaYaga = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Baba Yaga");
 
-if (!legs) {
-  throw new Error("Missing Legs test athlete");
+if (!legs || !hare || !babaYaga) {
+  throw new Error("Missing DicePanel test athlete");
 }
 
 const player: Player = {
@@ -84,6 +86,26 @@ describe("DicePanel", () => {
     expect(markup).toContain("绊倒恢复中");
     expect(markup).toContain("3 秒后自动进入下一回合");
     expect(markup).not.toContain("直接移动 5 格");
+  });
+
+  it("automatically skips a Hare turn when it is alone in the lead", () => {
+    const hareEntrant = { ...entrant, athleteId: hare.id, position: 4 };
+    const markup = renderToStaticMarkup(
+      <DicePanel
+        debugMode={false}
+        race={{
+          ...race,
+          entrants: [hareEntrant, { ...entrant, id: "player-2", playerId: "player-2", athleteId: babaYaga.id, position: 3 }],
+        }}
+        currentPlayer={{ ...player, athleteIds: [hare.id] }}
+        currentEntrant={hareEntrant}
+        effectiveAbilityKey="hare_fast_unless_alone_lead"
+        onRoll={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("野兔独自领先，本回合跳过");
+    expect(markup).not.toContain(">掷骰<");
   });
 
   it("shows forced die controls in debug mode", () => {
