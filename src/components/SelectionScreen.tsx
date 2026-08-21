@@ -7,10 +7,13 @@ type SelectionScreenProps = {
   onBack: () => void;
   onSelectAthlete: (playerId: string, athleteId: string) => void;
   onLockSelection: (playerId: string) => void;
+  selectionPlayerId?: string;
 };
 
-export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection }: SelectionScreenProps) {
-  const activePlayer = getActiveSelectionPlayer(game);
+export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection, selectionPlayerId }: SelectionScreenProps) {
+  const activePlayer = selectionPlayerId
+    ? game.players.find((player) => player.id === selectionPlayerId) ?? null
+    : getActiveSelectionPlayer(game);
 
   if (!activePlayer || !game.selectionState) {
     return null;
@@ -18,6 +21,8 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
 
   const selectedAthleteIds = game.selectionState.selectionsByPlayerId[activePlayer.id] ?? [];
   const requiredSelections = game.settings.racersPerPlayerPerRace;
+  const isLocked = game.selectionState.lockedPlayerIds.includes(activePlayer.id);
+  const lockedCount = game.selectionState.lockedPlayerIds.length;
 
   return (
     <main className="app-shell screen-layout">
@@ -30,6 +35,7 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
           <h1>{activePlayer.name}</h1>
           <p className="helper-text">{`Only this player should look. Pick ${requiredSelections} unused racer${requiredSelections > 1 ? "s" : ""}, then lock it.`}</p>
           <p className="selection-count">{`${selectedAthleteIds.length} / ${requiredSelections} selected`}</p>
+          {selectionPlayerId ? <p className="selection-count">{`${lockedCount} / ${game.players.length} 位玩家已锁定`}</p> : null}
         </div>
         <span />
       </header>
@@ -49,7 +55,7 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
               className={`selectable-racer ${isSelected ? "selected" : ""}`}
               type="button"
               key={athlete.id}
-              disabled={isUsed}
+              disabled={isUsed || isLocked}
               onClick={() => onSelectAthlete(activePlayer.id, athlete.id)}
             >
               <img src={athlete.imagePath} alt={athlete.displayName} />
@@ -65,10 +71,10 @@ export function SelectionScreen({ game, onBack, onSelectAthlete, onLockSelection
         <button
           className="primary-button"
           type="button"
-          disabled={selectedAthleteIds.length !== requiredSelections}
+          disabled={isLocked || selectedAthleteIds.length !== requiredSelections}
           onClick={() => onLockSelection(activePlayer.id)}
         >
-          Lock Choice
+          {isLocked ? "已锁定，等待其他玩家" : "Lock Choice"}
         </button>
       </footer>
     </main>

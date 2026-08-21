@@ -512,7 +512,7 @@ const rooms = new Map<string, RoomState>();
 - 每个命令带上客户端看到的 `revision`。
 - 如果 revision 过旧，服务端拒绝命令并返回最新状态。
 
-阶段 12 当前实现：`RoomService` 对每个连接单独生成选角阶段的客户端视图，其他玩家的 `athleteIds` 与选择结果不会发送到当前终端；公开揭示后才广播完整阵容。服务端同时校验命令携带的玩家或 racer 归属，拒绝代替其他玩家选角、掷骰或确认反应。
+阶段 12 当前实现：`RoomService` 对每个连接单独生成选角阶段的客户端视图，其他玩家的 `athleteIds` 与选择结果不会发送到当前终端；公开揭示后才广播完整阵容。在线选角不使用 `activePlayerId` 限制操作，所有未锁定玩家可并行选择本人角色；`SELECT_ATHLETE` 和 `LOCK_SELECTION` 可接受不同玩家基于同一旧 revision 的命令，其余命令仍严格校验 revision。服务端同时校验命令携带的玩家或 racer 归属，拒绝代替其他玩家选角、掷骰或确认反应。
 
 在线创建共享局时，玩家人数和昵称由已占用的房间座位生成；房主通过 `START_SHARED_GAME.options` 传入 `racersPerPlayerPerRace`、`debugMode` 与 `boardMode`，服务端调用同一套 `normalizeSettings` 校验后创建权威 `GameState`。启用 Debug 后，房主可选择 `Alternate` 或 `All Special`；后者会同步为整局每场均使用特殊棋盘。
 
@@ -547,7 +547,7 @@ type ServerMessage =
 
 在线选择规则：
 
-- 每个玩家只能看到自己的可选角色。
+- 每个玩家只能看到自己的可选角色，并可与其他玩家并行选择。
 - 其他玩家只看到“已锁定/未锁定”。
 - 服务端保存所有选择。
 - 所有人锁定后，服务端广播揭示结果。
@@ -567,7 +567,7 @@ type SelectionState = {
 };
 ```
 
-选择状态按玩家保存数组。数组长度必须等于 `game.settings.racersPerPlayerPerRace` 才允许锁定。
+选择状态按玩家保存数组。`activePlayerId` 仅供本地同屏轮流选角使用；在线客户端始终读取自身 `playerId`。数组长度必须等于 `game.settings.racersPerPlayerPerRace` 才允许锁定。
 
 客户端视图过滤：
 

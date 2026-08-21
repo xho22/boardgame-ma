@@ -116,6 +116,57 @@ describe("RoomService", () => {
     )).toThrow("不能替其他玩家执行操作");
   });
 
+  it("accepts simultaneous players' selection commands while keeping choices private", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+    const started = service.startSharedGame("family-a", dad.playerId);
+    const selecting = service.dispatchGameCommand(
+      "family-a",
+      dad.playerId,
+      started.gameState!.revision,
+      { type: "BEGIN_SELECTION" },
+    );
+    const revision = selecting.gameState!.revision;
+    const dadAthleteId = selecting.gameState!.players.find((player) => player.id === dad.playerId)!.athleteIds[0];
+    const kidAthleteId = selecting.gameState!.players.find((player) => player.id === kid.playerId)!.athleteIds[0];
+
+    const dadSelected = service.dispatchGameCommand(
+      "family-a",
+      dad.playerId,
+      revision,
+      { type: "SELECT_ATHLETE", playerId: dad.playerId, athleteId: dadAthleteId },
+    );
+    const kidSelected = service.dispatchGameCommand(
+      "family-a",
+      kid.playerId,
+      revision,
+      { type: "SELECT_ATHLETE", playerId: kid.playerId, athleteId: kidAthleteId },
+    );
+
+    expect(kidSelected.gameState?.selectionState?.selectionsByPlayerId).toEqual({
+      [dad.playerId]: [dadAthleteId],
+      [kid.playerId]: [kidAthleteId],
+    });
+    expect(service.getRoomForPlayer("family-a", kid.playerId)?.gameState?.selectionState?.selectionsByPlayerId[dad.playerId]).toEqual([]);
+
+    const dadLocked = service.dispatchGameCommand(
+      "family-a",
+      dad.playerId,
+      dadSelected.gameState!.revision,
+      { type: "LOCK_SELECTION", playerId: dad.playerId },
+    );
+    const revealed = service.dispatchGameCommand(
+      "family-a",
+      kid.playerId,
+      kidSelected.gameState!.revision,
+      { type: "LOCK_SELECTION", playerId: kid.playerId },
+    );
+
+    expect(dadLocked.gameState?.phase).toBe("selecting");
+    expect(revealed.gameState?.phase).toBe("raceReveal");
+  });
+
   it("lets only the host reset a shared game while preserving seats", () => {
     const service = new RoomService();
     const dad = service.join("family-a", "Dad");

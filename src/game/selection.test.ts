@@ -49,12 +49,18 @@ describe("selection flow", () => {
     expect(game.selectionState?.mastermindPredictionsByAthleteId).toEqual({});
   });
 
-  it("locks players one by one and only reveals after everyone is locked", () => {
+  it("allows every player to select before anyone locks and only reveals after everyone is locked", () => {
     let game = createSelectionGame();
     const firstAthlete = game.players[0].athleteIds[0];
     const secondAthlete = game.players[1].athleteIds[0];
 
     game = selectAthleteForRace(game, "player-1", firstAthlete);
+    game = selectAthleteForRace(game, "player-2", secondAthlete);
+    expect(game.selectionState?.selectionsByPlayerId).toEqual({
+      "player-1": [firstAthlete],
+      "player-2": [secondAthlete],
+    });
+
     game = lockPlayerSelection(game, "player-1", orderedRng);
 
     expect(game.phase).toBe("selecting");
@@ -62,7 +68,6 @@ describe("selection flow", () => {
     expect(game.selectionState?.lockedPlayerIds).toEqual(["player-1"]);
     expect(game.selectionState?.revealed).toBe(false);
 
-    game = selectAthleteForRace(game, "player-2", secondAthlete);
     game = lockPlayerSelection(game, "player-2", orderedRng);
 
     expect(game.phase).toBe("raceReveal");

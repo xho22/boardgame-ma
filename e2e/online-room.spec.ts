@@ -37,15 +37,17 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
 
   await dad.getByRole("button", { name: "Choose Racers" }).click();
   await expect(dad.getByRole("button", { name: "Lock Choice" })).toBeVisible();
-  await expect(kid.getByText("等待 Dad 选择 racer")).toBeVisible();
-
-  await dad.locator(".selectable-racer").first().click();
-  await dad.getByRole("button", { name: "Lock Choice" }).click();
   await expect(kid.getByRole("button", { name: "Lock Choice" })).toBeVisible();
-  await expect(dad.getByText("等待 Kid 选择 racer")).toBeVisible();
+  await expect(dad.getByText("0 / 2 位玩家已锁定")).toBeVisible();
 
-  await kid.locator(".selectable-racer").first().click();
-  await kid.getByRole("button", { name: "Lock Choice" }).click();
+  await Promise.all([
+    dad.locator(".selectable-racer").first().click(),
+    kid.locator(".selectable-racer").first().click(),
+  ]);
+  await Promise.all([
+    dad.getByRole("button", { name: "Lock Choice" }).click(),
+    kid.getByRole("button", { name: "Lock Choice" }).click(),
+  ]);
   await expect(dad.getByRole("heading", { name: "Race 1" })).toBeVisible();
   await expect(kid.getByRole("heading", { name: "Race 1" })).toBeVisible();
 

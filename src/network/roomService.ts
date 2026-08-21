@@ -187,7 +187,8 @@ export class RoomService {
       throw new RoomServiceError("房主尚未创建共享游戏。");
     }
 
-    if (game.revision !== revision) {
+    const isParallelSelectionCommand = command.type === "SELECT_ATHLETE" || command.type === "LOCK_SELECTION";
+    if (game.revision !== revision && !isParallelSelectionCommand) {
       throw new RoomServiceError("房间状态已更新，请等待同步后再操作。");
     }
 
@@ -252,6 +253,10 @@ export class RoomService {
 
     if (commandPlayerId && !ownsCommand) {
       throw new RoomServiceError("不能替其他玩家执行操作。");
+    }
+
+    if ((command.type === "SELECT_ATHLETE" || command.type === "LOCK_SELECTION") && room.gameState?.phase !== "selecting") {
+      throw new RoomServiceError("当前不在选角阶段。");
     }
 
     if (["ASSIGN_TEAMS", "BEGIN_SELECTION", "REVEAL_RACE", "BEGIN_NEXT_RACE", "FINISH_GAME"].includes(command.type)) {

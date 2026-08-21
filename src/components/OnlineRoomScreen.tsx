@@ -5,7 +5,6 @@ import { RaceResultsScreen } from "./RaceResultsScreen";
 import { RaceScreen } from "./RaceScreen";
 import { SelectionScreen } from "./SelectionScreen";
 import { TeamRevealScreen } from "./TeamRevealScreen";
-import { getActiveSelectionPlayer } from "../game/selection";
 import type { GameCommand, GameState, MainMoveChoice, RoomState } from "../game/types";
 import { RoomClient } from "../network/roomClient";
 import type { ServerMessage, StartSharedGameOptions } from "../network/protocol";
@@ -305,13 +304,10 @@ function renderOnlineGameScreen(
   }
 
   if (game.phase === "selecting") {
-    const activePlayer = getActiveSelectionPlayer(game);
-    if (!activePlayer || activePlayer.id !== playerId) {
-      return <OnlineWaitingScreen playerName={activePlayer?.name ?? "其他玩家"} />;
-    }
     return (
       <SelectionScreen
         game={game}
+        selectionPlayerId={playerId}
         onBack={onBack}
         onSelectAthlete={(ownerId, athleteId) => onCommand({ type: "SELECT_ATHLETE", playerId: ownerId, athleteId })}
         onLockSelection={(ownerId) => onCommand({ type: "LOCK_SELECTION", playerId: ownerId })}
@@ -354,16 +350,4 @@ function renderOnlineGameScreen(
   }
 
   return <FinalResultsScreen game={game} onNewGame={onBack} />;
-}
-
-function OnlineWaitingScreen({ playerName }: { playerName: string }) {
-  return (
-    <main className="app-shell screen-layout">
-      <section className="online-waiting-panel">
-        <p className="eyebrow">Online room</p>
-        <h1>{`等待 ${playerName} 选择 racer`}</h1>
-        <p className="helper-text">对方的选角仅显示在其终端；完成锁定后会自动同步到这里。</p>
-      </section>
-    </main>
-  );
 }
