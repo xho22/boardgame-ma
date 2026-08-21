@@ -569,45 +569,60 @@ h1 {
 
 .race-layout {
   display: grid;
-  gap: 22px;
+  gap: 12px;
 }
 
 .race-header {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(320px, 2fr);
-  align-items: end;
-  gap: 24px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+
+.race-header .eyebrow {
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+
+.race-header h1 {
+  font-size: 30px;
+  line-height: 1;
 }
 
 .race-score-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(72px, max-content));
+  justify-content: end;
+  gap: 6px;
 }
 
 .race-score-strip div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
   border: 1px solid #ddd5ca;
-  border-radius: 8px;
+  border-radius: 6px;
   background: #fffdf8;
-  padding: 10px;
+  padding: 5px 7px;
 }
 
 .race-score-strip dt {
   color: #665f57;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .race-score-strip dd {
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 900;
 }
 
 .track-section {
   overflow-x: auto;
   border-block: 1px solid #ddd5ca;
-  padding: 18px 0;
+  padding: 10px 0;
 }
 
 .track-grid {
@@ -653,7 +668,7 @@ h1 {
 }
 
 .track-infield strong {
-  font-size: 28px;
+  font-size: 19px;
   letter-spacing: 0;
 }
 
@@ -830,9 +845,9 @@ h1 {
 
 .race-info-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 16px;
-  margin-bottom: 18px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  gap: 8px;
+  margin-bottom: 0;
 }
 
 .turn-order,
@@ -840,7 +855,7 @@ h1 {
   border: 1px solid #ddd5ca;
   border-radius: 8px;
   background: #fffdf8;
-  padding: 14px;
+  padding: 7px 9px;
 }
 
 .turn-order-heading {
@@ -848,29 +863,26 @@ h1 {
   align-items: end;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 5px;
 }
 
 .turn-order-heading .eyebrow,
 .race-awards .eyebrow {
-  margin-bottom: 4px;
-  font-size: 11px;
+  display: none;
 }
 
 .turn-order h2,
 .race-awards h2 {
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .turn-order-heading > p {
-  color: #5d564f;
-  font-size: 12px;
-  font-weight: 800;
+  display: none;
 }
 
 .turn-order-list {
   display: flex;
-  gap: 8px;
+  gap: 5px;
   margin: 0;
   padding: 0;
   overflow-x: auto;
@@ -879,16 +891,16 @@ h1 {
 }
 
 .turn-order-item {
-  min-width: 126px;
+  min-width: 104px;
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 28px minmax(0, 1fr);
   grid-template-rows: auto 1fr;
-  gap: 5px 8px;
+  gap: 3px 6px;
   border: 1px solid #d4c9ba;
   border-left: 4px solid var(--player-color);
   border-radius: 7px;
   background: #fff;
-  padding: 7px;
+  padding: 5px;
 }
 
 .turn-order-item.current {
@@ -901,7 +913,7 @@ h1 {
 .turn-status {
   grid-column: 1 / -1;
   color: #5d564f;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 900;
 }
 
@@ -915,8 +927,8 @@ h1 {
 
 .turn-order-item img,
 .turn-order-fallback {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   grid-row: 2;
   border-radius: 50%;
   object-fit: cover;
@@ -948,20 +960,20 @@ h1 {
 }
 
 .turn-order-copy strong {
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .turn-order-copy small {
   color: #5d564f;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
 }
 
 .turn-order-finishers {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
-  margin-top: 10px;
+  gap: 4px 8px;
+  margin-top: 6px;
   color: #5d564f;
   font-size: 12px;
 }
@@ -977,18 +989,19 @@ h1 {
 .race-awards {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 5px;
 }
 
 .race-awards > div {
-  display: grid;
-  gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 
 .race-awards strong {
   border-left: 3px solid #e94f2f;
-  padding-left: 8px;
-  font-size: 14px;
+  padding-left: 5px;
+  font-size: 12px;
 }
 
 .dice-panel,
