@@ -606,9 +606,9 @@ h1 {
 }
 
 .race-score-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(72px, max-content));
-  justify-content: end;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 6px;
 }
 

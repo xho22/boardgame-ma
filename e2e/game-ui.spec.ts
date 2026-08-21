@@ -59,7 +59,7 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await fillMastermindPredictions(page);
   await page.getByRole("button", { name: "Start Race" }).click();
 
-  await expect(page.getByRole("heading", { name: "Track" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "魔法运动会" })).toBeVisible();
   await expect(page.locator(".current-racer-image")).toBeVisible();
   await expect(page.locator(".current-racer-copy").locator("p").last()).toHaveText(/.+/);
   await expect(page.getByLabel("行动顺序")).toBeVisible();

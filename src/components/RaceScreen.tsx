@@ -87,7 +87,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
       <header className="race-header">
         <div>
           <p className="eyebrow">{`Race ${race.raceNumber}`}</p>
-          <h1>Track</h1>
+          <h1>魔法运动会</h1>
         </div>
         <div className="race-scoreboard">
           <span className="race-scoreboard-label">当前积分榜</span>
