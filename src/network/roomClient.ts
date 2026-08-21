@@ -64,11 +64,16 @@ export class RoomClient {
 
   private startHeartbeat(socket: WebSocket): void {
     this.stopHeartbeat();
+    this.sendHeartbeat(socket);
     this.heartbeatTimer = window.setInterval(() => {
-      if (this.socket === socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: "HEARTBEAT" } satisfies ClientMessage));
-      }
+      this.sendHeartbeat(socket);
     }, 25_000);
+  }
+
+  private sendHeartbeat(socket: WebSocket): void {
+    if (this.socket === socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ type: "HEARTBEAT", sentAt: Date.now() } satisfies ClientMessage));
+    }
   }
 
   private stopHeartbeat(): void {

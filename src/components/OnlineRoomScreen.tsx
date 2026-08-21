@@ -35,10 +35,17 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   const [racersPerPlayerPerRace, setRacersPerPlayerPerRace] = useState<1 | 2>(1);
   const [debugMode, setDebugMode] = useState(false);
   const [boardMode, setBoardMode] = useState<"alternating" | "allSpecial">("alternating");
+  const [connectionLatencyMs, setConnectionLatencyMs] = useState<number | null>(null);
+  const [selectionFailureToken, setSelectionFailureToken] = useState(0);
 
   useEffect(() => () => client.current.close(), []);
 
   function handleMessage(message: ServerMessage) {
+    if (message.type === "HEARTBEAT_ACK") {
+      setConnectionLatencyMs(Math.max(0, Date.now() - message.sentAt));
+      return;
+    }
+
     if (message.type === "STATE_SYNC") {
       setRoom(message.room);
       setPlayerId(message.playerId);
@@ -50,6 +57,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
 
     if (message.type === "COMMAND_REJECTED") {
       setError(message.reason);
+      setSelectionFailureToken((token) => token + 1);
       if (message.room) {
         setRoom(message.room);
       }
@@ -124,7 +132,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   }, [occupiedCount]);
 
   if (game && playerId) {
-    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} />;
+    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} connectionLatencyMs={connectionLatencyMs} selectionFailureToken={selectionFailureToken} />;
   }
 
   return (
@@ -260,20 +268,23 @@ type OnlineGameViewProps = {
   onBack: () => void;
   onCommand: (command: GameCommand) => void;
   onReset: () => void;
+  connectionLatencyMs: number | null;
+  selectionFailureToken: number;
 };
 
-function OnlineGameView({ room, playerId, onBack, onCommand, onReset }: OnlineGameViewProps) {
+function OnlineGameView({ room, playerId, onBack, onCommand, onReset, connectionLatencyMs, selectionFailureToken }: OnlineGameViewProps) {
   const game = room.gameState!;
   const isHost = room.hostPlayerId === playerId;
   const canChangeAthlete = (athleteId: string) => game.players.some(
     (player) => player.id === playerId && game.selectionState?.selectionsByPlayerId[player.id]?.includes(athleteId),
   );
-  const content = renderOnlineGameScreen(game, playerId, isHost, onBack, onCommand, canChangeAthlete);
+  const content = renderOnlineGameScreen(game, playerId, isHost, onBack, onCommand, canChangeAthlete, selectionFailureToken);
 
   return (
     <>
       <div className="online-mode-banner">
         <span>{`在线房间: ${room.roomName}`}</span>
+        <span className="online-latency">{connectionLatencyMs === null ? "延迟测量中" : `延迟 ${connectionLatencyMs} ms`}</span>
         {isHost ? <button className="ghost-button danger" type="button" onClick={onReset}>重置房间</button> : null}
       </div>
       {content}
@@ -288,6 +299,7 @@ function renderOnlineGameScreen(
   onBack: () => void,
   onCommand: (command: GameCommand) => void,
   canChangeAthlete: (athleteId: string) => boolean,
+  selectionFailureToken: number,
 ) {
   if (game.phase === "teamReveal") {
     return (
@@ -308,6 +320,7 @@ function renderOnlineGameScreen(
       <SelectionScreen
         game={game}
         selectionPlayerId={playerId}
+        selectionFailureToken={selectionFailureToken}
         onBack={onBack}
         onSelectAthlete={(ownerId, athleteId) => onCommand({ type: "SELECT_ATHLETE", playerId: ownerId, athleteId })}
         onLockSelection={(ownerId) => onCommand({ type: "LOCK_SELECTION", playerId: ownerId })}

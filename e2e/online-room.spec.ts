@@ -55,7 +55,9 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
 
   for (const page of [dad, kid]) {
     while (await page.locator("select:not([disabled])").count()) {
-      await page.locator("select:not([disabled])").first().selectOption({ index: 1 });
+      const select = page.locator("select:not([disabled])").first();
+      await select.selectOption({ index: 1 });
+      await expect(select).not.toHaveValue("");
     }
   }
 

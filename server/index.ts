@@ -86,6 +86,7 @@ server.on("connection", (socket) => {
       const message = JSON.parse(rawMessage.toString()) as ClientMessage;
 
       if (message.type === "HEARTBEAT") {
+        send(socket, { type: "HEARTBEAT_ACK", sentAt: message.sentAt });
         return;
       }
 
