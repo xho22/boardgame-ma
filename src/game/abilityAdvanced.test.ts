@@ -512,6 +512,15 @@ describe("phase 9 abilities", () => {
     }), "player-1", [1], { useHypnotist: true });
     expect(position(game, "player-2")).toBe(0);
 
+    game = roll(setPositions(createRace(["Hypnotist", "Baba Yaga", "Alchemist"]), {
+      "player-1": 0,
+      "player-2": 6,
+      "player-3": 0,
+    }), "player-1", [1], { useHypnotist: true, hypnotistTargetEntrantId: "player-2" });
+    expect(entrant(game, "player-1").skippedTurns).toBe(1);
+    expect(entrant(game, "player-3").skippedTurns).toBe(1);
+    expect(messages(game).some((message) => message.includes("芭芭雅嘎") && message.includes("绊倒了P1的催眠师、P3的炼金师"))).toBe(true);
+
     game = roll(setPositions(createRace(["Hypnotist", "Baba Yaga", "Banana"]), {
       "player-1": 0,
       "player-2": 6,

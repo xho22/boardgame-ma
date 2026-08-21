@@ -438,6 +438,8 @@ afterRace          比赛结束时
 | 35 | Third Wheel | 电灯泡 | 双人格 warp | main move 前，可以 warp 到任意恰好有 2 名选手的格子；warp 后仍正常 main move | `warp_to_exactly_two_before_main` |
 | 36 | Twin | 双胞胎 | 前冠军复制 | before race 选择上一场获胜角色，使用 Twin 棋子参赛但获得该角色能力，包括 before race 能力 | `copy_previous_winner_before_race` |
 
+催眠师传送不算 `move`，不会触发吸盘鱼跟随、香蕉经过等移动触发；但被传送角色抵达新格后仍属于停在该格，必须结算芭芭雅嘎、巨婴等同格落点能力。
+
 ## 5.3 能力落地优先级
 
 MVP 不必一次实现全部 36 个能力。建议按规则引擎复杂度分批，而不是按角色顺序分批。

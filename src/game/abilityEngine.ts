@@ -58,6 +58,7 @@ type ResolveAfterMoveOptions = {
   path: number[];
   abilityTriggered: boolean;
   isTurnEnd?: boolean;
+  skipScoocherResponse?: boolean;
 };
 
 export function applyBeforeRaceAbilities({
@@ -345,13 +346,15 @@ export function resolveAfterMove({
   path,
   abilityTriggered,
   isTurnEnd = false,
+  skipScoocherResponse = false,
 }: ResolveAfterMoveOptions): AfterMoveResolution {
   const logs: AbilityLog[] = [];
   let workingRace = race;
   let nextPlayers = players;
   const moverKey = getEffectiveImplementationKey(game, race, moverAfter);
   const passedSpaces = getPassedSpaces(moverBefore.position, moverAfter.position);
-  const movedOutFromSharedStart = moverAfter.position > moverBefore.position;
+  const movedOutFromSharedStart = path.length > 0 && moverAfter.position > moverBefore.position;
+  const stoppedOnNewSpace = moverAfter.position !== moverBefore.position;
   let didAnyAbilityTrigger = abilityTriggered;
 
   const hugeBaby = workingRace.entrants.find(
@@ -451,7 +454,7 @@ export function resolveAfterMove({
   }
   }
 
-  const shared = path.length > 0 ? workingRace.entrants.filter(
+  const shared = stoppedOnNewSpace ? workingRace.entrants.filter(
     (entrant) =>
       entrant.id !== moverAfter.id &&
       !entrant.finished &&
@@ -575,7 +578,7 @@ export function resolveAfterMove({
     }
   }
 
-  if (didAnyAbilityTrigger) {
+  if (didAnyAbilityTrigger && !skipScoocherResponse) {
     for (const scoocher of workingRace.entrants) {
       if (
         getEffectiveImplementationKey(game, workingRace, scoocher) === "move_one_on_other_power" &&
@@ -690,6 +693,21 @@ function applyBeforeMainMove(
         type: "position_swap",
         message: `${name} 使用催眠师，将${describeEntrant(game, target)}传送到 ${entrant.position}。`,
       });
+      const targetAfter = workingRace.entrants.find((candidate) => candidate.id === target.id) ?? target;
+      const afterWarp = resolveAfterMove({
+        game: { ...game, players: nextPlayers, activeRace: workingRace },
+        race: workingRace,
+        players: nextPlayers,
+        moverBefore: target,
+        moverAfter: targetAfter,
+        path: [],
+        abilityTriggered: true,
+        isTurnEnd: false,
+        skipScoocherResponse: true,
+      });
+      workingRace = afterWarp.race;
+      nextPlayers = afterWarp.players;
+      logs.push(...afterWarp.logs);
       workingRace = triggerScoocherOnOtherPower(game, workingRace, entrant.id, logs);
     }
   }
