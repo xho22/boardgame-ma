@@ -638,6 +638,7 @@ describe("phase 9 abilities", () => {
       "player-2": 3,
     }), "player-1", [3]);
     expect(entrant(game, "player-2").eliminated).toBe(true);
+    expect(entrant(game, "player-1").skippedTurns).toBe(0);
 
     game = roll(setPositions(createRace(["Party Animal", "Baba Yaga", "Banana"]), {
       "player-1": 3,

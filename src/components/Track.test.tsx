@@ -1,13 +1,16 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { STANDARD_ATHLETES } from "../game/athletes";
-import { getBackwardSpecialWaypoints, getTrackSpacePosition, Track } from "./Track";
+import { getBackwardSpecialWaypoints, getCopiedAbilityDetails, getTrackSpacePosition, Track } from "./Track";
 import type { Entrant, GameState, Player, RaceState } from "../game/types";
 
 const alchemist = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Alchemist");
 const legs = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Legs");
+const copycat = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Copycat");
+const egg = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Egg");
+const twin = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Twin");
 
-if (!alchemist || !legs) {
+if (!alchemist || !legs || !copycat || !egg || !twin) {
   throw new Error("Missing test athletes");
 }
 
@@ -106,6 +109,24 @@ describe("Track", () => {
     expect(markup).toContain("track-infield");
     expect(markup).toContain("special-space-marker");
     expect(markup).toContain("特殊棋盘");
+  });
+
+  it("describes Copycat, Egg, and Twin's currently copied ability", () => {
+    const copycatRace: RaceState = {
+      ...race,
+      entrants: [
+        { ...entrants[0], athleteId: copycat.id, position: 2 },
+        { ...entrants[1], athleteId: legs.id, position: 3 },
+      ],
+    };
+
+    for (const entrant of [
+      copycatRace.entrants[0],
+      { ...entrants[0], athleteId: egg.id, copiedAbilityKey: legs.implementationKey },
+      { ...entrants[0], athleteId: twin.id, copiedAbilityKey: legs.implementationKey },
+    ]) {
+      expect(getCopiedAbilityDetails(game, copycatRace, entrant)).toMatchObject({ displayName: "长腿", abilityText: legs.abilityText });
+    }
   });
 
   it("adds a landing waypoint before animating a backward special space", () => {

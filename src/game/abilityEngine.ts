@@ -460,36 +460,6 @@ export function resolveAfterMove({
   if (shared.length > 0) {
     const moverCurrent = workingRace.entrants.find((entrant) => entrant.id === moverAfter.id) ?? moverAfter;
 
-    for (const entrant of shared) {
-      const key = getEffectiveImplementationKey(game, workingRace, entrant);
-
-      if (key === "trip_on_shared_stop") {
-        workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
-          ...current,
-          skippedTurns: current.skippedTurns + 1,
-        }));
-      logs.push({
-        type: "status_added",
-        message: `${describeEntrant(game, entrant)} 在同格停留时绊倒了${describeEntrant(game, moverCurrent)}。`,
-      });
-      didAnyAbilityTrigger = true;
-    }
-    }
-
-    if (moverKey === "trip_on_shared_stop") {
-      for (const entrant of shared) {
-        workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
-          ...current,
-          skippedTurns: current.skippedTurns + 1,
-        }));
-      }
-      logs.push({
-        type: "status_added",
-        message: `${describeEntrant(game, moverCurrent)} 在同格停留时绊倒了${shared.map((entrant) => describeEntrant(game, entrant)).join("、")}。`,
-      });
-      didAnyAbilityTrigger = true;
-    }
-
     if (moverKey === "eliminate_single_shared_racer" && shared.length === 1) {
       workingRace = updateEntrant(workingRace, shared[0].id, (current) => ({
         ...current,
@@ -500,6 +470,36 @@ export function resolveAfterMove({
         message: `${describeEntrant(game, moverCurrent)} 将${describeEntrant(game, shared[0])}移出本场比赛。`,
       });
       didAnyAbilityTrigger = true;
+    } else {
+      for (const entrant of shared) {
+        const key = getEffectiveImplementationKey(game, workingRace, entrant);
+
+        if (key === "trip_on_shared_stop") {
+          workingRace = updateEntrant(workingRace, moverAfter.id, (current) => ({
+            ...current,
+            skippedTurns: current.skippedTurns + 1,
+          }));
+          logs.push({
+            type: "status_added",
+            message: `${describeEntrant(game, entrant)} 在同格停留时绊倒了${describeEntrant(game, moverCurrent)}。`,
+          });
+          didAnyAbilityTrigger = true;
+        }
+      }
+
+      if (moverKey === "trip_on_shared_stop") {
+        for (const entrant of shared) {
+          workingRace = updateEntrant(workingRace, entrant.id, (current) => ({
+            ...current,
+            skippedTurns: current.skippedTurns + 1,
+          }));
+        }
+        logs.push({
+          type: "status_added",
+          message: `${describeEntrant(game, moverCurrent)} 在同格停留时绊倒了${shared.map((entrant) => describeEntrant(game, entrant)).join("、")}。`,
+        });
+        didAnyAbilityTrigger = true;
+      }
     }
   }
 

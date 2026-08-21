@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
+import { getEffectiveImplementationKey } from "../game/abilityEngine";
 import { getSpecialTrackEffect } from "../game/specialTrack";
 import type { GameLogEntry, GameState, RaceState } from "../game/types";
 
@@ -49,6 +50,21 @@ export function getBackwardSpecialWaypoints(
   return waypoints;
 }
 
+export function getCopiedAbilityDetails(game: GameState, race: RaceState, entrant: RaceState["entrants"][number]) {
+  const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+  const effectiveAbilityKey = getEffectiveImplementationKey(game, race, entrant);
+
+  if (!athlete || athlete.implementationKey === effectiveAbilityKey) {
+    return null;
+  }
+
+  const copiedAthlete = [...STANDARD_ATHLETE_BY_ID.values()].find(
+    (candidate) => candidate.implementationKey === effectiveAbilityKey,
+  );
+
+  return copiedAthlete ? { displayName: copiedAthlete.displayName, abilityText: copiedAthlete.abilityText } : null;
+}
+
 export function Track({ game, race }: TrackProps) {
   const spaces = Array.from({ length: race.trackLength + 1 }, (_, index) => index);
   const targetPositions = useMemo(
@@ -62,6 +78,7 @@ export function Track({ game, race }: TrackProps) {
     playerName: string;
     racerName: string;
     abilityText: string;
+    copiedAbility: { displayName: string; abilityText: string } | null;
     x: number;
     y: number;
   } | null>(null);
@@ -146,6 +163,7 @@ export function Track({ game, race }: TrackProps) {
                 {entrants.map((entrant) => {
                   const player = game.players.find((candidate) => candidate.id === entrant.playerId);
                   const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+                  const copiedAbility = getCopiedAbilityDetails(game, race, entrant);
 
                   return (
                     <span
@@ -166,6 +184,7 @@ export function Track({ game, race }: TrackProps) {
                           playerName: player?.name ?? entrant.playerId,
                           racerName: athlete?.displayName ?? entrant.athleteId,
                           abilityText: athlete?.abilityText ?? "暂无能力说明。",
+                          copiedAbility,
                           x: event.clientX,
                           y: event.clientY,
                         })
@@ -203,6 +222,7 @@ export function Track({ game, race }: TrackProps) {
         >
           <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
           <span>{hoveredRacer.abilityText}</span>
+          {hoveredRacer.copiedAbility ? <span className="copied-ability">{`当前复制：${hoveredRacer.copiedAbility.displayName} - ${hoveredRacer.copiedAbility.abilityText}`}</span> : null}
         </aside>
       ) : null}
     </section>

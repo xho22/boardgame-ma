@@ -873,6 +873,13 @@ h1 {
   font-size: 14px;
 }
 
+.racer-hover-card .copied-ability {
+  border-top: 1px solid #ddd5ca;
+  padding-top: 5px;
+  color: #174d44;
+  font-weight: 800;
+}
+
 .race-control-grid {
   display: grid;
   grid-template-columns: minmax(280px, 420px) minmax(280px, 1fr);
@@ -1171,6 +1178,12 @@ h1 {
 }
 
 .dice-result-hold {
+  position: fixed;
+  z-index: 30;
+  top: 50%;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100vw - 32px);
   display: grid;
   grid-template-columns: auto auto 1fr;
   align-items: center;
@@ -1180,6 +1193,8 @@ h1 {
   background: #edf7f2;
   padding: 10px 16px;
   color: #174d44;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .dice-result-hold span,
