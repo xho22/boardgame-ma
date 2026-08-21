@@ -37,6 +37,7 @@ describe("STANDARD_ATHLETES", () => {
       expect(athlete.imagePath).toBe(`/racers/${athlete.id}.png`);
       expect(athlete.displayName.length).toBeGreaterThan(0);
       expect(athlete.abilityText.length).toBeGreaterThan(10);
+      expect(athlete.abilityText).not.toMatch(/main move|before race|trip|last place|lead|warp|passing|\bmove\b/i);
       expect(athlete.abilityHooks.length).toBeGreaterThan(0);
       expect(athlete.tags).toContain("standard");
       expect(athlete.artPrompt).toContain(athlete.standardName);
