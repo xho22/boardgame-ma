@@ -21,11 +21,8 @@ export function AthleteCatalogScreen({ onBack }: AthleteCatalogScreenProps) {
             <img src={athlete.imagePath} alt={athlete.displayName} />
             <div>
               <h2>{athlete.displayName}</h2>
-              <p>{athlete.standardName}</p>
             </div>
-            <span>{athlete.type}</span>
             <p>{athlete.abilityText}</p>
-            <code>{athlete.implementationKey}</code>
           </article>
         ))}
       </section>

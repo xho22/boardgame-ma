@@ -22,6 +22,8 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await expect(page.getByRole("heading", { name: "Racers" })).toBeVisible();
   await expect(page.getByRole("img", { name: "炼金师" })).toBeVisible();
   await expect(page.getByText("主要移动掷出 1 或 2 时，可以改为前进 4 格。")).toBeVisible();
+  await expect(page.locator(".catalog-card code")).toHaveCount(0);
+  await expect(page.getByText("main_roll_low_becomes_four")).toHaveCount(0);
 
   await page.getByRole("button", { name: "Back" }).click();
   await page.getByRole("button", { name: "Local Game" }).click();
