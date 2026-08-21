@@ -184,7 +184,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
                 {isHost ? (
                   <>
                     <div className="control-band">
-                      <label htmlFor="online-racers-per-player">Racers Per Player</label>
+                      <label htmlFor="online-racers-per-player">每位玩家的 racer 数量</label>
                       <div className="segmented-control" id="online-racers-per-player">
                         <button className={racersPerPlayerPerRace === 1 ? "selected" : ""} type="button" onClick={() => setRacersPerPlayerPerRace(1)}>1</button>
                         <button className={racersPerPlayerPerRace === 2 ? "selected" : ""} type="button" disabled={occupiedCount > 3} onClick={() => setRacersPerPlayerPerRace(2)}>2</button>

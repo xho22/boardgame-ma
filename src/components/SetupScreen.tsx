@@ -81,7 +81,7 @@ export function SetupScreen({ onStartGame, onBack }: SetupScreenProps) {
         </div>
 
         <div className="control-band">
-          <label htmlFor="racers-per-player">Racers Per Player</label>
+          <label htmlFor="racers-per-player">每位玩家的 racer 数量</label>
           <div className="segmented-control" id="racers-per-player">
             <button
               className={racersPerPlayerPerRace === 1 ? "selected" : ""}
