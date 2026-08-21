@@ -142,6 +142,7 @@ export function beginRaceFromSelection(game: GameState): GameState {
     entrants: prepared.entrants,
     finishers: [],
     round: 1,
+    previousDieRoll: null,
     previousFinalMoveValue: null,
     pendingReactions: [],
     pendingTurnState: null,
@@ -231,6 +232,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
       ...game,
       activeRace: {
         ...race,
+        previousDieRoll: dieRoll,
         previousFinalMoveValue: dieRoll,
         pendingDiceDecision: {
           kind: "dicemonger",
@@ -272,6 +274,7 @@ export function rollForCurrentPlayer(game: GameState, playerId: string, rng: Rng
         ...game,
         activeRace: {
           ...race,
+          previousDieRoll: dieRoll,
           previousFinalMoveValue: dieRoll,
           pendingDiceDecision: postRollPrompt.decision,
           pendingReactions: [...race.pendingReactions, postRollPrompt.prompt],
@@ -327,6 +330,7 @@ function finishResolvedMove(
     ...mainMove.race,
     entrants,
     finishers,
+    previousDieRoll: mainMove.dieRoll,
     previousFinalMoveValue: mainMove.finalMove,
   };
   let raceAfterLeaptoadJumps: RaceState = updatedRace;
@@ -883,6 +887,7 @@ function confirmDicemongerReroll(
   const dicemonger = race.entrants.find((entrant) => entrant.id === decision.dicemongerEntrantId);
   let continuedRace: RaceState = {
     ...race,
+    previousDieRoll: finalRoll,
     pendingDiceDecision: null,
     pendingReactions: race.pendingReactions.filter((candidate) => candidate.id !== prompt.id),
   };

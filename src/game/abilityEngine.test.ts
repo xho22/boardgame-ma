@@ -232,6 +232,7 @@ describe("phase 7 abilities", () => {
     const game = roll(createRace("Rocket Scientist", "Coach"), "player-1", [3]);
 
     expect(entrantPosition(game, "player-1")).toBe(7);
+    expect(game.activeRace?.previousDieRoll).toBe(3);
     expect(game.activeRace?.previousFinalMoveValue).toBe(7);
     expect(latestMessages(game).some((message) => message.includes("主移动翻倍为 6"))).toBe(true);
     expect(latestMessages(game).some((message) => message.includes("主移动 +1，当前为 7"))).toBe(true);

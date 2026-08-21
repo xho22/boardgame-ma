@@ -895,6 +895,54 @@ h1 {
   color: #e94f2f;
 }
 
+.dice-result-hold {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid #1d6258;
+  border-radius: 8px;
+  background: #edf7f2;
+  padding: 10px 16px;
+  color: #174d44;
+}
+
+.dice-result-hold span,
+.reaction-die-highlight span {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.dice-result-hold strong,
+.reaction-die-highlight strong {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.dice-result-hold p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.reaction-die-highlight {
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #d39a19;
+  border-radius: 8px;
+  background: #fff6d9;
+  padding: 8px 10px;
+  color: #755500;
+}
+
 @keyframes dice-pulse {
   0% {
     transform: rotate(-3deg) scale(0.96);

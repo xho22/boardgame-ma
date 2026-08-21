@@ -131,6 +131,8 @@ export type RaceState = {
   entrants: Entrant[];
   finishers: Finisher[];
   round: number;
+  /** The unmodified die result for the latest dice-based main move. */
+  previousDieRoll?: number | null;
   previousFinalMoveValue: number | null;
   pendingReactions: ReactionPrompt[];
   pendingDiceDecision?: PendingDiceDecision | null;

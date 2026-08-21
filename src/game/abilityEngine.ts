@@ -1240,6 +1240,7 @@ function emptyRace(game: GameState): RaceState {
     entrants: [],
     finishers: [],
     round: 1,
+    previousDieRoll: null,
     previousFinalMoveValue: null,
     pendingReactions: [],
     pendingTurnState: null,

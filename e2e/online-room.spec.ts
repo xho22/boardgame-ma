@@ -14,10 +14,9 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
 
   await dad.locator(".room-join-form input").fill("Dad");
   await kid.locator(".room-join-form input").fill("Kid");
-  await Promise.all([
-    dad.getByRole("button", { name: "Join Room" }).click(),
-    kid.getByRole("button", { name: "Join Room" }).click(),
-  ]);
+  await dad.getByRole("button", { name: "Join Room" }).click();
+  await expect(dad.getByText("座位 1 / 6")).toBeVisible();
+  await kid.getByRole("button", { name: "Join Room" }).click();
 
   await expect(dad.getByText("座位 2 / 6")).toBeVisible();
   await expect(kid.getByText("Dad")).toBeVisible();
@@ -54,7 +53,7 @@ test("synchronizes a fixed room between two browser contexts", async ({ browser 
   dad.once("dialog", (dialog) => dialog.accept());
   await dad.getByRole("button", { name: "重置房间" }).click();
   await expect(dad.getByRole("button", { name: "Start Shared Game" })).toBeVisible();
-  await expect(kid.getByText("等待房主设置每人 racer 数量和 Debug 模式。")).toBeVisible();
+  await expect(kid.getByText("等待房主设置每人 racer 数量、Debug 模式和棋盘模式。")).toBeVisible();
   await expect(dad.getByText("座位 2 / 6")).toBeVisible();
 
   await dadContext.close();

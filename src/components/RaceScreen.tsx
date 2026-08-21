@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DicePanel } from "./DicePanel";
 import { GameLog } from "./GameLog";
 import { Track } from "./Track";
@@ -14,11 +14,28 @@ type RaceScreenProps = {
 
 export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = () => true }: RaceScreenProps) {
   const [duelTargetEntrantId, setDuelTargetEntrantId] = useState("");
+  const [revealedDieRoll, setRevealedDieRoll] = useState<number | null>(null);
+  const lastSeenRevisionRef = useRef(game.revision);
   const race = game.activeRace;
   const pendingReaction = race?.pendingReactions[0];
   useEffect(() => {
     setDuelTargetEntrantId("");
   }, [pendingReaction?.id]);
+
+  useEffect(() => {
+    if (lastSeenRevisionRef.current === game.revision) {
+      return;
+    }
+
+    lastSeenRevisionRef.current = game.revision;
+    if (race?.previousDieRoll === null || race?.previousDieRoll === undefined) {
+      return;
+    }
+
+    setRevealedDieRoll(race.previousDieRoll);
+    const timeout = window.setTimeout(() => setRevealedDieRoll(null), 1_000);
+    return () => window.clearTimeout(timeout);
+  }, [game.revision, race?.previousDieRoll]);
 
   if (!race) {
     return null;
@@ -83,6 +100,14 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
 
       <Track game={game} race={race} />
 
+      {revealedDieRoll !== null ? (
+        <section className="dice-result-hold" role="status" aria-label="本次骰子结果">
+          <span>本次骰点</span>
+          <strong>{revealedDieRoll}</strong>
+          <p>结果已确认</p>
+        </section>
+      ) : null}
+
       <div className="race-control-grid">
         {pendingReaction ? (
           <section className="dice-panel" aria-label="Reaction prompt">
@@ -91,6 +116,12 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
               <h2>{reactionPlayer?.name ?? pendingReaction.playerId}</h2>
               <h3>{pendingReaction.title ?? "能力确认"}</h3>
               <p>{pendingReaction.description ?? "请决定是否使用这个能力。"}</p>
+              {race.pendingDiceDecision ? (
+                <div className="reaction-die-highlight" aria-label={`本次骰点 ${race.pendingDiceDecision.dieRoll}`}>
+                  <span>本次骰点</span>
+                  <strong>{race.pendingDiceDecision.dieRoll}</strong>
+                </div>
+              ) : null}
             </div>
             <div className="ability-choice-panel">
               {pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy" ? (
@@ -111,7 +142,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
                   className="secondary-button"
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, false)}
-                  disabled={!canActAsPlayer(pendingReaction.playerId)}
+                  disabled={revealedDieRoll !== null || !canActAsPlayer(pendingReaction.playerId)}
                 >
                   {reactionActions.decline}
                 </button>
@@ -119,7 +150,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
                   className="primary-button"
                   type="button"
                   onClick={() => onConfirmReaction(pendingReaction.playerId, pendingReaction.id, true, duelTargetEntrantId || undefined)}
-                  disabled={!canActAsPlayer(pendingReaction.playerId) || ((pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy") && !duelTargetEntrantId)}
+                  disabled={revealedDieRoll !== null || !canActAsPlayer(pendingReaction.playerId) || ((pendingReaction.promptType === "duel" || pendingReaction.promptType === "copy") && !duelTargetEntrantId)}
                 >
                   {reactionActions.accept}
                 </button>
@@ -133,6 +164,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
             currentPlayer={currentPlayer}
             currentEntrant={currentEntrant}
             effectiveAbilityKey={getEffectiveImplementationKey(game, race, currentEntrant)}
+            interactionBlocked={revealedDieRoll !== null}
             onRoll={onRoll}
           />
         ) : (
