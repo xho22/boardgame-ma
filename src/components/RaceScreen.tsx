@@ -126,9 +126,9 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
 
       <div className="race-control-grid">
         {pendingReaction ? (
-          <section className="dice-panel" aria-label="Reaction prompt">
+          <section className="dice-panel reaction-panel" aria-label="能力确认">
             <div className="current-racer-copy reaction-copy">
-              <p className="eyebrow">Reaction</p>
+              <p className="eyebrow">能力确认</p>
               <h2>{reactionPlayer?.name ?? pendingReaction.playerId}</h2>
               <h3>{pendingReaction.title ?? "能力确认"}</h3>
               <p>{pendingReaction.description ?? "请决定是否使用这个能力。"}</p>

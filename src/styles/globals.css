@@ -1051,6 +1051,10 @@ h1 {
   align-items: center;
 }
 
+.reaction-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .dice-panel .primary-button,
 .dice-panel .secondary-button {
   grid-column: 1 / -1;
