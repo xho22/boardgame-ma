@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { DicePanel } from "./DicePanel";
 import { GameLog } from "./GameLog";
 import { Track } from "./Track";
+import { TurnOrder } from "./TurnOrder";
 import { getEffectiveImplementationKey } from "../game/abilityEngine";
 import type { GameState, MainMoveChoice } from "../game/types";
 
@@ -98,6 +99,18 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
         </dl>
       </header>
 
+      <div className="race-info-grid">
+        <TurnOrder game={game} race={race} />
+        <section className="race-awards" aria-label="本局名次积分">
+          <p className="eyebrow">Race rewards</p>
+          <h2>本局名次积分</h2>
+          <div>
+            <strong>{`第一名 +${race.firstPlacePoints}`}</strong>
+            <strong>{`第二名 +${race.secondPlacePoints}`}</strong>
+          </div>
+        </section>
+      </div>
+
       <Track game={game} race={race} />
 
       {revealedDieRoll !== null ? (
@@ -176,7 +189,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
             </div>
           </section>
         )}
-        <GameLog entries={game.log} />
+        <GameLog entries={game.log} players={game.players} athletes={game.athletes} />
       </div>
     </main>
   );
