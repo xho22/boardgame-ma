@@ -18,6 +18,14 @@ type Highlight = {
   color?: string;
 };
 
+export function getRacerLogColor(athleteId: string): string {
+  let hash = 0;
+  for (const character of athleteId) {
+    hash = (hash * 31 + character.charCodeAt(0)) % 360;
+  }
+  return `hsl(${hash} 62% 35%)`;
+}
+
 function findMatches(message: string, token: string): { start: number; end: number }[] {
   if (!token) {
     return [];
@@ -95,9 +103,19 @@ function renderMessage(message: string, participants: ParticipantMatch[], abilit
 
 export function GameLog({ entries, players = [], athletes = [] }: GameLogProps) {
   const visibleEntries = entries.map((entry, index) => ({ entry, number: index + 1 })).reverse();
-  const participants = players.flatMap((player) =>
-    athletes.map((athlete) => ({ label: `${player.name}的${athlete.displayName}`, color: player.color })),
-  );
+  const athletesById = new Map(athletes.map((athlete) => [athlete.id, athlete]));
+  const participants: ParticipantMatch[] = [];
+  for (const player of players) {
+    for (const athleteId of player.athleteIds) {
+      const athlete = athletesById.get(athleteId);
+      if (athlete) {
+        participants.push({
+          label: `${player.name}的${athlete.displayName}`,
+          color: getRacerLogColor(athlete.id),
+        });
+      }
+    }
+  }
   const abilityNames = athletes.map((athlete) => athlete.displayName);
 
   return (
