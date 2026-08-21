@@ -8,6 +8,20 @@ type TrackProps = {
   race: RaceState;
 };
 
+const TRACK_COLUMNS = 16;
+
+export function getTrackSpacePosition(space: number): { column: number; row: number } {
+  if (space <= 13) {
+    return { column: space + 3, row: 3 };
+  }
+
+  if (space === 14) {
+    return { column: TRACK_COLUMNS, row: 2 };
+  }
+
+  return { column: 31 - space, row: 1 };
+}
+
 export function getBackwardSpecialWaypoints(
   game: GameState,
   race: RaceState,
@@ -51,6 +65,7 @@ export function Track({ game, race }: TrackProps) {
     x: number;
     y: number;
   } | null>(null);
+  const currentEntrantId = race.turnOrder[race.currentTurnIndex];
 
   useEffect(() => {
     setDisplayedPositions(Object.fromEntries(race.entrants.map((entrant) => [entrant.id, entrant.position])));
@@ -108,14 +123,23 @@ export function Track({ game, race }: TrackProps) {
     <section className="track-section" aria-label="Race track">
       <div
         className="track-grid"
-        style={{ gridTemplateColumns: `repeat(${spaces.length}, minmax(38px, 1fr))` }}
+        style={{ gridTemplateColumns: `repeat(${TRACK_COLUMNS}, minmax(58px, 1fr))` }}
       >
+        <div className="track-infield" aria-hidden="true">
+          <span>{`Race ${race.raceNumber}`}</span>
+          <strong>竞速赛道</strong>
+        </div>
         {spaces.map((space) => {
           const entrants = race.entrants.filter((entrant) => (displayedPositions[entrant.id] ?? entrant.position) === space);
           const specialEffect = race.boardKind === "special" ? getSpecialTrackEffect(space) : undefined;
+          const trackPosition = getTrackSpacePosition(space);
 
           return (
-            <div className={`track-space ${specialEffect ? `special-space special-${specialEffect.type}` : ""}`} key={space}>
+            <div
+              className={`track-space ${specialEffect ? `special-space special-${specialEffect.type}` : ""}`}
+              key={space}
+              style={{ gridColumn: trackPosition.column, gridRow: trackPosition.row }}
+            >
               <span className="space-label">{space === 0 ? "Start" : space === race.trackLength ? "Finish" : space}</span>
               {specialEffect ? <span className="special-space-marker" title={`特殊格：${specialEffect.label}`}>{specialEffect.label}</span> : null}
               <div className="piece-stack">
@@ -125,9 +149,18 @@ export function Track({ game, race }: TrackProps) {
 
                   return (
                     <span
-                      className={`track-piece moving-piece ${entrant.skippedTurns > 0 ? "tripped" : ""} ${entrant.eliminated ? "eliminated" : ""}`}
+                      className={[
+                        "track-piece",
+                        "moving-piece",
+                        entrant.id === currentEntrantId ? "current-racer" : "",
+                        entrant.skippedTurns > 0 ? "tripped" : "",
+                        entrant.eliminated ? "eliminated" : "",
+                      ].filter(Boolean).join(" ")}
                       key={entrant.id}
-                      style={{ borderColor: player?.color ?? "#1d6258" }}
+                      style={{
+                        borderColor: player?.color ?? "#1d6258",
+                        "--current-player-color": player?.color ?? "#e94f2f",
+                      } as React.CSSProperties}
                       onMouseEnter={(event) =>
                         setHoveredRacer({
                           playerName: player?.name ?? entrant.playerId,
@@ -147,6 +180,7 @@ export function Track({ game, race }: TrackProps) {
                       onMouseLeave={() => setHoveredRacer(null)}
                     >
                       {athlete ? <img src={athlete.imagePath} alt={athlete.displayName} /> : player?.name.slice(0, 1).toUpperCase() ?? "?"}
+                      {entrant.id === currentEntrantId ? <span className="current-racer-marker">当前</span> : null}
                       {entrant.eliminated ? <span className="chomp-marker">CHOMP!</span> : null}
                     </span>
                   );

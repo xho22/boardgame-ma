@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { STANDARD_ATHLETES } from "../game/athletes";
-import { getBackwardSpecialWaypoints, Track } from "./Track";
+import { getBackwardSpecialWaypoints, getTrackSpacePosition, Track } from "./Track";
 import type { Entrant, GameState, Player, RaceState } from "../game/types";
 
 const alchemist = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Alchemist");
@@ -102,6 +102,8 @@ describe("Track", () => {
     expect(markup).toContain(alchemist.imagePath);
     expect(markup).toContain(legs.imagePath);
     expect(markup).toContain("track-piece moving-piece tripped");
+    expect(markup).toContain("current-racer-marker");
+    expect(markup).toContain("track-infield");
     expect(markup).toContain("special-space-marker");
     expect(markup).toContain("特殊棋盘");
   });
@@ -125,5 +127,12 @@ describe("Track", () => {
     expect(getBackwardSpecialWaypoints(backwardGame, backwardRace, backwardGame.log)).toEqual({
       "player-1:racer-1": [16, 12],
     });
+  });
+
+  it("maps the thirty-space track around the two corners", () => {
+    expect(getTrackSpacePosition(0)).toEqual({ column: 3, row: 3 });
+    expect(getTrackSpacePosition(14)).toEqual({ column: 16, row: 2 });
+    expect(getTrackSpacePosition(15)).toEqual({ column: 16, row: 1 });
+    expect(getTrackSpacePosition(30)).toEqual({ column: 1, row: 1 });
   });
 });
