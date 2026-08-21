@@ -21,9 +21,21 @@ const contentTypes: Record<string, string> = {
   ".webp": "image/webp",
 };
 
+function cacheControl(relativePath: string, servedPath: string): string {
+  if (extname(servedPath) === ".html") {
+    return "no-store";
+  }
+
+  if (relativePath.startsWith("assets/")) {
+    return "public, max-age=31536000, immutable";
+  }
+
+  return "public, max-age=3600, must-revalidate";
+}
+
 const httpServer = createServer(async (request, response) => {
   if (request.url === "/health") {
-    response.writeHead(200, { "content-type": "application/json" });
+    response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" });
     response.end(JSON.stringify({ status: "ok" }));
     return;
   }
@@ -41,22 +53,26 @@ const httpServer = createServer(async (request, response) => {
   const fallbackPath = resolve(clientDistDirectory, "index.html");
 
   try {
-    const body = await readFile(safePath ?? fallbackPath);
-    response.writeHead(200, { "content-type": contentTypes[extname(safePath ?? fallbackPath)] ?? "application/octet-stream" });
+    const servedPath = safePath ?? fallbackPath;
+    const body = await readFile(servedPath);
+    response.writeHead(200, {
+      "content-type": contentTypes[extname(servedPath)] ?? "application/octet-stream",
+      "cache-control": cacheControl(relativePath, servedPath),
+    });
     response.end(request.method === "HEAD" ? undefined : body);
   } catch {
     if (extname(relativePath)) {
-      response.writeHead(404);
+      response.writeHead(404, { "cache-control": "no-store" });
       response.end();
       return;
     }
 
     try {
       const body = await readFile(fallbackPath);
-      response.writeHead(200, { "content-type": contentTypes[".html"] });
+      response.writeHead(200, { "content-type": contentTypes[".html"], "cache-control": "no-store" });
       response.end(request.method === "HEAD" ? undefined : body);
     } catch {
-      response.writeHead(503, { "content-type": "application/json" });
+      response.writeHead(503, { "content-type": "application/json", "cache-control": "no-store" });
       response.end(JSON.stringify({ error: "Client build is unavailable. Run npm run build first." }));
     }
   }

@@ -38,13 +38,19 @@ ingress:
 
 将该 Tunnel 绑定到域名后，浏览器访问 `https://game.example.com/`；在线房间会自动连接同源的 `wss://game.example.com/ws`。前端不再写死端口或独立 WebSocket 域名。
 
-## 3. WebSocket 可靠性
+## 3. 发布缓存
+
+生产服务对 `index.html` 返回 `Cache-Control: no-store`，确保浏览器和 Cloudflare 每次都取得当前发布版本的入口文件；Vite 生成的 `assets/` 文件名带内容 hash，可使用一年期不可变缓存。其他未带 hash 的静态资源（例如角色图片）缓存一小时并在过期后重新验证。
+
+请勿在 Cloudflare 的 Cache Rules 中为 HTML 使用 `Cache Everything` 或覆盖源站的 `Cache-Control`。否则旧的 `index.html` 可能引用已经不存在的 CSS 或 JavaScript 文件，表现为页面没有样式或无法启动。
+
+## 4. WebSocket 可靠性
 
 客户端每 25 秒向 `/ws` 发送一次 `HEARTBEAT`，避免空闲连接被中间网络关闭。连接仍可能因网络切换、浏览器休眠、Cloudflare 边缘维护或服务进程重启而关闭；客户端会以 1、2、4、8、10 秒的上限退避自动重连，并通过已保存的 `playerId` 重新加入原座位。
 
 心跳和自动重连只保证连接恢复，不保证服务进程重启后的比赛恢复。当前房间与比赛状态保存在 Node 进程内存中，进程重启、部署重启或崩溃后会清空。正式长期使用前应将 `RoomState` 持久化到 SQLite、Postgres 或等价存储。
 
-## 4. 运行边界
+## 5. 运行边界
 
 - 固定房间名不是访问控制。任何知道域名和房间名的人都可以以任意昵称加入；公开部署前至少应增加房间口令或简单的邀请码。
 - 一台单实例 Node 服务适合当前家庭用途。若以后扩容为多个 Node 实例，必须将房间状态外置，并保证同一房间的 WebSocket 始终路由到同一权威实例。
