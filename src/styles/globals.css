@@ -993,6 +993,7 @@ h1 {
   border-radius: 7px;
   background: #fff;
   padding: 5px;
+  cursor: help;
 }
 
 .turn-order-item.current {

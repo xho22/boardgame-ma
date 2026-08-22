@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
 import type { GameState, RaceState } from "../game/types";
 
@@ -24,6 +25,13 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
   const upcomingEntrantIds = getUpcomingEntrantIds(race);
   const currentEntrantId = race.turnOrder[race.currentTurnIndex];
   const finishers = [...race.finishers].sort((first, second) => first.rank - second.rank);
+  const [hoveredRacer, setHoveredRacer] = useState<{
+    playerName: string;
+    racerName: string;
+    abilityText: string;
+    x: number;
+    y: number;
+  } | null>(null);
 
   return (
     <section className="turn-order" aria-label="行动顺序">
@@ -50,6 +58,17 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
               className={`turn-order-item ${isCurrent ? "current" : ""} ${entrant.skippedTurns > 0 ? "tripped" : ""}`}
               key={entrant.id}
               style={{ "--player-color": player?.color ?? "#1d6258" } as React.CSSProperties}
+              onMouseEnter={(event) => setHoveredRacer({
+                playerName: player?.name ?? entrant.playerId,
+                racerName: athlete?.displayName ?? entrant.athleteId,
+                abilityText: athlete?.abilityText ?? "暂无能力说明。",
+                x: event.clientX,
+                y: event.clientY,
+              })}
+              onMouseMove={(event) => setHoveredRacer((current) =>
+                current ? { ...current, x: event.clientX, y: event.clientY } : current,
+              )}
+              onMouseLeave={() => setHoveredRacer(null)}
             >
               <span className="turn-order-index">{isCurrent ? "当前" : index === 1 ? "下一位" : `${index} 回合后`}</span>
               {athlete ? <img src={athlete.imagePath} alt={athlete.displayName} /> : <span className="turn-order-fallback">?</span>}
@@ -70,6 +89,16 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
             return <strong key={finisher.entrantId}>{`${finisher.rank}. ${athlete?.displayName ?? finisher.athleteId}`}</strong>;
           })}
         </div>
+      ) : null}
+      {hoveredRacer ? (
+        <aside
+          className="racer-hover-card"
+          role="tooltip"
+          style={{ left: hoveredRacer.x + 14, top: hoveredRacer.y + 14 }}
+        >
+          <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
+          <span>{hoveredRacer.abilityText}</span>
+        </aside>
       ) : null}
     </section>
   );
