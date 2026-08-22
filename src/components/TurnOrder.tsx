@@ -34,6 +34,9 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
     x: number;
     y: number;
   } | null>(null);
+  const moveHoveredRacer = (event: React.MouseEvent) => setHoveredRacer((current) =>
+    current ? { ...current, x: event.clientX, y: event.clientY } : current,
+  );
 
   return (
     <section className="turn-order" aria-label="行动顺序">
@@ -61,22 +64,22 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
               className={`turn-order-item ${isCurrent ? "current" : ""} ${entrant.skippedTurns > 0 ? "tripped" : ""} ${copiedAthlete ? "has-copied-ability" : ""}`}
               key={entrant.id}
               style={{ "--player-color": player?.color ?? "#1d6258" } as React.CSSProperties}
-              onMouseEnter={(event) => setHoveredRacer({
-                playerName: player?.name ?? entrant.playerId,
-                racerName: athlete?.displayName ?? entrant.athleteId,
-                abilityText: athlete?.abilityText ?? "暂无能力说明。",
-                imagePath: athlete?.imagePath,
-                x: event.clientX,
-                y: event.clientY,
-              })}
-              onMouseMove={(event) => setHoveredRacer((current) =>
-                current ? { ...current, x: event.clientX, y: event.clientY } : current,
-              )}
-              onMouseLeave={() => setHoveredRacer(null)}
             >
               <span className="turn-order-index">{isCurrent ? "当前" : index === 1 ? "下一位" : `${index} 回合后`}</span>
               {athlete ? (
-                <span className="turn-order-avatar">
+                <span
+                  className="turn-order-avatar"
+                  onMouseEnter={(event) => setHoveredRacer({
+                    playerName: player?.name ?? entrant.playerId,
+                    racerName: athlete.displayName,
+                    abilityText: athlete.abilityText,
+                    imagePath: athlete.imagePath,
+                    x: event.clientX,
+                    y: event.clientY,
+                  })}
+                  onMouseMove={moveHoveredRacer}
+                  onMouseLeave={() => setHoveredRacer(null)}
+                >
                   <img src={athlete.imagePath} alt={athlete.displayName} />
                 </span>
               ) : <span className="turn-order-fallback">?</span>}
@@ -84,7 +87,23 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
                 <strong>{athlete?.displayName ?? entrant.athleteId}</strong>
                 <small>{player?.name ?? entrant.playerId}</small>
               </span>
-              {copiedAthlete ? <img className="turn-order-copied-image" src={copiedAthlete.imagePath} alt={`${copiedAthlete.displayName}能力`} /> : null}
+              {copiedAthlete ? (
+                <img
+                  className="turn-order-copied-image"
+                  src={copiedAthlete.imagePath}
+                  alt={`${copiedAthlete.displayName}能力`}
+                  onMouseEnter={(event) => setHoveredRacer({
+                    playerName: player?.name ?? entrant.playerId,
+                    racerName: `当前复制：${copiedAthlete.displayName}`,
+                    abilityText: copiedAthlete.abilityText,
+                    imagePath: copiedAthlete.imagePath,
+                    x: event.clientX,
+                    y: event.clientY,
+                  })}
+                  onMouseMove={moveHoveredRacer}
+                  onMouseLeave={() => setHoveredRacer(null)}
+                />
+              ) : null}
               {entrant.skippedTurns > 0 ? <span className="turn-status">绊倒</span> : null}
             </li>
           );

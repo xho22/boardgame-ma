@@ -1014,7 +1014,6 @@ h1 {
   border-radius: 7px;
   background: #fff;
   padding: 5px;
-  cursor: help;
 }
 
 .turn-order-item.has-copied-ability {
@@ -1052,6 +1051,7 @@ h1 {
 
 .turn-order-avatar {
   position: relative;
+  cursor: help;
 }
 
 .turn-order-avatar > img {
@@ -1074,6 +1074,7 @@ h1 {
   border: 1px solid #174d44;
   border-radius: 5px;
   background: #fffdf8;
+  cursor: help;
   object-fit: cover;
 }
 
