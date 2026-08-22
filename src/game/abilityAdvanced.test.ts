@@ -402,6 +402,18 @@ describe("phase 8 abilities", () => {
     expect(messages(game).some((message) => message.includes("在其他选手使用能力后移动 1 格"))).toBe(true);
   });
 
+  it("records the die result before Blimp and Gunk modify the main move", () => {
+    const game = roll(createRace(["Blimp", "Gunk"]), "player-1", [6]);
+    const turnMessages = messages(game).slice(-4);
+
+    expect(turnMessages).toEqual([
+      "P1的飞艇 掷出了 6。",
+      "P1的飞艇 使用飞艇，主移动 +3，当前为 9。",
+      "P2的黏液 触发黏液，P1的飞艇的主移动从 9 减为 8，只能移动 8 格。",
+      "P1的飞艇 移动 8 格，到达 8。",
+    ]);
+  });
+
   it("resolves Baba Yaga after Scoocher and Lackey ability moves", () => {
     let game = roll(setPositions(createRace(["Alchemist", "Gunk", "Scoocher", "Baba Yaga"]), {
       "player-1": 0,

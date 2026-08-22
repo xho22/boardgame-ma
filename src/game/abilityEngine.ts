@@ -21,6 +21,7 @@ export type MainMoveResolution = {
   race: RaceState;
   players: Player[];
   logs: AbilityLog[];
+  diceLogIndex?: number;
   usesLeaptoadMove: boolean;
   preventsOverFinish: boolean;
   extraTurnPlayerId: string | null;
@@ -263,6 +264,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
   }
 
   let dieRoll: number | null = null;
+  let diceLogIndex: number | undefined;
   let moveValue: number;
   let nextEntrant = {
     ...workingEntrant,
@@ -277,6 +279,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
     });
   } else {
     dieRoll = choice.forcedDieRoll ?? rng.rollDie(6);
+    diceLogIndex = logs.length;
 
     const rollReaction = applyRollReactions(game, workingRace, workingEntrant, dieRoll, players);
     workingRace = rollReaction.race;
@@ -361,6 +364,7 @@ export function resolveMainMove({ game, race, entrant, rng, choice = {} }: Resol
     race: workingRace,
     players,
     logs,
+    diceLogIndex,
     usesLeaptoadMove: key === "skip_occupied_spaces_while_moving",
     preventsOverFinish: hasOtherKey(game, workingRace, workingEntrant, "others_need_exact_finish"),
     extraTurnPlayerId,

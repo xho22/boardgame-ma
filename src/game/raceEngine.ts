@@ -370,11 +370,13 @@ function finishResolvedMove(
     afterMove.players,
   );
   const raceAfterSecondaryFinishes = syncFinishers(specialResolution.race);
+  const diceLogIndex = mainMove.diceLogIndex ?? mainMove.logs.length;
   const baseLogs = [
-    ...mainMove.logs,
+    ...mainMove.logs.slice(0, diceLogIndex),
     ...(mainMove.dieRoll === null
       ? []
       : [{ type: "dice_roll" as const, message: `${describeRaceEntrant(game, entrant)} 掷出了 ${mainMove.dieRoll}。` }]),
+    ...mainMove.logs.slice(diceLogIndex),
     ...(exactFinishBlocked
       ? [
           {
