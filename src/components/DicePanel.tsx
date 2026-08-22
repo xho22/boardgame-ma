@@ -13,16 +13,17 @@ type DicePanelProps = {
   effectiveAbilityKey: AbilityImplementationKey;
   interactionBlocked?: boolean;
   sendRollImmediately?: boolean;
+  onRollAnimationStart?: () => void;
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
-const ROLL_ANIMATION_MS = 2_000;
+export const ROLL_ANIMATION_MS = 2_000;
 
 export function getRollResultDelay(rollStartedAt: number, now: number): number {
   return Math.max(0, ROLL_ANIMATION_MS - (now - rollStartedAt));
 }
 
-export function DicePanel({ debugMode, gameRevision, race, currentPlayer, currentEntrant, effectiveAbilityKey, interactionBlocked = false, sendRollImmediately = false, onRoll }: DicePanelProps) {
+export function DicePanel({ debugMode, gameRevision, race, currentPlayer, currentEntrant, effectiveAbilityKey, interactionBlocked = false, sendRollImmediately = false, onRollAnimationStart, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
   const [revealedRollValue, setRevealedRollValue] = useState<number | null>(null);
@@ -152,6 +153,7 @@ export function DicePanel({ debugMode, gameRevision, race, currentPlayer, curren
 
     if (sendRollImmediately) {
       awaitingRollResultRef.current = true;
+      onRollAnimationStart?.();
       onRoll(currentEntrant.id, choice);
       return;
     }

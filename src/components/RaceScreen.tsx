@@ -12,9 +12,10 @@ type RaceScreenProps = {
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
   canActAsPlayer?: (playerId: string) => boolean;
   sendRollImmediately?: boolean;
+  onRollAnimationStart?: () => void;
 };
 
-export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = () => true, sendRollImmediately = false }: RaceScreenProps) {
+export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = () => true, sendRollImmediately = false, onRollAnimationStart }: RaceScreenProps) {
   const [duelTargetEntrantId, setDuelTargetEntrantId] = useState("");
   const [revealedDieRoll, setRevealedDieRoll] = useState<number | null>(null);
   const lastSeenRevisionRef = useRef(game.revision);
@@ -184,6 +185,7 @@ export function RaceScreen({ game, onConfirmReaction, onRoll, canActAsPlayer = (
             effectiveAbilityKey={getEffectiveImplementationKey(game, race, currentEntrant)}
             interactionBlocked={revealedDieRoll !== null}
             sendRollImmediately={sendRollImmediately}
+            onRollAnimationStart={onRollAnimationStart}
             onRoll={onRoll}
           />
         ) : (

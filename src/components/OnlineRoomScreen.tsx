@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FinalResultsScreen } from "./FinalResultsScreen";
+import { ROLL_ANIMATION_MS } from "./DicePanel";
 import { RaceRevealScreen } from "./RaceRevealScreen";
 import { RaceResultsScreen } from "./RaceResultsScreen";
 import { RaceScreen } from "./RaceScreen";
@@ -12,6 +13,8 @@ import type { ServerMessage, StartSharedGameOptions } from "../network/protocol"
 type OnlineRoomScreenProps = {
   onBack: () => void;
 };
+
+type StateSyncMessage = Extract<ServerMessage, { type: "STATE_SYNC" }>;
 
 export const ONLINE_ROOM_IDS = ["family-a", "family-b", "family-c", "family-d", "family-e", "family-f", "family-g", "family-h"] as const;
 
@@ -37,8 +40,61 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   const [boardMode, setBoardMode] = useState<"alternating" | "allSpecial">("alternating");
   const [connectionLatencyMs, setConnectionLatencyMs] = useState<number | null>(null);
   const [selectionFailureToken, setSelectionFailureToken] = useState(0);
+  const pendingRollAnimationUntilRef = useRef<number | null>(null);
+  const deferredStateSyncRef = useRef<StateSyncMessage | null>(null);
+  const deferredStateSyncTimerRef = useRef<number | null>(null);
 
-  useEffect(() => () => client.current.close(), []);
+  useEffect(() => () => {
+    clearDeferredStateSync();
+    client.current.close();
+  }, []);
+
+  function applyStateSync(message: StateSyncMessage) {
+    setRoom(message.room);
+    setPlayerId(message.playerId);
+    window.localStorage.setItem(`boardgame-ma:online-player:${message.room.roomId}`, message.playerId);
+    setStatus(`已连接到 ${message.room.roomName}`);
+    setError(null);
+  }
+
+  function clearDeferredStateSync() {
+    if (deferredStateSyncTimerRef.current !== null) {
+      window.clearTimeout(deferredStateSyncTimerRef.current);
+      deferredStateSyncTimerRef.current = null;
+    }
+
+    pendingRollAnimationUntilRef.current = null;
+    deferredStateSyncRef.current = null;
+  }
+
+  function beginOnlineRollAnimation() {
+    pendingRollAnimationUntilRef.current = Date.now() + ROLL_ANIMATION_MS;
+  }
+
+  function deferStateSyncForRollAnimation(message: StateSyncMessage) {
+    const remaining = Math.max(0, (pendingRollAnimationUntilRef.current ?? 0) - Date.now());
+
+    if (remaining === 0) {
+      clearDeferredStateSync();
+      applyStateSync(message);
+      return;
+    }
+
+    deferredStateSyncRef.current = message;
+    if (deferredStateSyncTimerRef.current !== null) {
+      return;
+    }
+
+    deferredStateSyncTimerRef.current = window.setTimeout(() => {
+      deferredStateSyncTimerRef.current = null;
+      pendingRollAnimationUntilRef.current = null;
+      const deferredMessage = deferredStateSyncRef.current;
+      deferredStateSyncRef.current = null;
+      if (deferredMessage) {
+        applyStateSync(deferredMessage);
+      }
+    }, remaining);
+  }
 
   function handleMessage(message: ServerMessage) {
     if (message.type === "HEARTBEAT_ACK") {
@@ -47,6 +103,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
     }
 
     if (message.type === "ROOM_CLEARED") {
+      clearDeferredStateSync();
       client.current.close();
       window.localStorage.removeItem(`boardgame-ma:online-player:${roomId}`);
       setRoom(null);
@@ -57,15 +114,16 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
     }
 
     if (message.type === "STATE_SYNC") {
-      setRoom(message.room);
-      setPlayerId(message.playerId);
-      window.localStorage.setItem(`boardgame-ma:online-player:${message.room.roomId}`, message.playerId);
-      setStatus(`已连接到 ${message.room.roomName}`);
-      setError(null);
+      if (pendingRollAnimationUntilRef.current !== null) {
+        deferStateSyncForRollAnimation(message);
+      } else {
+        applyStateSync(message);
+      }
       return;
     }
 
     if (message.type === "COMMAND_REJECTED") {
+      clearDeferredStateSync();
       setError(message.reason);
       setSelectionFailureToken((token) => token + 1);
       if (message.room) {
@@ -154,7 +212,7 @@ export function OnlineRoomScreen({ onBack }: OnlineRoomScreenProps) {
   }, [occupiedCount]);
 
   if (game && playerId) {
-    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} onClearRoom={clearRoom} connectionLatencyMs={connectionLatencyMs} selectionFailureToken={selectionFailureToken} />;
+    return <OnlineGameView room={room} playerId={playerId} onBack={onBack} onCommand={sendCommand} onReset={resetSharedGame} onClearRoom={clearRoom} connectionLatencyMs={connectionLatencyMs} selectionFailureToken={selectionFailureToken} onRollAnimationStart={beginOnlineRollAnimation} />;
   }
 
   return (
@@ -294,15 +352,16 @@ type OnlineGameViewProps = {
   onClearRoom: () => void;
   connectionLatencyMs: number | null;
   selectionFailureToken: number;
+  onRollAnimationStart: () => void;
 };
 
-function OnlineGameView({ room, playerId, onBack, onCommand, onReset, onClearRoom, connectionLatencyMs, selectionFailureToken }: OnlineGameViewProps) {
+function OnlineGameView({ room, playerId, onBack, onCommand, onReset, onClearRoom, connectionLatencyMs, selectionFailureToken, onRollAnimationStart }: OnlineGameViewProps) {
   const game = room.gameState!;
   const isHost = room.hostPlayerId === playerId;
   const canChangeAthlete = (athleteId: string) => game.players.some(
     (player) => player.id === playerId && game.selectionState?.selectionsByPlayerId[player.id]?.includes(athleteId),
   );
-  const content = renderOnlineGameScreen(game, playerId, isHost, onBack, onCommand, canChangeAthlete, selectionFailureToken);
+  const content = renderOnlineGameScreen(game, playerId, isHost, onBack, onCommand, canChangeAthlete, selectionFailureToken, onRollAnimationStart);
 
   return (
     <>
@@ -325,6 +384,7 @@ function renderOnlineGameScreen(
   onCommand: (command: GameCommand) => void,
   canChangeAthlete: (athleteId: string) => boolean,
   selectionFailureToken: number,
+  onRollAnimationStart: () => void,
 ) {
   if (game.phase === "teamReveal") {
     return (
@@ -372,6 +432,7 @@ function renderOnlineGameScreen(
         game={game}
         canActAsPlayer={(ownerId) => ownerId === playerId}
         sendRollImmediately
+        onRollAnimationStart={onRollAnimationStart}
         onRoll={(entrantId, choice?: MainMoveChoice) => onCommand({ type: "ROLL_DICE", playerId: entrantId, choice })}
         onConfirmReaction={(ownerId, reactionId, accepted, targetEntrantId) => onCommand({
           type: "CONFIRM_REACTION",
