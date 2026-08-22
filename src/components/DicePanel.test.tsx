@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { STANDARD_ATHLETES } from "../game/athletes";
-import { DicePanel } from "./DicePanel";
+import { DicePanel, getRollResultDelay } from "./DicePanel";
 import type { Entrant, Player, RaceState } from "../game/types";
 
 const legs = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Legs");
@@ -55,10 +55,16 @@ const race: RaceState = {
 };
 
 describe("DicePanel", () => {
+  it("waits for the minimum animation duration before revealing an online result", () => {
+    expect(getRollResultDelay(1_000, 1_500)).toBe(1_500);
+    expect(getRollResultDelay(1_000, 3_500)).toBe(0);
+  });
+
   it("shows both Legs choices before the main move", () => {
     const markup = renderToStaticMarkup(
       <DicePanel
         debugMode={false}
+        gameRevision={0}
         race={race}
         currentPlayer={player}
         currentEntrant={entrant}
@@ -75,6 +81,7 @@ describe("DicePanel", () => {
     const markup = renderToStaticMarkup(
       <DicePanel
         debugMode={false}
+        gameRevision={0}
         race={race}
         currentPlayer={player}
         currentEntrant={{ ...entrant, skippedTurns: 1 }}
@@ -93,6 +100,7 @@ describe("DicePanel", () => {
     const markup = renderToStaticMarkup(
       <DicePanel
         debugMode={false}
+        gameRevision={0}
         race={{
           ...race,
           entrants: [hareEntrant, { ...entrant, id: "player-2", playerId: "player-2", athleteId: babaYaga.id, position: 3 }],
@@ -112,6 +120,7 @@ describe("DicePanel", () => {
     const markup = renderToStaticMarkup(
       <DicePanel
         debugMode
+        gameRevision={0}
         race={race}
         currentPlayer={player}
         currentEntrant={entrant}
@@ -127,6 +136,7 @@ describe("DicePanel", () => {
     const markup = renderToStaticMarkup(
       <DicePanel
         debugMode={false}
+        gameRevision={0}
         race={race}
         currentPlayer={player}
         currentEntrant={entrant}

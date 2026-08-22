@@ -371,6 +371,7 @@ function renderOnlineGameScreen(
       <RaceScreen
         game={game}
         canActAsPlayer={(ownerId) => ownerId === playerId}
+        sendRollImmediately
         onRoll={(entrantId, choice?: MainMoveChoice) => onCommand({ type: "ROLL_DICE", playerId: entrantId, choice })}
         onConfirmReaction={(ownerId, reactionId, accepted, targetEntrantId) => onCommand({
           type: "CONFIRM_REACTION",

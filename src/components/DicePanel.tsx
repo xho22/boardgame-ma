@@ -6,15 +6,23 @@ import type { Entrant, MainMoveChoice, Player, RaceState } from "../game/types";
 
 type DicePanelProps = {
   debugMode: boolean;
+  gameRevision: number;
   race: RaceState;
   currentPlayer: Player;
   currentEntrant: Entrant;
   effectiveAbilityKey: AbilityImplementationKey;
   interactionBlocked?: boolean;
+  sendRollImmediately?: boolean;
   onRoll: (playerId: string, choice?: MainMoveChoice) => void;
 };
 
-export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effectiveAbilityKey, interactionBlocked = false, onRoll }: DicePanelProps) {
+const ROLL_ANIMATION_MS = 2_000;
+
+export function getRollResultDelay(rollStartedAt: number, now: number): number {
+  return Math.max(0, ROLL_ANIMATION_MS - (now - rollStartedAt));
+}
+
+export function DicePanel({ debugMode, gameRevision, race, currentPlayer, currentEntrant, effectiveAbilityKey, interactionBlocked = false, sendRollImmediately = false, onRoll }: DicePanelProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [rollingValue, setRollingValue] = useState(1);
   const [revealedRollValue, setRevealedRollValue] = useState<number | null>(null);
@@ -27,6 +35,8 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
   const timeoutRef = useRef<number | null>(null);
   const revealTimeoutRef = useRef<number | null>(null);
   const awaitingRollResultRef = useRef(false);
+  const rollStartedAtRef = useRef<number | null>(null);
+  const resultScheduledRef = useRef(false);
   const isDiceBusy = isRolling || revealedRollValue !== null;
   const hareSkipsTurn =
     effectiveAbilityKey === "hare_fast_unless_alone_lead" &&
@@ -51,6 +61,8 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
     }
 
     awaitingRollResultRef.current = false;
+    rollStartedAtRef.current = null;
+    resultScheduledRef.current = false;
     setIsRolling(false);
   }
 
@@ -66,28 +78,46 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
     setSelectedThirdWheelPosition("");
     setGeniusGuess("");
     setForcedDieRoll(6);
-  }, [currentEntrant.id, currentPlayer.id, race.previousDieRoll]);
+  }, [currentEntrant.id, currentPlayer.id, gameRevision, race.previousDieRoll]);
 
   useEffect(() => {
-    if (!awaitingRollResultRef.current || race.previousDieRoll == null) {
+    if (!awaitingRollResultRef.current || resultScheduledRef.current || race.previousDieRoll == null) {
       return;
     }
 
     const confirmedDieRoll = race.previousDieRoll;
-    awaitingRollResultRef.current = false;
-    setIsRolling(false);
-    setRollingValue(confirmedDieRoll);
-    setRevealedRollValue(confirmedDieRoll);
-    revealTimeoutRef.current = window.setTimeout(() => {
-      revealTimeoutRef.current = null;
-      setRevealedRollValue(null);
-      setUseBeforeMainAbility(false);
-      setSelectedTargetEntrantId("");
-      setSelectedThirdWheelPosition("");
-      setGeniusGuess("");
-      setForcedDieRoll(6);
-    }, 1_000);
-  }, [currentEntrant.id, race.previousDieRoll]);
+    resultScheduledRef.current = true;
+    const finishRoll = () => {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      timeoutRef.current = null;
+      awaitingRollResultRef.current = false;
+      rollStartedAtRef.current = null;
+      resultScheduledRef.current = false;
+      setIsRolling(false);
+      setRollingValue(confirmedDieRoll);
+      setRevealedRollValue(confirmedDieRoll);
+      revealTimeoutRef.current = window.setTimeout(() => {
+        revealTimeoutRef.current = null;
+        setRevealedRollValue(null);
+        setUseBeforeMainAbility(false);
+        setSelectedTargetEntrantId("");
+        setSelectedThirdWheelPosition("");
+        setGeniusGuess("");
+        setForcedDieRoll(6);
+      }, 1_000);
+    };
+    const delay = getRollResultDelay(rollStartedAtRef.current ?? Date.now(), Date.now());
+
+    if (delay === 0) {
+      finishRoll();
+      return;
+    }
+
+    timeoutRef.current = window.setTimeout(finishRoll, delay);
+  }, [currentEntrant.id, gameRevision, race.previousDieRoll]);
 
   useEffect(() => {
     return () => {
@@ -114,18 +144,23 @@ export function DicePanel({ debugMode, race, currentPlayer, currentEntrant, effe
 
     setIsRolling(true);
     setRevealedRollValue(null);
+    resultScheduledRef.current = false;
+    rollStartedAtRef.current = Date.now();
     intervalRef.current = window.setInterval(() => {
       setRollingValue(Math.floor(Math.random() * 6) + 1);
     }, 80);
+
+    if (sendRollImmediately) {
+      awaitingRollResultRef.current = true;
+      onRoll(currentEntrant.id, choice);
+      return;
+    }
+
     timeoutRef.current = window.setTimeout(() => {
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
       timeoutRef.current = null;
       awaitingRollResultRef.current = true;
       onRoll(currentEntrant.id, choice);
-    }, 2_000);
+    }, ROLL_ANIMATION_MS);
   }
 
   function useDirectAbility(choice: MainMoveChoice) {
