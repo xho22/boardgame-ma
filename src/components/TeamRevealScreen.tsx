@@ -81,10 +81,10 @@ export function TeamRevealScreen({ game, onNewGame, onClearGame, onRandomizeTeam
 
       <footer className="bottom-actions">
         <button className="secondary-button" type="button" onClick={onRandomizeTeams} disabled={!canRandomizeTeams}>
-          Randomize Teams
+          再随机一匹
         </button>
         <button className="primary-button" type="button" onClick={onBeginSelection} disabled={!canBeginSelection}>
-          Choose Racers
+          进入挑选
         </button>
       </footer>
       {tooltip ? (

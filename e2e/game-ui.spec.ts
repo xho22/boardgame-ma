@@ -35,15 +35,15 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await firstTeamRacer.hover();
   await expect(page.locator(".ability-tooltip")).toBeVisible();
 
-  await page.getByRole("button", { name: "Randomize Teams" }).click();
+  await page.getByRole("button", { name: "再随机一匹" }).click();
   await expect(page.locator(".racer-card")).toHaveCount(8);
   await expect(page.locator(".racer-card").first().locator("img")).toBeVisible();
 
-  await page.getByRole("button", { name: "Choose Racers" }).click();
+  await page.getByRole("button", { name: "进入挑选" }).click();
   await expect(page.getByRole("button", { name: "Back" })).toBeVisible();
   await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("heading", { name: "Teams" })).toBeVisible();
-  await page.getByRole("button", { name: "Choose Racers" }).click();
+  await page.getByRole("button", { name: "进入挑选" }).click();
 
   const firstSelectableRacer = page.locator(".selectable-racer").first();
   await expect(firstSelectableRacer.locator("img")).toBeVisible();
@@ -83,7 +83,7 @@ test("supports choosing two racers per player in a small game", async ({ page })
   await page.getByRole("button", { name: "Start Game" }).click();
 
   await expect(page.locator(".racer-card")).toHaveCount(16);
-  await page.getByRole("button", { name: "Choose Racers" }).click();
+  await page.getByRole("button", { name: "进入挑选" }).click();
   await expect(page.getByText("0 / 2 selected")).toBeVisible();
 
   await page.locator(".selectable-racer").nth(0).click();
