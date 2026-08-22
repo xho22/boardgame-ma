@@ -78,6 +78,7 @@ export function Track({ game, race }: TrackProps) {
     playerName: string;
     racerName: string;
     abilityText: string;
+    imagePath?: string;
     copiedAbility: { displayName: string; abilityText: string } | null;
     x: number;
     y: number;
@@ -184,6 +185,7 @@ export function Track({ game, race }: TrackProps) {
                           playerName: player?.name ?? entrant.playerId,
                           racerName: athlete?.displayName ?? entrant.athleteId,
                           abilityText: athlete?.abilityText ?? "暂无能力说明。",
+                          imagePath: athlete?.imagePath,
                           copiedAbility,
                           x: event.clientX,
                           y: event.clientY,
@@ -220,8 +222,13 @@ export function Track({ game, race }: TrackProps) {
           role="tooltip"
           style={{ left: hoveredRacer.x + 14, top: hoveredRacer.y + 14 }}
         >
-          <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
-          <span>{hoveredRacer.abilityText}</span>
+          <div className="racer-hover-summary">
+            {hoveredRacer.imagePath ? <img src={hoveredRacer.imagePath} alt="" /> : null}
+            <div>
+              <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
+              <span>{hoveredRacer.abilityText}</span>
+            </div>
+          </div>
           {hoveredRacer.copiedAbility ? <span className="copied-ability">{`当前复制：${hoveredRacer.copiedAbility.displayName} - ${hoveredRacer.copiedAbility.abilityText}`}</span> : null}
         </aside>
       ) : null}

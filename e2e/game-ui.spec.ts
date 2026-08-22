@@ -71,6 +71,7 @@ test("shows racer card images in catalog, selection, and current turn", async ({
   await expect(page.locator(".race-board-layout")).toBeVisible();
   await page.locator(".turn-order-item.current").hover();
   await expect(page.locator(".race-sidebar .racer-hover-card")).toBeVisible();
+  await expect(page.locator(".race-sidebar .racer-hover-card img")).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath("race-layout.png"), fullPage: true });
 });

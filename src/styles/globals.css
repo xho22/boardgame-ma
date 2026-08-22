@@ -908,6 +908,27 @@ h1 {
   font-size: 14px;
 }
 
+.racer-hover-summary {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.racer-hover-summary img {
+  width: 78px;
+  height: 78px;
+  border: 1px solid #d4c9ba;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
+.racer-hover-summary > div {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
 .racer-hover-card .copied-ability {
   border-top: 1px solid #ddd5ca;
   padding-top: 5px;

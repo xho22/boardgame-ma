@@ -29,6 +29,7 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
     playerName: string;
     racerName: string;
     abilityText: string;
+    imagePath?: string;
     x: number;
     y: number;
   } | null>(null);
@@ -62,6 +63,7 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
                 playerName: player?.name ?? entrant.playerId,
                 racerName: athlete?.displayName ?? entrant.athleteId,
                 abilityText: athlete?.abilityText ?? "暂无能力说明。",
+                imagePath: athlete?.imagePath,
                 x: event.clientX,
                 y: event.clientY,
               })}
@@ -96,8 +98,13 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
           role="tooltip"
           style={{ left: hoveredRacer.x + 14, top: hoveredRacer.y + 14 }}
         >
-          <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
-          <span>{hoveredRacer.abilityText}</span>
+          <div className="racer-hover-summary">
+            {hoveredRacer.imagePath ? <img src={hoveredRacer.imagePath} alt="" /> : null}
+            <div>
+              <strong>{`${hoveredRacer.playerName}的${hoveredRacer.racerName}`}</strong>
+              <span>{hoveredRacer.abilityText}</span>
+            </div>
+          </div>
         </aside>
       ) : null}
     </section>
