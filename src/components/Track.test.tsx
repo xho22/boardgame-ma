@@ -105,6 +105,7 @@ describe("Track", () => {
     expect(markup).toContain(alchemist.imagePath);
     expect(markup).toContain(legs.imagePath);
     expect(markup).toContain("track-piece moving-piece tripped");
+    expect(markup).toContain("piece-stack pieces-2");
     expect(markup).toContain("current-racer-marker");
     expect(markup).toContain("track-infield");
     expect(markup).toContain("special-space-marker");

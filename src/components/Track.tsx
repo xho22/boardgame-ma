@@ -159,7 +159,7 @@ export function Track({ game, race }: TrackProps) {
             >
               <span className="space-label">{space === 0 ? "Start" : space === race.trackLength ? "Finish" : space}</span>
               {specialEffect ? <span className="special-space-marker" title={`特殊格：${specialEffect.label}`}>{specialEffect.label}</span> : null}
-              <div className="piece-stack">
+              <div className={`piece-stack pieces-${entrants.length}`}>
                 {entrants.map((entrant) => {
                   const player = game.players.find((candidate) => candidate.id === entrant.playerId);
                   const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
