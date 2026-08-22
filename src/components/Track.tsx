@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
-import { getEffectiveImplementationKey } from "../game/abilityEngine";
+import { getCopiedAbilityAthlete } from "../game/abilityEngine";
 import { getSpecialTrackEffect } from "../game/specialTrack";
 import type { GameLogEntry, GameState, RaceState } from "../game/types";
 
@@ -50,19 +50,12 @@ export function getBackwardSpecialWaypoints(
   return waypoints;
 }
 
-export function getCopiedAbilityDetails(game: GameState, race: RaceState, entrant: RaceState["entrants"][number]) {
-  const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
-  const effectiveAbilityKey = getEffectiveImplementationKey(game, race, entrant);
+export function getCopiedAbilityDetails(race: RaceState, entrant: RaceState["entrants"][number]) {
+  const copiedAthlete = getCopiedAbilityAthlete(race, entrant);
 
-  if (!athlete || athlete.implementationKey === effectiveAbilityKey) {
-    return null;
-  }
-
-  const copiedAthlete = [...STANDARD_ATHLETE_BY_ID.values()].find(
-    (candidate) => candidate.implementationKey === effectiveAbilityKey,
-  );
-
-  return copiedAthlete ? { displayName: copiedAthlete.displayName, abilityText: copiedAthlete.abilityText } : null;
+  return copiedAthlete
+    ? { displayName: copiedAthlete.displayName, abilityText: copiedAthlete.abilityText }
+    : null;
 }
 
 export function Track({ game, race }: TrackProps) {
@@ -164,7 +157,7 @@ export function Track({ game, race }: TrackProps) {
                 {entrants.map((entrant) => {
                   const player = game.players.find((candidate) => candidate.id === entrant.playerId);
                   const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
-                  const copiedAbility = getCopiedAbilityDetails(game, race, entrant);
+                  const copiedAbility = getCopiedAbilityDetails(race, entrant);
 
                   return (
                     <span

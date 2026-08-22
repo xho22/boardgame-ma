@@ -645,7 +645,7 @@ export function describeEntrant(game: GameState, entrant: Entrant): string {
 }
 
 export function getEffectiveImplementationKey(
-  _game: GameState,
+  _game: GameState | undefined,
   race: RaceState,
   entrant: Entrant,
 ): AbilityImplementationKey {
@@ -675,6 +675,19 @@ export function getEffectiveImplementationKey(
   }
 
   return copiedKey;
+}
+
+export function getCopiedAbilityAthlete(race: RaceState, entrant: Entrant) {
+  const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+  const effectiveAbilityKey = getEffectiveImplementationKey(undefined, race, entrant);
+
+  if (!athlete || athlete.implementationKey === effectiveAbilityKey) {
+    return null;
+  }
+
+  return [...STANDARD_ATHLETE_BY_ID.values()].find(
+    (candidate) => candidate.implementationKey === effectiveAbilityKey,
+  ) ?? null;
 }
 
 function applyBeforeMainMove(

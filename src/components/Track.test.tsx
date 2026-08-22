@@ -126,7 +126,7 @@ describe("Track", () => {
       { ...entrants[0], athleteId: egg.id, copiedAbilityKey: legs.implementationKey },
       { ...entrants[0], athleteId: twin.id, copiedAbilityKey: legs.implementationKey },
     ]) {
-      expect(getCopiedAbilityDetails(game, copycatRace, entrant)).toMatchObject({ displayName: "长腿", abilityText: legs.abilityText });
+      expect(getCopiedAbilityDetails(copycatRace, entrant)).toMatchObject({ displayName: "长腿", abilityText: legs.abilityText });
     }
   });
 

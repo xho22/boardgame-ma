@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { STANDARD_ATHLETE_BY_ID } from "../game/athletes";
+import { getCopiedAbilityAthlete } from "../game/abilityEngine";
 import type { GameState, RaceState } from "../game/types";
 
 type TurnOrderProps = {
@@ -52,6 +53,7 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
 
           const player = game.players.find((candidate) => candidate.id === entrant.playerId);
           const athlete = STANDARD_ATHLETE_BY_ID.get(entrant.athleteId);
+          const copiedAthlete = getCopiedAbilityAthlete(race, entrant);
           const isCurrent = entrant.id === currentEntrantId;
 
           return (
@@ -73,7 +75,12 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
               onMouseLeave={() => setHoveredRacer(null)}
             >
               <span className="turn-order-index">{isCurrent ? "当前" : index === 1 ? "下一位" : `${index} 回合后`}</span>
-              {athlete ? <img src={athlete.imagePath} alt={athlete.displayName} /> : <span className="turn-order-fallback">?</span>}
+              {athlete ? (
+                <span className="turn-order-avatar">
+                  <img src={athlete.imagePath} alt={athlete.displayName} />
+                  {copiedAthlete ? <img className="turn-order-copied-image" src={copiedAthlete.imagePath} alt={`${copiedAthlete.displayName}能力`} /> : null}
+                </span>
+              ) : <span className="turn-order-fallback">?</span>}
               <span className="turn-order-copy">
                 <strong>{athlete?.displayName ?? entrant.athleteId}</strong>
                 <small>{player?.name ?? entrant.playerId}</small>

@@ -5,6 +5,12 @@ import type { GameState, RaceState } from "../game/types";
 import { getUpcomingEntrantIds, TurnOrder } from "./TurnOrder";
 
 const [firstAthlete, secondAthlete, thirdAthlete] = STANDARD_ATHLETES;
+const egg = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Egg");
+const legs = STANDARD_ATHLETES.find((athlete) => athlete.standardName === "Legs");
+
+if (!egg || !legs) {
+  throw new Error("Missing copied ability test athletes");
+}
 
 const race: RaceState = {
   id: "race-1",
@@ -45,5 +51,22 @@ describe("TurnOrder", () => {
     expect(markup).toContain("绊倒");
     expect(markup).toContain("已冲线");
     expect(markup).toContain(`1. ${firstAthlete.displayName}`);
+  });
+
+  it("shows the copied ability portrait without replacing the racer's portrait", () => {
+    const copiedRace: RaceState = {
+      ...race,
+      entrants: race.entrants.map((entrant) =>
+        entrant.id === "entrant-2"
+          ? { ...entrant, athleteId: egg.id, copiedAbilityKey: legs.implementationKey }
+          : entrant,
+      ),
+    };
+
+    const markup = renderToStaticMarkup(<TurnOrder game={game} race={copiedRace} />);
+
+    expect(markup).toContain(`src="${egg.imagePath}"`);
+    expect(markup).toContain(`turn-order-copied-image" src="${legs.imagePath}"`);
+    expect(markup).toContain(`alt="${legs.displayName}能力"`);
   });
 });

@@ -1039,18 +1039,37 @@ h1 {
   color: #a53024;
 }
 
-.turn-order-item img,
+.turn-order-avatar,
 .turn-order-fallback {
   width: 28px;
   height: 28px;
   grid-row: 2;
+}
+
+.turn-order-avatar {
+  position: relative;
+}
+
+.turn-order-avatar > img {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
 }
 
-.turn-order-item.tripped img {
+.turn-order-item.tripped .turn-order-avatar > img:first-child {
   transform: rotate(180deg);
   opacity: 0.7;
+}
+
+.turn-order-avatar > .turn-order-copied-image {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #fffdf8;
+  box-shadow: 0 0 0 1px #174d44;
 }
 
 .turn-order-fallback {
