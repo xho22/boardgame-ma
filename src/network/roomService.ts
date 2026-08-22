@@ -88,6 +88,16 @@ export class RoomService {
     return updatedRoom;
   }
 
+  clearIfAllPlayersOffline(roomId: string): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room || room.playerSlots.some((slot) => slot.isOccupied && slot.isConnected)) {
+      return false;
+    }
+
+    this.rooms.delete(roomId);
+    return true;
+  }
+
   startSharedGame(roomId: string, playerId: string, options: StartSharedGameOptions = {}): RoomState {
     const room = this.requireRoom(roomId);
     this.requireHost(room, playerId);

@@ -10,6 +10,8 @@ const host = process.env.HOST ?? "0.0.0.0";
 const clientDistDirectory = resolve(process.cwd(), "dist");
 const rooms = new RoomService();
 const clients = new Map<WebSocket, { roomId: string; playerId: string }>();
+const inactiveRoomTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const INACTIVE_ROOM_GRACE_MS = 60_000;
 const contentTypes: Record<string, string> = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -96,6 +98,23 @@ function broadcast(roomId: string): void {
   }
 }
 
+function cancelInactiveRoomCleanup(roomId: string): void {
+  const timer = inactiveRoomTimers.get(roomId);
+  if (timer) {
+    clearTimeout(timer);
+    inactiveRoomTimers.delete(roomId);
+  }
+}
+
+function scheduleInactiveRoomCleanup(roomId: string): void {
+  cancelInactiveRoomCleanup(roomId);
+  const timer = setTimeout(() => {
+    inactiveRoomTimers.delete(roomId);
+    rooms.clearIfAllPlayersOffline(roomId);
+  }, INACTIVE_ROOM_GRACE_MS);
+  inactiveRoomTimers.set(roomId, timer);
+}
+
 function disconnectClearedRoomClients(roomId: string, hostPlayerId: string): void {
   for (const [socket, client] of clients) {
     if (client.roomId !== roomId || client.playerId === hostPlayerId) {
@@ -120,6 +139,7 @@ server.on("connection", (socket) => {
 
       if (message.type === "JOIN_ROOM") {
         const joined = rooms.join(message.roomId, message.playerName, message.previousPlayerId);
+        cancelInactiveRoomCleanup(message.roomId);
         clients.set(socket, { roomId: message.roomId, playerId: joined.playerId });
         broadcast(message.roomId);
         return;
@@ -160,6 +180,7 @@ server.on("connection", (socket) => {
     if (client) {
       rooms.disconnect(client.roomId, client.playerId);
       broadcast(client.roomId);
+      scheduleInactiveRoomCleanup(client.roomId);
     }
   });
 });

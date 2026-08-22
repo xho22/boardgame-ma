@@ -22,6 +22,20 @@ describe("RoomService", () => {
     expect(rejoined.room.playerSlots[1].isConnected).toBe(true);
   });
 
+  it("clears a room only after every occupied seat is offline", () => {
+    const service = new RoomService();
+    const dad = service.join("family-a", "Dad");
+    const kid = service.join("family-a", "Kid");
+
+    service.disconnect("family-a", dad.playerId);
+    expect(service.clearIfAllPlayersOffline("family-a")).toBe(false);
+    expect(service.getRoom("family-a")).not.toBeNull();
+
+    service.disconnect("family-a", kid.playerId);
+    expect(service.clearIfAllPlayersOffline("family-a")).toBe(true);
+    expect(service.getRoom("family-a")).toBeNull();
+  });
+
   it("creates a shared game and broadcasts a server-authoritative command result", () => {
     const service = new RoomService();
     const dad = service.join("family-a", "Dad");
