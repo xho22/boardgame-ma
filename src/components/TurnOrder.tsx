@@ -58,7 +58,7 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
 
           return (
             <li
-              className={`turn-order-item ${isCurrent ? "current" : ""} ${entrant.skippedTurns > 0 ? "tripped" : ""}`}
+              className={`turn-order-item ${isCurrent ? "current" : ""} ${entrant.skippedTurns > 0 ? "tripped" : ""} ${copiedAthlete ? "has-copied-ability" : ""}`}
               key={entrant.id}
               style={{ "--player-color": player?.color ?? "#1d6258" } as React.CSSProperties}
               onMouseEnter={(event) => setHoveredRacer({
@@ -78,13 +78,13 @@ export function TurnOrder({ game, race }: TurnOrderProps) {
               {athlete ? (
                 <span className="turn-order-avatar">
                   <img src={athlete.imagePath} alt={athlete.displayName} />
-                  {copiedAthlete ? <img className="turn-order-copied-image" src={copiedAthlete.imagePath} alt={`${copiedAthlete.displayName}能力`} /> : null}
                 </span>
               ) : <span className="turn-order-fallback">?</span>}
               <span className="turn-order-copy">
                 <strong>{athlete?.displayName ?? entrant.athleteId}</strong>
                 <small>{player?.name ?? entrant.playerId}</small>
               </span>
+              {copiedAthlete ? <img className="turn-order-copied-image" src={copiedAthlete.imagePath} alt={`${copiedAthlete.displayName}能力`} /> : null}
               {entrant.skippedTurns > 0 ? <span className="turn-status">绊倒</span> : null}
             </li>
           );

@@ -66,6 +66,7 @@ describe("TurnOrder", () => {
     const markup = renderToStaticMarkup(<TurnOrder game={game} race={copiedRace} />);
 
     expect(markup).toContain(`src="${egg.imagePath}"`);
+    expect(markup).toContain("turn-order-item current tripped has-copied-ability");
     expect(markup).toContain(`turn-order-copied-image" src="${legs.imagePath}"`);
     expect(markup).toContain(`alt="${legs.displayName}能力"`);
   });
